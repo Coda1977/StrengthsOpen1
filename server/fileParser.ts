@@ -86,10 +86,10 @@ export async function parseTeamMembersFile(buffer: Buffer, mimetype: string, fil
 
       case 'application/pdf':
         // For PDF files, use OCR since pdf-parse has dependency issues
-        const worker = await createWorker('eng');
-        const { data: { text } } = await worker.recognize(buffer);
-        await worker.terminate();
-        extractedText = text;
+        const pdfWorker = await createWorker('eng');
+        const pdfResult = await pdfWorker.recognize(buffer);
+        await pdfWorker.terminate();
+        extractedText = pdfResult.data.text;
         break;
 
       case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
@@ -103,10 +103,10 @@ export async function parseTeamMembersFile(buffer: Buffer, mimetype: string, fil
       case 'image/jpeg':
       case 'image/jpg':
         // OCR for images
-        const worker = await createWorker('eng');
-        const { data: { text } } = await worker.recognize(buffer);
-        await worker.terminate();
-        extractedText = text;
+        const imageWorker = await createWorker('eng');
+        const imageResult = await imageWorker.recognize(buffer);
+        await imageWorker.terminate();
+        extractedText = imageResult.data.text;
         break;
 
       default:

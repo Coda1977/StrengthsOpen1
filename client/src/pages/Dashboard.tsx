@@ -268,15 +268,6 @@ const Dashboard = () => {
     },
   });
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      uploadMutation.mutate(file);
-    }
-    // Reset the input
-    event.target.value = '';
-  };
-
   const handleRefreshInsight = () => {
     if (refreshCount > 0) {
       generateInsightMutation.mutate();
@@ -327,7 +318,26 @@ const Dashboard = () => {
 
           {/* Team Synergy Section */}
           <div className="card">
-            <h2 className="card-title">Team Synergy</h2>
+            <div className="overview-header">
+              <h2 className="card-title">Team Synergy</h2>
+              <div className="overview-actions">
+                <input
+                  type="file"
+                  id="file-upload"
+                  accept=".csv,.xlsx,.xls,.pdf,.docx,.doc,.png,.jpg,.jpeg"
+                  onChange={handleFileUpload}
+                  style={{ display: 'none' }}
+                />
+                <button 
+                  className="upload-btn" 
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                  disabled={uploadMutation.isPending}
+                >
+                  {uploadMutation.isPending ? 'Uploading...' : 'Upload File'}
+                </button>
+                <button className="add-member-btn" onClick={() => openAddModal()}>+</button>
+              </div>
+            </div>
             {teamMembersLoading ? (
               <div style={{ textAlign: 'center', padding: '2rem' }}>
                 <div style={{
