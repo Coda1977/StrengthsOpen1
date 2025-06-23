@@ -1,7 +1,11 @@
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 
-const Navigation = () => {
+interface NavigationProps {
+  simplified?: boolean;
+}
+
+const Navigation = ({ simplified = false }: NavigationProps) => {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -11,6 +15,17 @@ const Navigation = () => {
     { path: '/encyclopedia', label: 'Encyclopedia' },
     { path: '/coach', label: 'AI Coach' }
   ];
+
+  // For landing page, show simplified navigation
+  if (simplified) {
+    return (
+      <nav className="app-nav">
+        <div className="nav-container">
+          <Link href="/" className="logo">Strengths Manager</Link>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="app-nav">

@@ -105,8 +105,9 @@
 .app-nav {
   background: var(--white);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  position: sticky;
+  position: fixed;
   top: 0;
+  width: 100%;
   z-index: 100;
   transition: all 0.3s ease;
 }
@@ -704,6 +705,66 @@
 .stat-label {
   color: var(--text-secondary);
   font-weight: 600;
+}
+
+/* Footer Styles */
+footer {
+  background: var(--text-primary);
+  color: var(--white);
+  padding: 80px var(--content-padding);
+  text-align: center;
+}
+
+.footer-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.footer-content p {
+  font-size: 32px;
+  margin-bottom: 40px;
+  opacity: 0.9;
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1.4;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 50px;
+}
+
+.footer-button {
+  background: var(--accent-yellow);
+  color: var(--text-primary);
+  padding: 18px 40px;
+  border-radius: 30px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 18px;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.footer-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(255, 214, 10, 0.3);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fadeInUp 0.8s ease-out forwards;
+  opacity: 0;
 }
 
 /* Chat Interface Styles */
