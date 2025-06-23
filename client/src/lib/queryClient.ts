@@ -48,10 +48,23 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
+      retry: (failureCount, error) => {
+        // Don't retry auth errors or other client errors
+        if (error.message?.includes('401') || error.message?.includes('403')) {
+          return false;
+        }
+        // Retry network errors up to 3 times
+        return failureCount < 3;
+      },
     },
     mutations: {
-      retry: false,
+      retry: (failureCount, error) => {
+        // Don't retry auth errors for mutations
+        if (error.message?.includes('401') || error.message?.includes('403')) {
+          return false;
+        }
+        return false; // Generally don't retry mutations
+      },
     },
   },
 });
