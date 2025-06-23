@@ -25,30 +25,43 @@ const getOidcConfig = memoize(
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
+  
+  // Enhanced session store configuration to prevent corruption
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
+    createTableIfMissing: false, // Table already exists in schema
     ttl: sessionTtl,
     tableName: "sessions",
     schemaName: 'public',
     pruneSessionInterval: 60 * 15, // 15 minutes
+    disableTouch: false, // Enable session touch to prevent premature expiry
     errorLog: (err) => {
       console.error('Session store error:', err);
-      // Don't crash on session errors - continue with in-memory fallback
+      // Log but don't crash - session middleware will handle gracefully
     },
+  });
+
+  // Add session store event handlers for monitoring
+  sessionStore.on('connect', () => {
+    console.log('Session store connected to database');
+  });
+
+  sessionStore.on('disconnect', () => {
+    console.log('Session store disconnected from database');
   });
   
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
-    rolling: true, // Reset expiry on activity
+    resave: false, // Don't save unchanged sessions
+    saveUninitialized: false, // Don't save empty sessions
+    rolling: true, // Reset expiry on activity to prevent premature logout
+    name: 'sessionId', // Custom session name for better security
     cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true, // Prevent XSS attacks
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
       maxAge: sessionTtl,
-      sameSite: 'strict',
+      sameSite: 'strict', // CSRF protection
     },
   });
 }
