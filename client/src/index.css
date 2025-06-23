@@ -1126,22 +1126,66 @@ footer {
 }
 
 /* Chat Interface Styles */
-.chat-layout {
+.main-container {
+  flex: 1;
   display: flex;
-  height: calc(100vh - 80px);
   overflow: hidden;
+  position: relative;
 }
 
-.chat-sidebar {
+.edge-swipe-handle {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 80px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0 4px 4px 0;
+  z-index: 200;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.edge-swipe-handle:hover {
+  width: 12px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.main-container:not(.sidebar-hidden) .edge-swipe-handle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.swipe-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 45;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.main-container:not(.sidebar-hidden) .swipe-overlay {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.sidebar {
   width: 320px;
   background: var(--white);
   border-right: 1px solid var(--border-light);
   display: flex;
   flex-direction: column;
-  transition: margin-left 0.3s ease;
+  transition: margin-left 0.3s ease, transform 0.3s ease;
   position: relative;
   z-index: 50;
   flex-shrink: 0;
+}
+
+.sidebar.hidden {
+  margin-left: -320px;
 }
 
 .sidebar-header {
