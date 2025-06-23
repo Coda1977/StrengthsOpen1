@@ -24,17 +24,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/onboarding', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      console.log('Onboarding request:', { userId, body: req.body });
+      
+      // Validate the request body
       const validatedData = updateUserOnboardingSchema.parse(req.body);
+      console.log('Validated data:', validatedData);
       
       const user = await storage.updateUserOnboarding(userId, validatedData);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
       
+      console.log('Updated user:', user);
       res.json(user);
     } catch (error) {
       console.error("Error updating onboarding:", error);
-      res.status(500).json({ message: "Failed to update onboarding" });
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+        res.status(500).json({ message: "Failed to update onboarding", error: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to update onboarding", error: String(error) });
+      }
     }
   });
 
