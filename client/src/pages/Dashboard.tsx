@@ -54,6 +54,10 @@ const Dashboard = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
       resetModal();
     },
+    onError: (error) => {
+      console.error('Failed to create team member:', error);
+      alert('Failed to add team member. Please try again.');
+    },
   });
 
   const updateMemberMutation = useMutation({
@@ -64,6 +68,10 @@ const Dashboard = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
       resetModal();
     },
+    onError: (error) => {
+      console.error('Failed to update team member:', error);
+      alert('Failed to update team member. Please try again.');
+    },
   });
 
   const deleteMemberMutation = useMutation({
@@ -72,6 +80,10 @@ const Dashboard = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
+    },
+    onError: (error) => {
+      console.error('Failed to delete team member:', error);
+      alert('Failed to delete team member. Please try again.');
     },
   });
 
@@ -166,10 +178,14 @@ const Dashboard = () => {
 
   const [teamInsight, setTeamInsight] = useState(teamInsights[0]);
 
-  const collaborationInsights: { [key: string]: string } = {
-    'You & John Doe': 'Your Analytical strength complements John\'s Communication abilities, creating a powerful combination for presenting data-driven insights.',
-    'You & Sarah Smith': 'Your Strategic thinking pairs well with Sarah\'s Activator strength, enabling rapid execution of well-planned initiatives.',
-    'John Doe & Sarah Smith': 'John\'s Developer strength and Sarah\'s Competition drive create a dynamic for building and improving team capabilities.'
+  const generateCollaborationInsight = (member1: string, member2: string) => {
+    const insights = [
+      `${member1} and ${member2} can leverage their complementary strengths to create powerful synergies in project execution.`,
+      `The collaboration between ${member1} and ${member2} offers opportunities to balance different working styles and approaches.`,
+      `${member1} and ${member2} can combine their unique perspectives to drive innovation and team performance.`,
+      `This partnership between ${member1} and ${member2} has potential for mutual development and shared success.`
+    ];
+    return insights[Math.floor(Math.random() * insights.length)];
   };
 
   const getCollaborationKey = () => {
@@ -334,7 +350,7 @@ const Dashboard = () => {
                   </div>
                   <div className="insight-box">
                     <p className="insight-text">
-                      {collaborationInsights[getCollaborationKey()] || "Collaboration insight not available for this combination."}
+                      {generateCollaborationInsight(selectedMembers[0], selectedMembers[1])}
                     </p>
                   </div>
                 </div>
