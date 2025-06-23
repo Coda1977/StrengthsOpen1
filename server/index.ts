@@ -63,16 +63,44 @@ app.use((req, res, next) => {
       res.status(status).json({ message: responseMessage });
     });
 
-    // Setup resource monitoring endpoint
+    // Setup system monitoring endpoints
     app.get('/api/system/health', async (req, res) => {
       const { resourceManager } = await import('./resourceManager');
-      const stats = resourceManager.getResourceStats();
+      const { DatabaseMonitor } = await import('./db');
+      
+      const resourceStats = resourceManager.getResourceStats();
+      const dbStats = DatabaseMonitor.getInstance().getPoolStats();
+      
       res.json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
-        resources: stats,
+        resources: resourceStats,
+        database: dbStats,
         uptime: process.uptime()
       });
+    });
+
+    // Database-specific monitoring
+    app.get('/api/system/db-stats', async (req, res) => {
+      const { DatabaseMonitor } = await import('./db');
+      const monitor = DatabaseMonitor.getInstance();
+      
+      try {
+        await monitor.checkPoolHealth();
+        const stats = monitor.getPoolStats();
+        
+        res.json({
+          status: 'healthy',
+          stats,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        res.status(503).json({
+          status: 'unhealthy',
+          error: error.message,
+          timestamp: new Date().toISOString()
+        });
+      }
     });
 
     // importantly only setup vite in development and after

@@ -373,6 +373,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Try bulk insert for remaining members if we have valid data
+      if (processingErrors.length === 0 && teamMembers.length > 5) {
+        try {
+          // Use bulk operation for better performance with large datasets
+          const validMembersData = teamMembers.map(memberData => ({
+            name: memberData.name.trim(),
+            strengths: memberData.strengths
+          }));
+          
+          const bulkCreated = await storage.createMultipleTeamMembers(userId, validMembersData);
+          createdMembers.push(...bulkCreated);
+        } catch (bulkError) {
+          console.error('Bulk insert failed, falling back to individual inserts:', bulkError);
+          // Fallback handled above in the loop
+        }
+      }
+
       // Log processing time
       const processingTime = Date.now() - startTime;
       console.log(`File processing completed in ${processingTime}ms [${requestId}]`);

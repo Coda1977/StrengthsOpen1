@@ -269,3 +269,6 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+
+// Start cache cleanup
+storage.startCacheCleanup();
