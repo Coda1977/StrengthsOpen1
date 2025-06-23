@@ -176,23 +176,18 @@ const Dashboard = () => {
 
   const generateCollaborationMutation = useMutation({
     mutationFn: async ({ member1, member2 }: { member1: string; member2: string }) => {
-      return await apiRequest('POST', '/api/generate-collaboration-insight', { member1, member2 });
+      const response = await apiRequest('POST', '/api/generate-collaboration-insight', { member1, member2 });
+      return await response.json();
     },
-    onSuccess: (response: any) => {
-      try {
-        // Clean up markdown formatting from AI response
-        const insight = response?.insight || 'No insight generated';
-        const cleanInsight = typeof insight === 'string' 
-          ? insight
-              .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
-              .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
-              .trim()
-          : 'Unable to process insight';
-        setCollaborationInsight(cleanInsight);
-      } catch (error) {
-        console.error('Error processing collaboration insight:', error);
-        setCollaborationInsight('Error processing insight');
-      }
+    onSuccess: (data: any) => {
+      const insight = data?.insight || 'No insight generated';
+      const cleanInsight = typeof insight === 'string' 
+        ? insight
+            .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
+            .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
+            .trim()
+        : 'Unable to process insight';
+      setCollaborationInsight(cleanInsight);
       setLoadingCollaboration(false);
     },
     onError: (error) => {
@@ -216,23 +211,18 @@ const Dashboard = () => {
 
   const generateInsightMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('POST', '/api/generate-team-insight');
+      const response = await apiRequest('POST', '/api/generate-team-insight');
+      return await response.json();
     },
-    onSuccess: (response: any) => {
-      try {
-        // Clean up markdown formatting from AI response
-        const insight = response?.insight || 'No insight generated';
-        const cleanInsight = typeof insight === 'string' 
-          ? insight
-              .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
-              .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
-              .trim()
-          : 'Unable to process insight';
-        setTeamInsight(cleanInsight);
-      } catch (error) {
-        console.error('Error processing team insight:', error);
-        setTeamInsight('Error processing insight');
-      }
+    onSuccess: (data: any) => {
+      const insight = data?.insight || 'No insight generated';
+      const cleanInsight = typeof insight === 'string' 
+        ? insight
+            .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
+            .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
+            .trim()
+        : 'Unable to process insight';
+      setTeamInsight(cleanInsight);
       setRefreshCount(refreshCount - 1);
     },
     onError: (error) => {

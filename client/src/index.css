@@ -48,6 +48,12 @@
   /* Standardized radius */
   --btn-radius: 25px;
   --card-radius: 20px;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
   --input-radius: 12px;
   --pill-radius: 28px;
   
