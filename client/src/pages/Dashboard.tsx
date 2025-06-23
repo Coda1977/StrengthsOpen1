@@ -352,14 +352,14 @@ const Dashboard = () => {
                 </div>
 
                 <h3 style={{fontSize: '20px', fontWeight: 700, marginBottom: '1rem', marginTop: '2rem'}}>Domain Distribution</h3>
-                <div className="domain-chart">
+                <div className="domain-chart" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {domainDistribution.map(({ domain, percentage }) => (
-                    <div key={domain} className="domain-bar">
-                      <div className="domain-label">
+                    <div key={domain} className="domain-bar" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div className="domain-label" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, fontSize: '14px' }}>
                         <span>{domain}</span>
                         <span>{percentage}%</span>
                       </div>
-                      <div className="bar-container">
+                      <div className="bar-container" style={{ height: '8px', background: 'var(--bg-primary)', borderRadius: '4px', overflow: 'hidden' }}>
                         <div 
                           className={`bar-fill ${domain.toLowerCase().replace(' ', '-')}`} 
                           style={{width: `${percentage}%`}}
@@ -376,10 +376,10 @@ const Dashboard = () => {
           <div className="card" style={{ background: 'var(--white)', borderRadius: 'var(--card-radius)', padding: 'var(--card-padding)', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)' }}>
             <h2 className="card-title" style={{ fontSize: '28px', fontWeight: 700, marginBottom: '1.5rem', letterSpacing: '-1px' }}>Insights</h2>
             
-            <div className="insight-section">
+            <div className="insight-section" style={{ marginBottom: 'var(--content-padding)' }}>
               <div className="insight-box">
-                <div className="insight-header">
-                  <h3 className="insight-title">Team Insight</h3>
+                <div className="insight-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h3 className="insight-title" style={{ fontWeight: 700, fontSize: '20px' }}>Team Insight</h3>
                   <button 
                     className="refresh-btn" 
                     onClick={handleRefreshInsight}
@@ -402,16 +402,16 @@ const Dashboard = () => {
                     <p style={{ fontSize: '16px', color: '#6B7280' }}>Generating team insight...</p>
                   </div>
                 ) : (
-                  <p className="insight-text">
+                  <p className="insight-text" style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
                     {teamInsight}
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="collaboration-section">
+            <div className="collaboration-section" style={{ marginTop: 'var(--content-padding)' }}>
               <p className="collaboration-prompt">Click on two names below to see collaboration insights:</p>
-              <div className="member-buttons">
+              <div className="member-buttons" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', margin: '1rem 0' }}>
                 <button 
                   className={`member-btn ${selectedMembers.includes('You') ? 'selected' : ''}`}
                   onClick={() => handleMemberSelection('You')}
