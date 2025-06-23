@@ -83,6 +83,10 @@ export class DatabaseStorage implements IStorage {
       return await db.select().from(teamMembers).where(eq(teamMembers.managerId, managerId));
     } catch (error) {
       console.error('Error getting team members:', error);
+      // Return empty array for database errors but log them
+      if (error.message?.includes('FATAL') || error.code === '57P01') {
+        console.warn('Database connection issue, returning empty team members list');
+      }
       return [];
     }
   }

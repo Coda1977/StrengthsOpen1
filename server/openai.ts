@@ -12,7 +12,22 @@ interface TeamStrengthsData {
 }
 
 export async function generateTeamInsight(data: TeamStrengthsData): Promise<string> {
+  // Check if OpenAI API key is available
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('OpenAI API key not found');
+    return "AI insights are not available. Please configure the OpenAI API key to enable team insights.";
+  }
+
   const { managerStrengths, teamMembers } = data;
+  
+  // Validate input data
+  if (!managerStrengths || managerStrengths.length === 0) {
+    return "Please add your top strengths to generate team insights.";
+  }
+  
+  if (!teamMembers || teamMembers.length === 0) {
+    return "Add team members with their strengths to generate insights.";
+  }
   
   // Create a comprehensive prompt with team composition
   const allStrengths = [
@@ -78,11 +93,28 @@ Keep the response to 2-3 sentences maximum. No fluff. Be nuanced - acknowledge b
     return response.choices[0].message.content || "Unable to generate insight at this time.";
   } catch (error) {
     console.error("Failed to generate team insight:", error);
+    if (error.message?.includes('API key')) {
+      return "OpenAI API key is invalid or expired. Please check your API key configuration.";
+    }
+    if (error.message?.includes('rate limit') || error.message?.includes('quota')) {
+      return "AI service is temporarily unavailable due to rate limits. Please try again in a few minutes.";
+    }
     return "Unable to generate team insight at this time. Please try again later.";
   }
 }
 
 export async function generateCollaborationInsight(member1: string, member2: string, member1Strengths: string[], member2Strengths: string[]): Promise<string> {
+  // Check if OpenAI API key is available
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('OpenAI API key not found');
+    return "AI insights are not available. Please configure the OpenAI API key to enable collaboration insights.";
+  }
+
+  // Validate input
+  if (!member1 || !member2 || !member1Strengths?.length || !member2Strengths?.length) {
+    return "Both team members need to have strengths assigned to generate collaboration insights.";
+  }
+
   const prompt = `You are an expert CliftonStrengths coach. Generate a collaboration insight for these two team members:
 
 ${member1}: ${member1Strengths.join(', ')}
@@ -150,6 +182,12 @@ Keep each point to one sentence maximum. No markdown. Total response under 150 w
     return content;
   } catch (error) {
     console.error("Failed to generate collaboration insight:", error);
+    if (error.message?.includes('API key')) {
+      return "OpenAI API key is invalid or expired. Please check your API key configuration.";
+    }
+    if (error.message?.includes('rate limit') || error.message?.includes('quota')) {
+      return "AI service is temporarily unavailable due to rate limits. Please try again in a few minutes.";
+    }
     return "Unable to generate collaboration insight at this time. Please try again later.";
   }
 }
