@@ -219,9 +219,10 @@ const Dashboard = () => {
         ? insight
             .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
             .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
-            .replace(/\. /g, '.\n\n') // Add line breaks after sentences
-            .replace(/: /g, ':\n• ') // Convert colons to bullet points
-            .replace(/\n• ([^•\n]*)\./g, '\n• $1.\n') // Ensure bullet points end with line breaks
+            .replace(/^-\s+/gm, '• ')        // Convert dashes to bullet points
+            .replace(/(\d+)\.\s+/g, '\n$1. ') // Add line breaks before numbered items
+            .replace(/:\s*$/gm, ':')         // Clean up trailing colons
+            .replace(/\n\s*\n/g, '\n\n')     // Normalize double line breaks
             .trim()
         : 'Unable to process insight';
       setCollaborationInsight(cleanInsight);

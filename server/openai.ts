@@ -88,12 +88,20 @@ export async function generateCollaborationInsight(member1: string, member2: str
 ${member1}: ${member1Strengths.join(', ')}
 ${member2}: ${member2Strengths.join(', ')}
 
-Generate a structured collaboration insight with the following format:
-• Start with how their strengths complement each other
-• Provide 2-3 specific collaboration strategies they can use
-• End with the unique value this partnership brings
+Provide a clear, actionable collaboration insight in exactly this format:
 
-Structure your response with clear breaks between ideas. Use bullet points or numbered lists where appropriate. Keep each point concise but practical.`;
+COMPLEMENTARY STRENGTHS:
+Write 2-3 sentences about how their specific strengths work together.
+
+COLLABORATION STRATEGIES:
+1. [Specific strategy #1 - one clear sentence]
+2. [Specific strategy #2 - one clear sentence] 
+3. [Specific strategy #3 - one clear sentence]
+
+UNIQUE VALUE:
+Write 1-2 sentences about what makes this partnership special.
+
+Keep each section concise and immediately actionable. No markdown formatting. Use plain text only.`;
 
   try {
     const response = await openai.chat.completions.create({
@@ -108,7 +116,7 @@ Structure your response with clear breaks between ideas. Use bullet points or nu
           content: prompt
         }
       ],
-      max_tokens: 150,
+      max_tokens: 250,
       temperature: 0.7
     });
 
