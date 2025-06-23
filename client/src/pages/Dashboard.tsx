@@ -157,52 +157,20 @@ const Dashboard = () => {
     }
   };
 
-  // Use optimized performance hooks
-  const teamAnalytics = useTeamAnalytics(teamMembers);
-  const chartData = useChartData(teamMembers);
+  // Use pre-calculated analytics from performance hook
+  const teamAnalytics = useTeamAnalytics(teamMembers || []);
+  const { domainDistribution, strengthCounts, totalMembers, topStrengths } = teamAnalytics;
   
-  // Memoized filtered strengths with debounced search
-  const debouncedSearch = useDebouncedCallback((term: string) => {
-    setSearchTerm(term);
-  }, 300);
-  
-  const filteredStrengths = useFilteredData(
-    ALL_STRENGTHS,
-    searchTerm,
-    (strength, search) => strength.toLowerCase().includes(search)
-  );
-
-  // Calculate domain distribution
-  const calculateDomainDistribution = () => {
-    const allTeamStrengths = [
-      ...(user?.topStrengths || []),
-      ...teamMembers.flatMap((member: TeamMember) => member.strengths || [])
-    ];
-
-    const domainCounts = {
-      'Executing': 0,
-      'Influencing': 0,
-      'Relationship Building': 0,
-      'Strategic Thinking': 0
-    };
-
-    allTeamStrengths.forEach((strength: string) => {
-      const domain = STRENGTHS_DOMAIN_MAP[strength];
-      if (domain) {
-        domainCounts[domain as keyof typeof domainCounts]++;
-      }
-    });
-
-    const total = Object.values(domainCounts).reduce((sum, count) => sum + count, 0);
-    
-    return Object.entries(domainCounts).map(([domain, count]) => ({
+  // Memoized domain percentages calculation
+  const domainPercentages = useMemo(() => {
+    if (!domainDistribution) return [];
+    const totalStrengths = Object.values(domainDistribution).reduce((sum, count) => sum + count, 0);
+    return Object.entries(domainDistribution).map(([domain, count]) => ({
       domain,
       count,
-      percentage: total > 0 ? Math.round((count / total) * 100) : 0
+      percentage: totalStrengths > 0 ? Math.round((count / totalStrengths) * 100) : 0
     }));
-  };
-
-  const domainDistribution = calculateDomainDistribution();
+  }, [domainDistribution]);
 
   const [teamInsight, setTeamInsight] = useState("Click 'Refresh' to generate your team insight based on your actual strengths data.");
 

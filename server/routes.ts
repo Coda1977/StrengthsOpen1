@@ -1,12 +1,12 @@
-import type { Express, Request, Response } from "express";
-import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertTeamMemberSchema, updateTeamMemberSchema } from "@shared/schema";
-import { updateUserOnboardingSchema } from "@shared/schema";
-import { generateTeamInsight, generateCollaborationInsight } from "./openai";
-import { parseTeamMembersFile } from "./fileParser";
-import multer from "multer";
+import { Express, Request, Response, NextFunction } from 'express';
+import { createServer, Server } from 'http';
+import multer from 'multer';
+import { isAuthenticated, setupAuth } from './replitAuth';
+import { storage } from './storage';
+import { parseTeamMembersFile } from './fileParser';
+import { generateTeamInsight, generateCollaborationInsight } from './openai';
+import { errors, createSuccessResponse, AppError } from './errorHandler';
+import { insertTeamMemberSchema, updateTeamMemberSchema } from '../shared/schema';
 
 interface AuthenticatedRequest extends Request {
   user: {
