@@ -187,7 +187,7 @@ const Dashboard = () => {
     };
 
     allTeamStrengths.forEach((strength: string) => {
-      const domain = strengthsDomain[strength];
+      const domain = STRENGTHS_DOMAIN_MAP[strength];
       if (domain) {
         domainCounts[domain as keyof typeof domainCounts]++;
       }
