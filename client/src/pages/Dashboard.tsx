@@ -179,12 +179,20 @@ const Dashboard = () => {
       return await apiRequest('POST', '/api/generate-collaboration-insight', { member1, member2 });
     },
     onSuccess: (response: any) => {
-      // Clean up markdown formatting from AI response
-      const cleanInsight = response.insight
-        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
-        .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
-        .trim();
-      setCollaborationInsight(cleanInsight);
+      try {
+        // Clean up markdown formatting from AI response
+        const insight = response?.insight || 'No insight generated';
+        const cleanInsight = typeof insight === 'string' 
+          ? insight
+              .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
+              .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
+              .trim()
+          : 'Unable to process insight';
+        setCollaborationInsight(cleanInsight);
+      } catch (error) {
+        console.error('Error processing collaboration insight:', error);
+        setCollaborationInsight('Error processing insight');
+      }
       setLoadingCollaboration(false);
     },
     onError: (error) => {
@@ -211,12 +219,20 @@ const Dashboard = () => {
       return await apiRequest('POST', '/api/generate-team-insight');
     },
     onSuccess: (response: any) => {
-      // Clean up markdown formatting from AI response
-      const cleanInsight = response.insight
-        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
-        .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
-        .trim();
-      setTeamInsight(cleanInsight);
+      try {
+        // Clean up markdown formatting from AI response
+        const insight = response?.insight || 'No insight generated';
+        const cleanInsight = typeof insight === 'string' 
+          ? insight
+              .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
+              .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
+              .trim()
+          : 'Unable to process insight';
+        setTeamInsight(cleanInsight);
+      } catch (error) {
+        console.error('Error processing team insight:', error);
+        setTeamInsight('Error processing insight');
+      }
       setRefreshCount(refreshCount - 1);
     },
     onError: (error) => {
