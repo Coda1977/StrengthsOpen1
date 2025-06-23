@@ -14,7 +14,8 @@ import Onboarding from "@/pages/Onboarding";
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
 
-  if (isLoading) {
+  // Show loading only for initial load, not for auth check
+  if (isLoading && user === undefined) {
     return (
       <div className="min-h-screen bg-primary-bg flex items-center justify-center">
         <div className="text-center">
