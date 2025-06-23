@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
-import { useTeamAnalytics, useChartData, useOptimizedQuery, useFilteredData, useDebouncedCallback, STRENGTHS_DOMAIN_MAP, ALL_STRENGTHS } from '@/hooks/usePerformanceOptimized';
+import { useTeamAnalytics, useOptimizedQuery, STRENGTHS_DOMAIN_MAP, ALL_STRENGTHS } from '@/hooks/usePerformanceOptimized';
 import { TeamMemberCard, StrengthSelector, DomainChart, TopStrengthsList } from '@/components/MemoizedComponents';
 import { useFileUploadCleanup, useCleanup } from '@/hooks/useCleanup';
 import Navigation from '../components/Navigation';
@@ -24,10 +24,6 @@ const Dashboard = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  // Resource cleanup hooks
-  const { startUpload, finishUpload, getActiveUploadCount } = useFileUploadCleanup();
-  const { createTimeout, addCleanup } = useCleanup();
-
   // Optimized team members query with proper caching
   const { data: teamMembers = [], isLoading: teamMembersLoading, error: teamMembersError } = useOptimizedQuery<TeamMember[]>(
     ['/api/team-members'],
@@ -35,80 +31,91 @@ const Dashboard = () => {
     5 * 60 * 1000 // 5 minutes stale time
   );
 
-  // Memoized mutation to prevent recreation on every render
-  const createMemberMutation = useMutation({
-    mutationFn: useCallback(async (data: { name: string; strengths: string[] }) => {
-      return await apiRequest('POST', '/api/team-members', data);
-    }, []),
-    onSuccess: useCallback(() => {
-      queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
-      resetModal();
-    }, [queryClient]),
-    onError: useCallback((error) => {
-      console.error('Failed to create team member:', error);
-      alert('Failed to add team member. Please try again.');
-    }, []),
-  });
+  // Resource cleanup hooks
+  const { startUpload, finishUpload, getActiveUploadCount } = useFileUploadCleanup();
+  const { createTimeout, addCleanup } = useCleanup();
 
-  const updateMemberMutation = useMutation({
-    mutationFn: useCallback(async ({ id, data }: { id: string; data: { name: string; strengths: string[] } }) => {
-      return await apiRequest('PUT', `/api/team-members/${id}`, data);
-    }, []),
-    onSuccess: useCallback(() => {
-      queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
-      resetModal();
-    }, [queryClient]),
-    onError: useCallback((error) => {
-      console.error('Failed to update team member:', error);
-      alert('Failed to update team member. Please try again.');
-    }, []),
-  });
-
-  const deleteMemberMutation = useMutation({
-    mutationFn: useCallback(async (id: string) => {
-      return await apiRequest('DELETE', `/api/team-members/${id}`);
-    }, []),
-    onSuccess: useCallback(() => {
-      queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
-    }, [queryClient]),
-    onError: useCallback((error) => {
-      console.error('Failed to delete team member:', error);
-      alert('Failed to delete team member. Please try again.');
-    }, []),
-  });
-
+  // File upload mutation with proper error handling
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      const response = await fetch('/api/upload-team-members', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Upload failed');
+      const abortController = startUpload(`upload-${Date.now()}`);
+      
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch('/api/upload-team-members', {
+          method: 'POST',
+          body: formData,
+          signal: abortController.signal
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || 'Upload failed');
+        }
+        
+        return await response.json();
+      } finally {
+        finishUpload(`upload-${Date.now()}`);
       }
-      return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
-      alert(`Successfully created ${data.members.length} team members from file`);
     },
-    onError: (error) => {
-      console.error('Failed to upload file:', error);
-      alert(`Failed to upload file: ${error.message}`);
-    },
+    onError: (error: Error) => {
+      console.error('Upload failed:', error);
+      alert('File upload failed. Please try again.');
+    }
   });
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       uploadMutation.mutate(file);
     }
-    // Reset the input
-    event.target.value = '';
+  }, [uploadMutation]);
+
+  const deleteMemberMutation = useMutation({
+    mutationFn: (id: string) => apiRequest('DELETE', `/api/team-members/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
+    }
+  });
+
+  const addMemberMutation = useMutation({
+    mutationFn: (data: { name: string; strengths: string[] }) => 
+      apiRequest('POST', '/api/team-members', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
+      resetModal();
+    }
+  });
+
+  const updateMemberMutation = useMutation({
+    mutationFn: (data: { id: string; name: string; strengths: string[] }) => 
+      apiRequest('PATCH', `/api/team-members/${data.id}`, {
+        name: data.name,
+        strengths: data.strengths
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
+      resetModal();
+    }
+  });
+
+  const openAddModal = () => {
+    setShowAddModal(true);
+    setEditingMember(null);
+    setMemberName('');
+    setSelectedStrengths([]);
+  };
+
+  const openEditModal = (member: TeamMember) => {
+    setShowAddModal(true);
+    setEditingMember(member);
+    setMemberName(member.name);
+    setSelectedStrengths(member.strengths || []);
   };
 
   const resetModal = () => {
@@ -119,27 +126,28 @@ const Dashboard = () => {
     setSearchTerm('');
   };
 
-  const openAddModal = () => {
-    resetModal();
-    setShowAddModal(true);
-  };
+  const handleSubmit = () => {
+    if (!memberName.trim()) {
+      alert('Please enter a name');
+      return;
+    }
+    
+    if (selectedStrengths.length === 0) {
+      alert('Please select at least one strength');
+      return;
+    }
 
-  const openEditModal = (member: TeamMember) => {
-    setEditingMember(member);
-    setMemberName(member.name);
-    setSelectedStrengths(member.strengths);
-    setShowAddModal(true);
-  };
-
-  const handleSaveMember = () => {
-    if (memberName.trim() && selectedStrengths.length > 0) {
-      const data = { name: memberName.trim(), strengths: selectedStrengths };
-      
-      if (editingMember) {
-        updateMemberMutation.mutate({ id: editingMember.id, data });
-      } else {
-        createMemberMutation.mutate(data);
-      }
+    if (editingMember) {
+      updateMemberMutation.mutate({
+        id: editingMember.id,
+        name: memberName.trim(),
+        strengths: selectedStrengths
+      });
+    } else {
+      addMemberMutation.mutate({
+        name: memberName.trim(),
+        strengths: selectedStrengths
+      });
     }
   };
 
@@ -186,84 +194,58 @@ const Dashboard = () => {
       let insight = data?.insight || 'No insight generated';
       
       // Final safety check for truncation on frontend
-      if (typeof insight === 'string' && insight.length > 50) {
-        // Remove any trailing incomplete words or phrases
-        if (insight.match(/\w+\s*$/) && !insight.match(/[.!?]\s*$/)) {
-          // Find last complete sentence or section
-          const sections = insight.split(/\n\n|\n(?=[A-Z])/);
-          const completeSections = [];
-          
-          for (const section of sections) {
-            if (section.match(/[.!?]\s*$/) || section.includes(':')) {
-              completeSections.push(section);
-            } else {
-              // Try to salvage partial section
-              const lastSentence = section.match(/^(.*[.!?])/);
-              if (lastSentence) {
-                completeSections.push(lastSentence[1]);
-              }
-              break; // Stop at first incomplete section
-            }
-          }
-          
-          if (completeSections.length > 0) {
-            insight = completeSections.join('\n\n');
-          }
-        }
+      if (insight.length > 800) {
+        insight = insight.substring(0, 800) + '... [truncated for readability]';
       }
       
-      const cleanInsight = typeof insight === 'string' 
-        ? insight
-            .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
-            .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
-            .replace(/^-\s+/gm, '• ')        // Convert dashes to bullet points
-            .replace(/(\d+)\.\s+/g, '\n$1. ') // Add line breaks before numbered items
-            .replace(/:\s*$/gm, ':')         // Clean up trailing colons
-            .replace(/\n\s*\n/g, '\n\n')     // Normalize double line breaks
-            .trim()
-        : 'Unable to process insight';
-      setCollaborationInsight(cleanInsight);
+      setCollaborationInsight(insight);
       setLoadingCollaboration(false);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Failed to generate collaboration insight:', error);
-      setCollaborationInsight('Unable to generate collaboration insight at this time.');
+      setCollaborationInsight('Failed to generate collaboration insight. Please try again.');
       setLoadingCollaboration(false);
-    },
+    }
   });
 
-  const generateCollaborationInsight = (member1: string, member2: string) => {
-    setLoadingCollaboration(true);
-    generateCollaborationMutation.mutate({ member1, member2 });
-  };
-
-  const getCollaborationKey = () => {
-    if (selectedMembers.length === 2) {
-      return selectedMembers.sort().join(' & ');
-    }
-    return '';
+  const handleMemberSelection = (memberName: string) => {
+    setSelectedMembers(prev => {
+      if (prev.includes(memberName)) {
+        return prev.filter(name => name !== memberName);
+      } else if (prev.length < 2) {
+        const newSelection = [...prev, memberName];
+        if (newSelection.length === 2) {
+          setLoadingCollaboration(true);
+          generateCollaborationMutation.mutate({
+            member1: newSelection[0],
+            member2: newSelection[1]
+          });
+        }
+        return newSelection;
+      }
+      return prev;
+    });
   };
 
   const generateInsightMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/generate-team-insight');
+      const response = await apiRequest('POST', '/api/generate-team-insight', {
+        managerStrengths: user?.topStrengths || [],
+        teamMembers: teamMembers.map(member => ({
+          name: member.name,
+          strengths: member.strengths || []
+        }))
+      });
       return await response.json();
     },
     onSuccess: (data: any) => {
-      const insight = data?.insight || 'No insight generated';
-      const cleanInsight = typeof insight === 'string' 
-        ? insight
-            .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
-            .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
-            .trim()
-        : 'Unable to process insight';
-      setTeamInsight(cleanInsight);
-      setRefreshCount(refreshCount - 1);
+      setTeamInsight(data?.insight || 'No insight generated');
+      setRefreshCount(prev => Math.max(0, prev - 1));
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Failed to generate team insight:', error);
-      alert('Failed to generate new insight. Please try again.');
-    },
+      setTeamInsight('Failed to generate team insight. Please try again.');
+    }
   });
 
   const handleRefreshInsight = () => {
@@ -272,51 +254,30 @@ const Dashboard = () => {
     }
   };
 
-  const handleMemberSelection = (memberName: string) => {
-    let newSelection: string[];
-    
-    if (selectedMembers.includes(memberName)) {
-      newSelection = selectedMembers.filter(name => name !== memberName);
-    } else if (selectedMembers.length < 2) {
-      newSelection = [...selectedMembers, memberName];
-    } else {
-      newSelection = [selectedMembers[1], memberName];
-    }
-    
-    setSelectedMembers(newSelection);
-    
-    // Generate collaboration insight when 2 members are selected
-    if (newSelection.length === 2) {
-      generateCollaborationInsight(newSelection[0], newSelection[1]);
-    } else {
-      setCollaborationInsight('');
-    }
-  };
+  // Filter strengths based on search term
+  const filteredStrengths = useMemo(() => {
+    if (!searchTerm.trim()) return ALL_STRENGTHS;
+    return ALL_STRENGTHS.filter(strength => 
+      strength.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm]);
 
   return (
-    <>
+    <div className="dashboard">
       <Navigation />
-      <div className="app-content">
-        <div className="dashboard-container">
-          <div className="dashboard-header">
-          </div>
+      
+      <div className="dashboard-container">
+        <div className="dashboard-header">
+          <h1 className="dashboard-title">Team Dashboard</h1>
+          <p className="dashboard-subtitle">
+            Manage your team's strengths and generate insights
+          </p>
+        </div>
 
-          {/* Manager Strengths Card */}
+        <div className="dashboard-content">
+          {/* Team Overview Section */}
           <div className="card">
-            <h2 className="card-title">My Top 5 Strengths</h2>
-            <div className="strengths-list">
-              {(user?.topStrengths || []).map((strength, index) => (
-                <span key={index} className="strength-pill">
-                  {strength}
-                </span>
-              ))}
-            </div>
-            <button className="edit-btn">Edit Strengths</button>
-          </div>
-
-          {/* Team Synergy Section */}
-          <div className="card">
-            <div className="overview-header">
+            <div className="card-header">
               <h2 className="card-title">Team Synergy</h2>
               <div className="overview-actions">
                 <input
@@ -380,22 +341,7 @@ const Dashboard = () => {
             </div>
 
             <h3 style={{fontSize: '20px', fontWeight: 700, marginBottom: '1rem', marginTop: '2rem'}}>Domain Distribution</h3>
-            <div className="domain-chart">
-              {domainDistribution.map(({ domain, percentage }) => (
-                <div key={domain} className="domain-bar">
-                  <div className="domain-label">
-                    <span>{domain}</span>
-                    <span>{percentage}%</span>
-                  </div>
-                  <div className="bar-container">
-                    <div 
-                      className={`bar-fill ${domain.toLowerCase().replace(' ', '-')}`} 
-                      style={{width: `${percentage}%`}}
-                    ></div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <DomainChart data={domainPercentages} />
               </>
             )}
           </div>
@@ -486,6 +432,18 @@ const Dashboard = () => {
               )}
             </div>
           </div>
+
+          {/* Top Strengths Section */}
+          <div className="card">
+            <h2 className="card-title">Top Team Strengths</h2>
+            {teamMembersLoading ? (
+              <div style={{ textAlign: 'center', padding: '2rem' }}>
+                <p>Loading strengths data...</p>
+              </div>
+            ) : (
+              <TopStrengthsList strengths={topStrengths || []} />
+            )}
+          </div>
         </div>
       </div>
 
@@ -501,42 +459,33 @@ const Dashboard = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000
+          zIndex: 1000,
+          padding: '1rem'
         }}>
           <div style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: '20px',
-            padding: '2.5rem',
-            width: '90%',
-            maxWidth: '600px',
-            maxHeight: '90vh',
+            borderRadius: '12px',
+            padding: '2rem',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '80vh',
             overflowY: 'auto'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1A1A1A', margin: 0 }}>
-                {editingMember ? 'Edit Team Member' : 'Add Team Member'}
-              </h2>
-              <button
-                onClick={resetModal}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '24px',
-                  cursor: 'pointer',
-                  color: '#9CA3AF'
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Name Input */}
-            <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ 
+              fontSize: '24px', 
+              fontWeight: 700, 
+              marginBottom: '1.5rem',
+              color: '#1A1A1A'
+            }}>
+              {editingMember ? 'Edit Team Member' : 'Add Team Member'}
+            </h3>
+            
+            <div style={{ marginBottom: '1.5rem' }}>
               <label style={{
                 display: 'block',
-                fontSize: '16px',
-                fontWeight: '600',
-                color: '#1A1A1A',
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#374151',
                 marginBottom: '0.5rem'
               }}>
                 Name
@@ -545,36 +494,29 @@ const Dashboard = () => {
                 type="text"
                 value={memberName}
                 onChange={(e) => setMemberName(e.target.value)}
-                placeholder="Enter team member's name"
+                placeholder="Enter team member name"
                 style={{
                   width: '100%',
                   padding: '0.75rem',
-                  fontSize: '14px',
-                  border: '2px solid #E5E7EB',
+                  fontSize: '16px',
+                  border: '1px solid #D1D5DB',
                   borderRadius: '8px',
                   outline: 'none'
                 }}
               />
             </div>
 
-            {/* Strengths Selection */}
-            <div style={{ marginBottom: '2rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <label style={{ fontSize: '16px', fontWeight: '600', color: '#1A1A1A' }}>
-                  Select Strengths (up to 5)
-                </label>
-                <span style={{
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: selectedStrengths.length === 5 ? '#059669' : '#4A4A4A',
-                  backgroundColor: selectedStrengths.length === 5 ? '#D1FAE5' : '#F3F4F6',
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '12px'
-                }}>
-                  {selectedStrengths.length}/5
-                </span>
-              </div>
-
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                Strengths (select up to 5)
+              </label>
+              
               <input
                 type="text"
                 value={searchTerm}
@@ -644,25 +586,26 @@ const Dashboard = () => {
                 Cancel
               </button>
               <button
-                onClick={handleSaveMember}
-                disabled={!memberName.trim() || selectedStrengths.length === 0 || createMemberMutation.isPending || updateMemberMutation.isPending}
+                onClick={handleSubmit}
+                disabled={!memberName.trim() || selectedStrengths.length === 0 || addMemberMutation.isPending || updateMemberMutation.isPending}
                 style={{
                   padding: '0.75rem 1.5rem',
                   border: 'none',
                   borderRadius: '8px',
-                  backgroundColor: memberName.trim() && selectedStrengths.length > 0 ? '#1A1A1A' : '#9CA3AF',
+                  backgroundColor: '#003566',
                   color: '#FFFFFF',
                   fontSize: '14px',
-                  cursor: memberName.trim() && selectedStrengths.length > 0 ? 'pointer' : 'not-allowed'
+                  cursor: (!memberName.trim() || selectedStrengths.length === 0 || addMemberMutation.isPending || updateMemberMutation.isPending) ? 'not-allowed' : 'pointer',
+                  opacity: (!memberName.trim() || selectedStrengths.length === 0 || addMemberMutation.isPending || updateMemberMutation.isPending) ? 0.6 : 1
                 }}
               >
-                {(createMemberMutation.isPending || updateMemberMutation.isPending) ? 'Saving...' : editingMember ? 'Save Changes' : 'Add Member'}
+                {(addMemberMutation.isPending || updateMemberMutation.isPending) ? 'Saving...' : (editingMember ? 'Update' : 'Add')}
               </button>
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
