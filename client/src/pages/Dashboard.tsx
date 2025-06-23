@@ -87,6 +87,40 @@ const Dashboard = () => {
     },
   });
 
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch('/api/upload-team-members', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Upload failed');
+      }
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
+      alert(`Successfully created ${data.members.length} team members from file`);
+    },
+    onError: (error) => {
+      console.error('Failed to upload file:', error);
+      alert(`Failed to upload file: ${error.message}`);
+    },
+  });
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      uploadMutation.mutate(file);
+    }
+    // Reset the input
+    event.target.value = '';
+  };
+
   const resetModal = () => {
     setShowAddModal(false);
     setEditingMember(null);
@@ -233,6 +267,15 @@ const Dashboard = () => {
       alert('Failed to generate new insight. Please try again.');
     },
   });
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      uploadMutation.mutate(file);
+    }
+    // Reset the input
+    event.target.value = '';
+  };
 
   const handleRefreshInsight = () => {
     if (refreshCount > 0) {

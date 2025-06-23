@@ -5,6 +5,8 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertTeamMemberSchema, updateTeamMemberSchema } from "@shared/schema";
 import { updateUserOnboardingSchema } from "@shared/schema";
 import { generateTeamInsight, generateCollaborationInsight } from "./openai";
+import { parseTeamMembersFile } from "./fileParser";
+import multer from "multer";
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -20,6 +22,30 @@ interface AuthenticatedRequest extends Request {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+
+  // File upload middleware
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = [
+        'text/csv',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/msword',
+        'image/png',
+        'image/jpeg',
+        'image/jpg'
+      ];
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Unsupported file type'), false);
+      }
+    }
+  });
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
@@ -193,6 +219,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating collaboration insight:", error);
       res.status(500).json({ message: "Failed to generate collaboration insight" });
+    }
+  });
+
+  // File upload endpoint for team members
+  app.post('/api/upload-team-members', isAuthenticated, upload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const userId = req.user.claims.sub;
+      const teamMembers = await parseTeamMembersFile(req.file.buffer, req.file.mimetype, req.file.originalname);
+
+      if (teamMembers.length === 0) {
+        return res.status(400).json({ message: "No valid team members found in the file" });
+      }
+
+      // Create team members in database
+      const createdMembers = [];
+      for (const member of teamMembers) {
+        try {
+          const created = await storage.createTeamMember({
+            managerId: userId,
+            name: member.name,
+            strengths: member.strengths
+          });
+          createdMembers.push(created);
+        } catch (error) {
+          console.error(`Failed to create team member ${member.name}:`, error);
+          // Continue with other members even if one fails
+        }
+      }
+
+      res.json({ 
+        message: `Successfully created ${createdMembers.length} team members`,
+        members: createdMembers,
+        totalParsed: teamMembers.length
+      });
+    } catch (error) {
+      console.error("Error uploading team members file:", error);
+      res.status(500).json({ message: error.message || "Failed to process file" });
     }
   });
 
