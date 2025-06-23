@@ -83,23 +83,17 @@ Keep the response to 2-3 sentences maximum. No fluff. Be nuanced - acknowledge b
 }
 
 export async function generateCollaborationInsight(member1: string, member2: string, member1Strengths: string[], member2Strengths: string[]): Promise<string> {
-  const prompt = `You are an expert strengths-based leadership coach with deep knowledge of CliftonStrengths. Analyze the partnership potential between these two team members:
+  const prompt = `You are an expert CliftonStrengths coach. Generate a collaboration insight for these two team members:
 
 ${member1}: ${member1Strengths.join(', ')}
 ${member2}: ${member2Strengths.join(', ')}
 
-Provide "The One Thing" - a single, specific intervention that will make this partnership thrive.
+Generate a structured collaboration insight with the following format:
+• Start with how their strengths complement each other
+• Provide 2-3 specific collaboration strategies they can use
+• End with the unique value this partnership brings
 
-Your response must:
-1. Identify the core friction OR magic in this specific pairing
-2. Give ONE actionable structure, process, or approach (not generic advice)
-3. Use vivid, memorable language that creates a mental picture
-4. Account for potential conflicts, not just complementarity
-5. Be immediately implementable with specific tactics
-
-Format: Start with "The One Thing:" followed by 2-3 sentences maximum. Include a specific phrase they could use or a concrete structure they could implement.
-
-Example level of specificity: Instead of "communicate better," say "Create a 'parking lot' document where Jamie dumps all ideas, review together weekly, and Alex executes only the top 2-3."`;
+Structure your response with clear breaks between ideas. Use bullet points or numbered lists where appropriate. Keep each point concise but practical.`;
 
   try {
     const response = await openai.chat.completions.create({

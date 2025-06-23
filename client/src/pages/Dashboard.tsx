@@ -185,6 +185,9 @@ const Dashboard = () => {
         ? insight
             .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
             .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
+            .replace(/\. /g, '.\n\n') // Add line breaks after sentences
+            .replace(/: /g, ':\n• ') // Convert colons to bullet points
+            .replace(/\n• ([^•\n]*)\./g, '\n• $1.\n') // Ensure bullet points end with line breaks
             .trim()
         : 'Unable to process insight';
       setCollaborationInsight(cleanInsight);
@@ -362,9 +365,24 @@ const Dashboard = () => {
                     {generateInsightMutation.isPending ? 'Generating...' : `Refresh (${refreshCount} left)`}
                   </button>
                 </div>
-                <p className="insight-text">
-                  {teamInsight}
-                </p>
+                {generateInsightMutation.isPending ? (
+                  <div style={{ textAlign: 'center', padding: '2rem' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      border: '3px solid #f3f3f3',
+                      borderTop: '3px solid #003566',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite',
+                      margin: '0 auto 1rem'
+                    }}></div>
+                    <p style={{ fontSize: '16px', color: '#6B7280' }}>Generating team insight...</p>
+                  </div>
+                ) : (
+                  <p className="insight-text">
+                    {teamInsight}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -408,9 +426,9 @@ const Dashboard = () => {
                         <p style={{ fontSize: '14px', color: '#6B7280' }}>Generating collaboration insight...</p>
                       </div>
                     ) : (
-                      <p className="insight-text">
+                      <div className="insight-text" style={{ whiteSpace: 'pre-line', lineHeight: '1.6' }}>
                         {collaborationInsight || "Select two team members to see collaboration insights."}
-                      </p>
+                      </div>
                     )}
                   </div>
                 </div>
