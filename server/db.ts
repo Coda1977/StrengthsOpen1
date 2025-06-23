@@ -14,28 +14,35 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Create pool with better error handling and connection settings
+// Create pool with optimized settings for Neon serverless
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 2, // Reduce for Replit environment
-  idleTimeoutMillis: 15000, // 15 second idle timeout
-  connectionTimeoutMillis: 10000, // 10 second timeout
-  maxUses: 7500, // Limit reuse
+  max: 1, // Single connection for serverless to avoid conflicts
+  idleTimeoutMillis: 0, // Disable idle timeout for serverless
+  connectionTimeoutMillis: 20000, // Increased timeout
+  maxUses: Infinity, // Allow unlimited reuse
   allowExitOnIdle: false,
 });
 
-// Handle pool errors gracefully
+// Enhanced error handling with reconnection logic
 pool.on('error', (err) => {
   console.error('Database pool error:', err);
-  // Don't exit process on pool errors
+  // Log specific error details for debugging
+  if (err.code === '57P01') {
+    console.log('Connection terminated by administrator - will reconnect automatically');
+  }
 });
 
-pool.on('connect', () => {
+pool.on('connect', (client) => {
   console.log('Database connected successfully');
 });
 
-pool.on('remove', () => {
-  console.log('Database connection removed from pool');
+pool.on('remove', (err) => {
+  if (err) {
+    console.log('Database connection removed due to error:', err.message);
+  } else {
+    console.log('Database connection removed from pool (normal)');
+  }
 });
 
 // Graceful shutdown handling

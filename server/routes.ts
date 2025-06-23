@@ -19,6 +19,16 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
+// Add authentication middleware with better typing
+const authenticatedMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  isAuthenticated(req, res, (err?: any) => {
+    if (err) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    next();
+  });
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);

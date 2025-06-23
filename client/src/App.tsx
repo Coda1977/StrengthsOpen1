@@ -36,10 +36,30 @@ function Router() {
           return <Dashboard />;
         }}
       </Route>
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/encyclopedia" component={Encyclopedia} />
-      <Route path="/coach" component={ChatCoach} />
-      <Route path="/onboarding" component={Onboarding} />
+      <Route path="/dashboard">
+        {() => {
+          if (!isAuthenticated) return <LandingPage />;
+          return <Dashboard />;
+        }}
+      </Route>
+      <Route path="/encyclopedia">
+        {() => {
+          if (!isAuthenticated) return <LandingPage />;
+          return <Encyclopedia />;
+        }}
+      </Route>
+      <Route path="/coach">
+        {() => {
+          if (!isAuthenticated) return <LandingPage />;
+          return <ChatCoach />;
+        }}
+      </Route>
+      <Route path="/onboarding">
+        {() => {
+          if (!isAuthenticated) return <LandingPage />;
+          return <Onboarding />;
+        }}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

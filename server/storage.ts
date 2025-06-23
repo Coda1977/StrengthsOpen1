@@ -41,23 +41,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    try {
-      const [user] = await db
-        .insert(users)
-        .values(userData)
-        .onConflictDoUpdate({
-          target: users.id,
-          set: {
-            ...userData,
-            updatedAt: new Date(),
-          },
-        })
-        .returning();
-      return user;
-    } catch (error) {
-      console.error('Error upserting user:', error);
-      throw error;
+    const maxRetries = 3;
+    let attempt = 0;
+    
+    while (attempt < maxRetries) {
+      try {
+        const [user] = await db
+          .insert(users)
+          .values(userData)
+          .onConflictDoUpdate({
+            target: users.id,
+            set: {
+              ...userData,
+              updatedAt: new Date(),
+            },
+          })
+          .returning();
+        return user;
+      } catch (error) {
+        attempt++;
+        console.error(`Error upserting user (attempt ${attempt}):`, error);
+        
+        // Retry on connection errors
+        if (error.code === '57P01' && attempt < maxRetries) {
+          console.log('Retrying due to connection termination...');
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+        throw error;
+      }
     }
+    throw new Error('Failed to upsert user after retries');
   }
 
   async updateUserOnboarding(id: string, data: UpdateUserOnboarding): Promise<User | undefined> {
@@ -92,33 +106,61 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTeamMember(data: InsertTeamMember): Promise<TeamMember> {
-    try {
-      const [member] = await db
-        .insert(teamMembers)
-        .values(data)
-        .returning();
-      return member;
-    } catch (error) {
-      console.error('Error creating team member:', error);
-      throw error;
+    const maxRetries = 3;
+    let attempt = 0;
+    
+    while (attempt < maxRetries) {
+      try {
+        const [member] = await db
+          .insert(teamMembers)
+          .values(data)
+          .returning();
+        return member;
+      } catch (error) {
+        attempt++;
+        console.error(`Error creating team member (attempt ${attempt}):`, error);
+        
+        // Retry on connection errors
+        if (error.code === '57P01' && attempt < maxRetries) {
+          console.log('Retrying due to connection termination...');
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+        throw error;
+      }
     }
+    throw new Error('Failed to create team member after retries');
   }
 
   async updateTeamMember(id: string, data: UpdateTeamMember): Promise<TeamMember | undefined> {
-    try {
-      const [member] = await db
-        .update(teamMembers)
-        .set({
-          ...data,
-          updatedAt: new Date(),
-        })
-        .where(eq(teamMembers.id, id))
-        .returning();
-      return member;
-    } catch (error) {
-      console.error('Error updating team member:', error);
-      throw error;
+    const maxRetries = 3;
+    let attempt = 0;
+    
+    while (attempt < maxRetries) {
+      try {
+        const [member] = await db
+          .update(teamMembers)
+          .set({
+            ...data,
+            updatedAt: new Date(),
+          })
+          .where(eq(teamMembers.id, id))
+          .returning();
+        return member;
+      } catch (error) {
+        attempt++;
+        console.error(`Error updating team member (attempt ${attempt}):`, error);
+        
+        // Retry on connection errors
+        if (error.code === '57P01' && attempt < maxRetries) {
+          console.log('Retrying due to connection termination...');
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+        throw error;
+      }
     }
+    throw new Error('Failed to update team member after retries');
   }
 
   async deleteTeamMember(id: string): Promise<void> {

@@ -92,8 +92,12 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Team Members Table**: Manages team member information and their strengths
 - **Sessions Table**: Handles session persistence for authentication
 
-## Changelog
-- June 23, 2025. Initial setup
+## Recent Changes
+- June 23, 2025: Fixed critical React hooks error by removing "use client" directives from all UI components
+- June 23, 2025: Enhanced database connection stability with optimized pool settings for Neon serverless
+- June 23, 2025: Added retry logic for database operations to handle connection terminations
+- June 23, 2025: Improved authentication route protection for all protected pages
+- June 23, 2025: Enhanced UUID generation security in schema
 
 ## User Preferences
 

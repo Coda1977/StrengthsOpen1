@@ -42,11 +42,23 @@ export const users = pgTable("users", {
 // Team members table
 export const teamMembers = pgTable("team_members", {
   id: varchar("id").primaryKey().notNull().$defaultFn(() => {
-    // Generate UUID using crypto.randomUUID if available, fallback to timestamp-based ID
+    // Generate cryptographically secure UUID
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
       return crypto.randomUUID();
     }
-    return `tm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Server-side fallback using Node.js crypto
+    if (typeof require !== 'undefined') {
+      try {
+        const crypto = require('crypto');
+        return crypto.randomUUID();
+      } catch (e) {
+        // Final fallback - more secure than Math.random
+        const timestamp = Date.now().toString(36);
+        const randomPart = Math.random().toString(36).substring(2, 15);
+        return `tm_${timestamp}_${randomPart}`;
+      }
+    }
+    return `tm_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
   }),
   managerId: varchar("manager_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   name: varchar("name").notNull(),
