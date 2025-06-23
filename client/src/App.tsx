@@ -31,12 +31,12 @@ function Router() {
       {!isAuthenticated ? (
         <>
           <Route path="/" component={LandingPage} />
-          <Route component={LandingPage} />
+          <Route path="/*" component={LandingPage} />
         </>
       ) : user && !(user as any).hasCompletedOnboarding ? (
         <>
           <Route path="/onboarding" component={Onboarding} />
-          <Route component={Onboarding} />
+          <Route path="/*" component={Onboarding} />
         </>
       ) : (
         <>
