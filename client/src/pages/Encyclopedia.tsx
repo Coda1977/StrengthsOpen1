@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import Navigation from "@/components/Navigation";
 
@@ -7,7 +8,7 @@ const Encyclopedia = () => {
   const [selectedStrength, setSelectedStrength] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Complete CliftonStrengths data matching HTML
+  // Complete CliftonStrengths data
   const strengthsData: Record<string, any> = {
     'Achiever': {
       domain: 'Executing',
@@ -313,6 +314,214 @@ const Encyclopedia = () => {
         'Might suppress their own opinions'
       ]
     },
+    'Ideation': {
+      domain: 'Strategic Thinking',
+      brief: 'People with Ideation are fascinated by ideas. They are able to find connections between seemingly disparate phenomena.',
+      full: 'You are fascinated by ideas. What is an idea? An idea is a concept, the best explanation of the most events. You are delighted when you discover beneath the complex surface an elegantly simple concept to explain why things are the way they are.',
+      quote: 'What if we tried this completely different approach? I love connecting dots that others don\'t see.',
+      workingWith: [
+        'Use them in brainstorming sessions and creative problem solving',
+        'Give them time to explore and develop ideas',
+        'Partner them with Focus or Discipline to turn ideas into action'
+      ],
+      potentialBlindSpots: [
+        'May get excited by ideas but not follow through',
+        'Can overwhelm others with too many concepts',
+        'Might pursue impractical or unrealistic ideas'
+      ]
+    },
+    'Includer': {
+      domain: 'Relationship Building',
+      brief: 'Includers want to include people and make them feel part of the group. They are accepting of others.',
+      full: '"Stretch the circle wider." This is the philosophy around which you orient your life. You want to include people, not exclude them. You see the group as the instrument of great power.',
+      quote: 'Everyone has something to contribute. I make sure no one gets left out or overlooked.',
+      workingWith: [
+        'Use them to build inclusive teams and environments',
+        'Have them help integrate new team members',
+        'Partner them with Focus to balance inclusion with efficiency'
+      ],
+      potentialBlindSpots: [
+        'May include people who shouldn\'t be included',
+        'Can slow down processes to ensure everyone is involved',
+        'Might avoid necessary exclusions'
+      ]
+    },
+    'Individualization': {
+      domain: 'Relationship Building',
+      brief: 'People with Individualization are intrigued with the unique qualities of each person. They have a gift for figuring out how different people can work together productively.',
+      full: 'Your Individualization theme leads you to be intrigued by the unique qualities of each person. You are impatient with generalizations or "types" because you don\'t want to obscure what is special and distinct about each person.',
+      quote: 'I see what makes each person unique. Cookie-cutter approaches just don\'t work with people.',
+      workingWith: [
+        'Use them to customize approaches for different team members',
+        'Have them help with team composition and role assignments',
+        'Partner them with Consistency to balance personalization with fairness'
+      ],
+      potentialBlindSpots: [
+        'May spend too much time customizing approaches',
+        'Can be seen as playing favorites',
+        'Might resist necessary standardization'
+      ]
+    },
+    'Input': {
+      domain: 'Strategic Thinking',
+      brief: 'People with Input have a craving to know more. Often they like to collect and archive all kinds of information.',
+      full: 'Your craving to know more is the key to your Input theme. More than anything else you want to be informed. You always want to know more. You crave information.',
+      quote: 'I need to gather all the information before I can make a good decision. Knowledge is never wasted.',
+      workingWith: [
+        'Give them access to information and resources',
+        'Use them as a research resource for the team',
+        'Partner them with Focus to help prioritize information gathering'
+      ],
+      potentialBlindSpots: [
+        'May hoard information instead of sharing it',
+        'Can get overwhelmed by too much information',
+        'Might delay decisions while gathering more data'
+      ]
+    },
+    'Intellection': {
+      domain: 'Strategic Thinking',
+      brief: 'People with Intellection are characterized by their intellectual activity. They are introspective and appreciate intellectual discussions.',
+      full: 'You like to think. You like mental activity. You like exercising the "muscles" of your brain, stretching them in multiple directions. This need for mental activity may be focused; for example, you may be trying to solve a problem or develop an idea or understand another person\'s feelings.',
+      quote: 'I need time to think things through. My best insights come when I can reflect deeply on complex issues.',
+      workingWith: [
+        'Give them time to think before expecting responses',
+        'Use them to analyze complex problems and situations',
+        'Partner them with Activator to move from thinking to action'
+      ],
+      potentialBlindSpots: [
+        'May overthink things and delay action',
+        'Can be seen as slow or indecisive',
+        'Might get lost in abstract thinking'
+      ]
+    },
+    'Learner': {
+      domain: 'Strategic Thinking',
+      brief: 'People with Learner have a great desire to learn and want to continuously improve. The process of learning, rather than the outcome, excites them.',
+      full: 'You love to learn. The subject matter that interests you most will be determined by your other themes and experiences, but whatever the subject, you will always be drawn to the process of learning.',
+      quote: 'I\'m energized by learning new things. It doesn\'t matter what it is - the process of getting better excites me.',
+      workingWith: [
+        'Provide opportunities for continuous learning and development',
+        'Use them to research new methods and approaches',
+        'Partner them with Achiever to channel learning into accomplishment'
+      ],
+      potentialBlindSpots: [
+        'May jump from learning to learning without mastering anything',
+        'Can be seen as unfocused or dabbling',
+        'Might prioritize learning over performing'
+      ]
+    },
+    'Maximizer': {
+      domain: 'Influencing',
+      brief: 'People with Maximizer focus on strengths as a way to stimulate personal and group excellence. They seek to transform something strong into something superb.',
+      full: 'Excellence, not average, is your measure. Taking something from below average to slightly above average takes a great deal of effort and in your opinion is not very rewarding. Transforming something strong into something superb takes just as much effort but is much more thrilling.',
+      quote: 'Why waste time on weaknesses? Let\'s take what we\'re already good at and make it exceptional.',
+      workingWith: [
+        'Focus on leveraging and developing strengths',
+        'Use them to help others identify and build on their talents',
+        'Partner them with Developer to balance excellence with growth'
+      ],
+      potentialBlindSpots: [
+        'May ignore important weaknesses that need attention',
+        'Can be impatient with those who focus on fixing problems',
+        'Might create unrealistic standards for excellence'
+      ]
+    },
+    'Positivity': {
+      domain: 'Relationship Building',
+      brief: 'People with Positivity have contagious enthusiasm. They are upbeat and can get others excited about what they are going to do.',
+      full: 'You are generous with praise, quick to smile, and always on the lookout for the positive in the situation. Some call you lighthearted. Others just wish that their glass were as full as yours seems to be.',
+      quote: 'I choose to see the bright side. Life\'s too short to dwell on the negative when there\'s so much good around us.',
+      workingWith: [
+        'Use them to boost team morale and energy',
+        'Have them help reframe challenges in positive ways',
+        'Partner them with Analytical to balance optimism with realism'
+      ],
+      potentialBlindSpots: [
+        'May ignore real problems or difficulties',
+        'Can be seen as naive or unrealistic',
+        'Might frustrate those who need to process negative emotions'
+      ]
+    },
+    'Relator': {
+      domain: 'Relationship Building',
+      brief: 'People with Relator enjoy close relationships with others. They find deep satisfaction in working hard with friends to achieve a goal.',
+      full: 'Relator describes your attitude toward your relationships. In simple terms, the Relator theme pulls you toward people you already know. You do not necessarily shy away from meeting new people—in fact, you may have other themes that cause you to enjoy the thrill of turning strangers into friends—but you do derive a great deal of pleasure and strength from being around your close friends.',
+      quote: 'I work best with people I know and trust. Deep relationships are more valuable than wide networks.',
+      workingWith: [
+        'Give them opportunities to work closely with familiar colleagues',
+        'Use them to deepen relationships within the team',
+        'Partner them with Woo to balance depth with breadth in relationships'
+      ],
+      potentialBlindSpots: [
+        'May be slow to trust or connect with new people',
+        'Can create "inner circles" that exclude others',
+        'Might resist necessary changes in team composition'
+      ]
+    },
+    'Responsibility': {
+      domain: 'Executing',
+      brief: 'People with Responsibility take psychological ownership of what they say they will do. They are committed to stable values such as dependability.',
+      full: 'Your Responsibility theme forces you to take psychological ownership for anything you commit to, and whether large or small, you feel emotionally bound to follow it through to completion.',
+      quote: 'When I say I\'ll do something, I do it. My word is my bond, and people know they can count on me.',
+      workingWith: [
+        'Give them clear commitments and deadlines',
+        'Use them for important follow-through responsibilities',
+        'Partner them with Strategic to ensure they\'re taking on the right commitments'
+      ],
+      potentialBlindSpots: [
+        'May take on too much responsibility',
+        'Can be reluctant to delegate important tasks',
+        'Might feel guilty when they can\'t fulfill every commitment'
+      ]
+    },
+    'Restorative': {
+      domain: 'Executing',
+      brief: 'People with Restorative are adept at dealing with problems. They are good at figuring out what is wrong and resolving it.',
+      full: 'You love to solve problems. Whereas some are dismayed when they encounter yet another breakdown, you can be energized by it. You enjoy the challenge of analyzing the symptoms, identifying what is wrong, and finding the solution.',
+      quote: 'I\'m energized by fixing what\'s broken. Give me a problem and I\'ll find a way to solve it.',
+      workingWith: [
+        'Use them to troubleshoot problems and implement solutions',
+        'Give them challenging situations that need fixing',
+        'Partner them with Strategic to ensure solutions align with long-term goals'
+      ],
+      potentialBlindSpots: [
+        'May focus too much on problems instead of opportunities',
+        'Can be seen as negative or critical',
+        'Might jump to solutions without understanding root causes'
+      ]
+    },
+    'Self-Assurance': {
+      domain: 'Influencing',
+      brief: 'People with Self-Assurance feel confident in their ability to manage their own lives. They possess an inner compass that gives them confidence that their decisions are right.',
+      full: 'Self-Assurance is similar to self-confidence. In the deepest part of you, you have faith in your strengths. You know that you are able—able to take risks, able to meet new challenges, able to stake claims, and, most important, able to deliver.',
+      quote: 'I trust my instincts. I know I can handle whatever comes my way, even if I\'ve never done it before.',
+      workingWith: [
+        'Give them autonomy and independence in their work',
+        'Use them in situations requiring confidence and risk-taking',
+        'Partner them with Input to ensure their confidence is based on good information'
+      ],
+      potentialBlindSpots: [
+        'May appear arrogant or dismissive of others\' input',
+        'Can be resistant to feedback or coaching',
+        'Might take on too much risk without adequate preparation'
+      ]
+    },
+    'Significance': {
+      domain: 'Influencing',
+      brief: 'People with Significance want to be very important in the eyes of others. They are independent and want to be recognized.',
+      full: 'You want to be very significant in the eyes of other people. In the truest sense of the word you want to be recognized. You feel a need to be known, and in particular you want to be known and appreciated for the unique strengths you bring.',
+      quote: 'I want my work to matter and be recognized. I need to know that what I do makes a real difference.',
+      workingWith: [
+        'Recognize their contributions publicly and meaningfully',
+        'Give them high-visibility projects and responsibilities',
+        'Partner them with Harmony to balance recognition-seeking with team needs'
+      ],
+      potentialBlindSpots: [
+        'May seek recognition at the expense of team success',
+        'Can be frustrated when their contributions go unnoticed',
+        'Might avoid tasks that don\'t bring visibility'
+      ]
+    },
     'Strategic': {
       domain: 'Strategic Thinking',
       brief: 'People with Strategic create alternative ways to proceed. They can quickly spot patterns and issues.',
@@ -327,6 +536,22 @@ const Encyclopedia = () => {
         'May overcomplicate simple situations',
         'Can frustrate those who want one clear path',
         'Might get stuck in planning mode'
+      ]
+    },
+    'Woo': {
+      domain: 'Influencing',
+      brief: 'People with Woo love the challenge of meeting new people and winning them over. They derive satisfaction from breaking the ice.',
+      full: 'Woo stands for winning others over. You enjoy the challenge of meeting new people and getting them to like you. Strangers are rarely intimidating to you. On the contrary, strangers can be energizing.',
+      quote: 'I love meeting new people and making connections. There\'s nothing like the energy of turning a stranger into a friend.',
+      workingWith: [
+        'Use them in networking and relationship-building roles',
+        'Have them help with team building and social events',
+        'Partner them with Relator to balance breadth with depth in relationships'
+      ],
+      potentialBlindSpots: [
+        'May struggle to maintain all the relationships they create',
+        'Can be seen as superficial or insincere',
+        'Might prioritize making new connections over deepening existing ones'
       ]
     }
   };
