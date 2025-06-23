@@ -37,25 +37,26 @@ export async function generateTeamInsight(data: TeamStrengthsData): Promise<stri
     return acc;
   }, {} as Record<string, number>);
 
-  const prompt = `You are an expert CliftonStrengths coach analyzing a team composition. Generate a practical, actionable team insight based on this data:
+  const totalStrengths = Object.values(domainCounts).reduce((sum, count) => sum + count, 0);
+  const domainPercentages = Object.entries(domainCounts).map(([domain, count]) => 
+    `${domain}: ${totalStrengths > 0 ? Math.round((count / totalStrengths) * 100) : 0}%`
+  ).join(', ');
 
-MANAGER'S TOP 5 STRENGTHS:
-${managerStrengths.join(', ')}
+  const prompt = `You are an expert strengths-based leadership coach with deep knowledge of CliftonStrengths. Generate a team-level insight based on the following team composition:
 
-TEAM MEMBERS:
-${teamMembers.map(member => `${member.name}: ${member.strengths.join(', ')}`).join('\n')}
+Manager's Top 5 Strengths: ${managerStrengths.join(', ')}
+Team Members and Their Strengths:
+${teamMembers.map(member => `- ${member.name}: ${member.strengths.join(', ')}`).join('\n')}
 
-OVERALL TEAM COMPOSITION:
-- Total people: ${teamMembers.length + 1} (including manager)
-- Domain distribution: ${Object.entries(domainCounts).map(([domain, count]) => `${domain}: ${count}`).join(', ')}
-- Most common strengths: ${Object.entries(strengthCounts).filter(([_, count]) => count > 1).map(([strength, count]) => `${strength} (${count})`).join(', ') || 'No duplicates'}
+Domain Distribution:
+${domainPercentages}
 
-Generate a concise, actionable insight (2-3 sentences) that:
-1. Identifies the team's primary strength or potential challenge
-2. Provides a specific, practical recommendation for team development or collaboration
-3. Is encouraging and focuses on leveraging strengths rather than fixing weaknesses
+Provide a direct, actionable insight that:
+1. Identifies a specific pattern or opportunity in the team's collective strengths
+2. Suggests ONE concrete action the manager can take this week
+3. Is specific enough to implement immediately
 
-Keep the tone professional but warm, and make it immediately actionable.`;
+Keep the response to 2-3 sentences maximum. No fluff. Be nuanced - acknowledge both the power and potential blind spots of this team composition. Use vivid, memorable language that sticks.`;
 
   try {
     const response = await openai.chat.completions.create({
@@ -82,17 +83,23 @@ Keep the tone professional but warm, and make it immediately actionable.`;
 }
 
 export async function generateCollaborationInsight(member1: string, member2: string, member1Strengths: string[], member2Strengths: string[]): Promise<string> {
-  const prompt = `You are an expert CliftonStrengths coach. Generate a collaboration insight for these two team members:
+  const prompt = `You are an expert strengths-based leadership coach with deep knowledge of CliftonStrengths. Analyze the partnership potential between these two team members:
 
 ${member1}: ${member1Strengths.join(', ')}
 ${member2}: ${member2Strengths.join(', ')}
 
-Generate a specific, actionable insight (1-2 sentences) about how these two people can work together effectively based on their CliftonStrengths. Focus on:
-1. How their strengths complement each other
-2. A specific collaboration strategy or project approach they could use
-3. What unique value this partnership brings to the team
+Provide "The One Thing" - a single, specific intervention that will make this partnership thrive.
 
-Keep it practical and immediately actionable.`;
+Your response must:
+1. Identify the core friction OR magic in this specific pairing
+2. Give ONE actionable structure, process, or approach (not generic advice)
+3. Use vivid, memorable language that creates a mental picture
+4. Account for potential conflicts, not just complementarity
+5. Be immediately implementable with specific tactics
+
+Format: Start with "The One Thing:" followed by 2-3 sentences maximum. Include a specific phrase they could use or a concrete structure they could implement.
+
+Example level of specificity: Instead of "communicate better," say "Create a 'parking lot' document where Jamie dumps all ideas, review together weekly, and Alex executes only the top 2-3."`;
 
   try {
     const response = await openai.chat.completions.create({
