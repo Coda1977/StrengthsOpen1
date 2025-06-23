@@ -108,10 +108,36 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
+  app.get("/api/callback", async (req, res, next) => {
+    passport.authenticate(`replitauth:${req.hostname}`, async (err: any, user: any) => {
+      if (err) {
+        console.error('Authentication error:', err);
+        return res.redirect("/api/login");
+      }
+      if (!user) {
+        return res.redirect("/api/login");
+      }
+
+      // Log the user in
+      req.logIn(user, async (loginErr) => {
+        if (loginErr) {
+          console.error('Login error:', loginErr);
+          return res.redirect("/api/login");
+        }
+
+        try {
+          // Check if user has completed onboarding
+          const dbUser = await storage.getUser(user.claims.sub);
+          if (dbUser && dbUser.hasCompletedOnboarding) {
+            return res.redirect("/dashboard");
+          } else {
+            return res.redirect("/onboarding");
+          }
+        } catch (error) {
+          console.error('Error checking user status:', error);
+          return res.redirect("/onboarding");
+        }
+      });
     })(req, res, next);
   });
 

@@ -28,7 +28,13 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/" component={!isAuthenticated ? LandingPage : user && !(user as any).hasCompletedOnboarding ? Onboarding : Dashboard} />
+      <Route path="/">
+        {() => {
+          if (!isAuthenticated) return <LandingPage />;
+          if (user && !(user as any).hasCompletedOnboarding) return <Onboarding />;
+          return <Dashboard />;
+        }}
+      </Route>
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/encyclopedia" component={Encyclopedia} />
       <Route path="/coach" component={ChatCoach} />
