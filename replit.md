@@ -1,0 +1,100 @@
+# Strengths Manager Application
+
+## Overview
+
+The Strengths Manager is a full-stack web application designed to help managers and teams understand and leverage CliftonStrengths for better team dynamics and performance. The application provides tools for team member management, strengths encyclopedia, AI-powered coaching insights, and comprehensive team analytics.
+
+## System Architecture
+
+### Frontend Architecture
+- **Framework**: React with TypeScript using Vite as the build tool
+- **Routing**: Wouter for client-side routing
+- **State Management**: TanStack Query (React Query) for server state management
+- **UI Framework**: shadcn/ui components built on Radix UI primitives
+- **Styling**: Tailwind CSS with custom CSS variables for theming
+- **Authentication**: Session-based authentication integrated with Replit Auth
+
+### Backend Architecture
+- **Runtime**: Node.js with TypeScript
+- **Framework**: Express.js for REST API
+- **Database ORM**: Drizzle ORM with PostgreSQL
+- **Database Provider**: Neon serverless PostgreSQL
+- **Authentication**: Replit OpenID Connect (OIDC) with Passport.js
+- **Session Management**: Express sessions with PostgreSQL store
+- **AI Integration**: OpenAI GPT-4o for generating team insights and coaching
+
+### Key Components
+
+1. **Authentication System**
+   - Replit Auth integration with OIDC
+   - Session-based authentication with PostgreSQL session store
+   - User profile management with onboarding flow
+
+2. **Team Management**
+   - CRUD operations for team members
+   - CliftonStrengths assignment and tracking
+   - Team composition analysis
+
+3. **Strengths Encyclopedia**
+   - Complete CliftonStrengths reference with detailed descriptions
+   - Domain categorization (Executing, Influencing, Relationship Building, Strategic Thinking)
+   - Search and filtering capabilities
+
+4. **AI Coach**
+   - OpenAI-powered insights generation
+   - Team strengths analysis and recommendations
+   - Personalized coaching suggestions
+
+5. **Dashboard**
+   - Team overview with strengths distribution
+   - Visual analytics and insights
+   - Quick access to key features
+
+## Data Flow
+
+1. **User Authentication**: Users authenticate via Replit Auth, creating or updating user records in PostgreSQL
+2. **Onboarding**: New users complete strengths selection and profile setup
+3. **Team Management**: Managers add team members with their respective strengths
+4. **AI Analysis**: Team data is processed through OpenAI API to generate insights
+5. **Dashboard Display**: Aggregated data and insights are presented in the dashboard interface
+
+## External Dependencies
+
+### Core Dependencies
+- **Database**: Neon serverless PostgreSQL for data persistence
+- **Authentication**: Replit Auth service for user authentication
+- **AI Services**: OpenAI API for generating insights and coaching content
+- **UI Components**: Radix UI for accessible component primitives
+
+### Development Tools
+- **Build Tool**: Vite for fast development and optimized builds
+- **Database Migrations**: Drizzle Kit for schema management
+- **Type Safety**: TypeScript throughout the application stack
+
+## Deployment Strategy
+
+### Development Environment
+- **Platform**: Replit with integrated PostgreSQL database
+- **Hot Reload**: Vite dev server with HMR for frontend changes
+- **Database**: Local development uses the same Neon database instance
+
+### Production Deployment
+- **Platform**: Replit Autoscale deployment
+- **Build Process**: Vite builds frontend assets, esbuild bundles server code
+- **Environment Variables**: 
+  - `DATABASE_URL` for PostgreSQL connection
+  - `OPENAI_API_KEY` for AI features
+  - `SESSION_SECRET` for session encryption
+  - `REPL_ID` and other Replit-specific variables
+
+### Database Schema
+- **Users Table**: Stores user profiles, onboarding status, and top strengths
+- **Team Members Table**: Manages team member information and their strengths
+- **Sessions Table**: Handles session persistence for authentication
+
+## Changelog
+- June 23, 2025. Initial setup
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
