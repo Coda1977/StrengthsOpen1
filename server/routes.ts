@@ -80,7 +80,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check MIME type
       if (!allowedMimeTypes.includes(file.mimetype)) {
-        return cb(new Error('File type not allowed. Only CSV, Excel, Word, PNG, and JPEG files are supported.'), false);
+        return cb(errors.unsupportedFileType([
+          'CSV', 'Excel (.xls, .xlsx)', 'Word (.docx)', 'PNG', 'JPEG'
+        ]), false);
       }
       
       // Validate file extension matches MIME type
@@ -96,12 +98,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const allowedExtensions = mimeToExtension[file.mimetype] || [];
       if (!allowedExtensions.includes(fileExtension)) {
-        return cb(new Error('File extension does not match file type'), false);
+        return cb(errors.validation('File extension does not match file type'), false);
       }
       
       // Validate filename for security
       if (!/^[a-zA-Z0-9._-]+$/.test(file.originalname)) {
-        return cb(new Error('Invalid filename. Only alphanumeric characters, dots, hyphens, and underscores are allowed.'), false);
+        return cb(errors.validation('Invalid filename. Only alphanumeric characters, dots, hyphens, and underscores are allowed.'), false);
       }
       
       cb(null, true);
@@ -214,14 +216,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Insights routes - require authentication and completed onboarding
-  app.post('/api/generate-team-insight', isAuthenticated, requireOnboarding, async (req: any, res) => {
+  app.post('/api/generate-team-insight', isAuthenticated, requireOnboarding, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       const teamMembers = await storage.getTeamMembers(userId);
 
       if (!user || !user.topStrengths) {
-        return res.status(400).json({ message: "User strengths not found" });
+        throw errors.validation('User strengths not found. Please complete your onboarding first.');
+      }
+
+      if (teamMembers.length === 0) {
+        throw errors.validation('No team members found. Please add team members before generating insights.');
       }
 
       const teamData = {
@@ -233,19 +239,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const insight = await generateTeamInsight(teamData);
-      res.json({ insight });
+      
+      res.json(createSuccessResponse(
+        { insight, generatedAt: new Date().toISOString() }, 
+        req.headers['x-request-id'] as string
+      ));
     } catch (error) {
-      console.error("Error generating team insight:", error);
-      res.status(500).json({ message: "Failed to generate team insight" });
+      next(error);
     }
   });
 
-  app.post('/api/generate-collaboration-insight', isAuthenticated, requireOnboarding, async (req: any, res) => {
+  app.post('/api/generate-collaboration-insight', isAuthenticated, requireOnboarding, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
       const { member1, member2 } = req.body;
       
       if (!member1 || !member2) {
-        return res.status(400).json({ message: "Both members must be specified" });
+        throw errors.validation('Both team members must be specified', {
+          required: ['member1', 'member2'],
+          received: { member1: !!member1, member2: !!member2 }
+        });
+      }
+
+      if (member1 === member2) {
+        throw errors.validation('Cannot generate collaboration insight for the same member');
       }
 
       const userId = req.user.claims.sub;
@@ -271,108 +287,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
         member2Strengths = teamMember?.strengths || [];
       }
 
-      if (member1Strengths.length === 0 || member2Strengths.length === 0) {
-        return res.status(400).json({ message: "Member strengths not found" });
+      if (member1Strengths.length === 0) {
+        throw errors.notFound(`Strengths for ${member1}`);
+      }
+
+      if (member2Strengths.length === 0) {
+        throw errors.notFound(`Strengths for ${member2}`);
       }
 
       const insight = await generateCollaborationInsight(member1, member2, member1Strengths, member2Strengths);
-      res.json({ insight });
+      
+      res.json(createSuccessResponse(
+        { 
+          insight, 
+          members: { member1, member2 },
+          generatedAt: new Date().toISOString()
+        }, 
+        req.headers['x-request-id'] as string
+      ));
     } catch (error) {
-      console.error("Error generating collaboration insight:", error);
-      res.status(500).json({ message: "Failed to generate collaboration insight" });
+      next(error);
     }
   });
 
   // File upload endpoint for team members
-  app.post('/api/upload-team-members', isAuthenticated, requireOnboarding, upload.single('file'), async (req: any, res) => {
+  app.post('/api/upload-team-members', isAuthenticated, requireOnboarding, upload.single('file'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const startTime = Date.now();
-    let processed = false;
     
     try {
       if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
+        throw errors.validation('No file uploaded', { field: 'file' });
       }
 
       const userId = req.user.claims.sub;
       const { buffer, mimetype, originalname } = req.file;
+      const requestId = req.headers['x-request-id'] as string;
       
       // Log upload attempt for security monitoring
-      console.log(`File upload attempt: ${originalname} (${mimetype}) by user ${userId}`);
+      console.log(`File upload attempt: ${originalname} (${mimetype}) by user ${userId} [${requestId}]`);
       
       // Rate limiting: max 50 team members per upload
       const maxMembers = 50;
       const maxFileSize = 5 * 1024 * 1024; // 5MB
       
       if (buffer.length > maxFileSize) {
-        return res.status(400).json({ 
-          message: "File too large. Maximum file size is 5MB." 
-        });
+        throw errors.fileTooLarge('5MB');
       }
       
       const teamMembers = await parseTeamMembersFile(buffer, mimetype, originalname);
-      processed = true;
 
       if (teamMembers.length === 0) {
-        return res.status(400).json({ message: "No valid team member data found in file" });
+        throw errors.validation('No valid team member data found in file. Please check the file format and content.');
       }
 
       if (teamMembers.length > maxMembers) {
-        return res.status(400).json({ 
-          message: `Too many team members in file. Maximum ${maxMembers} members allowed per upload.` 
-        });
+        throw new AppError(
+          'RESOURCE_LIMIT_EXCEEDED',
+          `Too many team members in file. Maximum ${maxMembers} members allowed per upload.`,
+          413,
+          { maxAllowed: maxMembers, found: teamMembers.length }
+        );
       }
 
       // Create team members in database
       const createdMembers = [];
-      const errors = [];
+      const processingErrors = [];
 
       for (const memberData of teamMembers) {
         try {
-          // Additional validation
-          if (!memberData.name || memberData.name.length > 100) {
-            errors.push(`Invalid name: ${memberData.name}`);
-            continue;
-          }
-          
-          if (!Array.isArray(memberData.strengths) || memberData.strengths.length === 0) {
-            errors.push(`No valid strengths for ${memberData.name}`);
-            continue;
-          }
-
-          const member = await storage.createTeamMember({
+          // Validate using schema
+          const validatedData = insertTeamMemberSchema.parse({
             managerId: userId,
             name: memberData.name.trim(),
             strengths: memberData.strengths
           });
+
+          const member = await storage.createTeamMember(validatedData);
           createdMembers.push(member);
         } catch (error) {
           console.error(`Failed to create team member ${memberData.name}:`, error);
-          errors.push(`Failed to create ${memberData.name}: ${error.message}`);
+          processingErrors.push({
+            name: memberData.name,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
         }
       }
 
       // Log processing time
       const processingTime = Date.now() - startTime;
-      console.log(`File processing completed in ${processingTime}ms`);
+      console.log(`File processing completed in ${processingTime}ms [${requestId}]`);
 
-      res.json({
-        message: `Successfully imported ${createdMembers.length} team members`,
-        members: createdMembers,
-        errors: errors.length > 0 ? errors : undefined,
-        total_processed: teamMembers.length,
-        successful: createdMembers.length,
-        failed: errors.length,
-        processing_time_ms: processingTime
-      });
+      const responseData = {
+        imported: createdMembers,
+        summary: {
+          total_processed: teamMembers.length,
+          successful: createdMembers.length,
+          failed: processingErrors.length,
+          processing_time_ms: processingTime
+        },
+        errors: processingErrors.length > 0 ? processingErrors : undefined
+      };
+
+      res.json(createSuccessResponse(responseData, requestId));
     } catch (error) {
       const processingTime = Date.now() - startTime;
       console.error("File upload error:", error);
-      console.log(`File processing failed after ${processingTime}ms`);
       
-      res.status(500).json({ 
-        message: error instanceof Error ? error.message : "Failed to process uploaded file",
-        processing_time_ms: processingTime
-      });
+      // Add processing time to error context
+      if (error instanceof AppError) {
+        error.context = { ...error.context, processing_time_ms: processingTime };
+      }
+      
+      next(error);
     }
   });
 
