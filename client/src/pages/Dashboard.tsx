@@ -178,14 +178,27 @@ const Dashboard = () => {
 
   const [teamInsight, setTeamInsight] = useState(teamInsights[0]);
 
+  const [collaborationInsight, setCollaborationInsight] = useState<string>('');
+  const [loadingCollaboration, setLoadingCollaboration] = useState(false);
+
+  const generateCollaborationMutation = useMutation({
+    mutationFn: async ({ member1, member2 }: { member1: string; member2: string }) => {
+      return await apiRequest('POST', '/api/generate-collaboration-insight', { member1, member2 });
+    },
+    onSuccess: (response: any) => {
+      setCollaborationInsight(response.insight);
+      setLoadingCollaboration(false);
+    },
+    onError: (error) => {
+      console.error('Failed to generate collaboration insight:', error);
+      setCollaborationInsight('Unable to generate collaboration insight at this time.');
+      setLoadingCollaboration(false);
+    },
+  });
+
   const generateCollaborationInsight = (member1: string, member2: string) => {
-    const insights = [
-      `${member1} and ${member2} can leverage their complementary strengths to create powerful synergies in project execution.`,
-      `The collaboration between ${member1} and ${member2} offers opportunities to balance different working styles and approaches.`,
-      `${member1} and ${member2} can combine their unique perspectives to drive innovation and team performance.`,
-      `This partnership between ${member1} and ${member2} has potential for mutual development and shared success.`
-    ];
-    return insights[Math.floor(Math.random() * insights.length)];
+    setLoadingCollaboration(true);
+    generateCollaborationMutation.mutate({ member1, member2 });
   };
 
   const getCollaborationKey = () => {
@@ -195,21 +208,44 @@ const Dashboard = () => {
     return '';
   };
 
+  const generateInsightMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('POST', '/api/generate-team-insight');
+    },
+    onSuccess: (response: any) => {
+      setTeamInsight(response.insight);
+      setRefreshCount(refreshCount - 1);
+    },
+    onError: (error) => {
+      console.error('Failed to generate team insight:', error);
+      alert('Failed to generate new insight. Please try again.');
+    },
+  });
+
   const handleRefreshInsight = () => {
     if (refreshCount > 0) {
-      const randomInsight = teamInsights[Math.floor(Math.random() * teamInsights.length)];
-      setTeamInsight(randomInsight);
-      setRefreshCount(refreshCount - 1);
+      generateInsightMutation.mutate();
     }
   };
 
   const handleMemberSelection = (memberName: string) => {
+    let newSelection: string[];
+    
     if (selectedMembers.includes(memberName)) {
-      setSelectedMembers(selectedMembers.filter(name => name !== memberName));
+      newSelection = selectedMembers.filter(name => name !== memberName);
     } else if (selectedMembers.length < 2) {
-      setSelectedMembers([...selectedMembers, memberName]);
+      newSelection = [...selectedMembers, memberName];
     } else {
-      setSelectedMembers([selectedMembers[1], memberName]);
+      newSelection = [selectedMembers[1], memberName];
+    }
+    
+    setSelectedMembers(newSelection);
+    
+    // Generate collaboration insight when 2 members are selected
+    if (newSelection.length === 2) {
+      generateCollaborationInsight(newSelection[0], newSelection[1]);
+    } else {
+      setCollaborationInsight('');
     }
   };
 
@@ -312,9 +348,9 @@ const Dashboard = () => {
                   <button 
                     className="refresh-btn" 
                     onClick={handleRefreshInsight}
-                    disabled={refreshCount === 0}
+                    disabled={refreshCount === 0 || generateInsightMutation.isPending}
                   >
-                    Refresh ({refreshCount} left)
+                    {generateInsightMutation.isPending ? 'Generating...' : `Refresh (${refreshCount} left)`}
                   </button>
                 </div>
                 <p className="insight-text">
@@ -349,9 +385,24 @@ const Dashboard = () => {
                     Selected: {selectedMembers.join(' & ')}
                   </div>
                   <div className="insight-box">
-                    <p className="insight-text">
-                      {generateCollaborationInsight(selectedMembers[0], selectedMembers[1])}
-                    </p>
+                    {loadingCollaboration ? (
+                      <div style={{ textAlign: 'center', padding: '1rem' }}>
+                        <div style={{
+                          width: '24px',
+                          height: '24px',
+                          border: '2px solid #f3f3f3',
+                          borderTop: '2px solid #003566',
+                          borderRadius: '50%',
+                          animation: 'spin 1s linear infinite',
+                          margin: '0 auto 0.5rem'
+                        }}></div>
+                        <p style={{ fontSize: '14px', color: '#6B7280' }}>Generating collaboration insight...</p>
+                      </div>
+                    ) : (
+                      <p className="insight-text">
+                        {collaborationInsight || "Select two team members to see collaboration insights."}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
