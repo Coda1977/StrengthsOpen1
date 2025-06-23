@@ -188,8 +188,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Insights routes
-  app.post('/api/generate-team-insight', isAuthenticated, async (req: any, res) => {
+  // AI Insights routes - require authentication and completed onboarding
+  app.post('/api/generate-team-insight', isAuthenticated, requireOnboarding, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -215,7 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/generate-collaboration-insight', isAuthenticated, async (req: any, res) => {
+  app.post('/api/generate-collaboration-insight', isAuthenticated, requireOnboarding, async (req: any, res) => {
     try {
       const { member1, member2 } = req.body;
       
@@ -259,7 +259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // File upload endpoint for team members
-  app.post('/api/upload-team-members', isAuthenticated, upload.single('file'), async (req: any, res) => {
+  app.post('/api/upload-team-members', isAuthenticated, requireOnboarding, upload.single('file'), async (req: any, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });

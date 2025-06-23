@@ -14,7 +14,7 @@ import Onboarding from "@/pages/Onboarding";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user, hasCompletedOnboarding } = useAuth();
 
   // Show loading only for initial load
   if (isLoading && user === undefined) {
@@ -35,7 +35,7 @@ function Router() {
         {() => {
           // If authenticated, check onboarding status and redirect accordingly
           if (isAuthenticated) {
-            if (user && !(user as any).hasCompletedOnboarding) {
+            if (!hasCompletedOnboarding) {
               return (
                 <ProtectedRoute routeName="Onboarding">
                   <Onboarding />

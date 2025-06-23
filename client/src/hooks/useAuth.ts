@@ -16,5 +16,8 @@ export function useAuth() {
     user,
     isLoading,
     isAuthenticated: !!user,
+    error,
+    // Helper to check if user has completed onboarding
+    hasCompletedOnboarding: !!user?.hasCompletedOnboarding,
   };
 }

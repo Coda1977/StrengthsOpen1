@@ -1,6 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
 import LandingPage from '@/pages/LandingPage';
-import RouteErrorBoundary from './RouteErrorBoundary';
+import React from 'react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, routeName, requireOnboarding = false }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user, hasCompletedOnboarding } = useAuth();
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -25,41 +25,31 @@ export function ProtectedRoute({ children, routeName, requireOnboarding = false 
 
   // Redirect to landing page if not authenticated
   if (!isAuthenticated) {
-    return (
-      <RouteErrorBoundary routeName="Landing Page">
-        <LandingPage />
-      </RouteErrorBoundary>
-    );
+    return <LandingPage />;
   }
 
   // Check onboarding requirement
-  if (requireOnboarding && user && !(user as any).hasCompletedOnboarding) {
+  if (requireOnboarding && !hasCompletedOnboarding) {
     return (
-      <RouteErrorBoundary routeName="Onboarding Required">
-        <div className="min-h-screen bg-primary-bg flex items-center justify-center p-4">
-          <div className="text-center max-w-md">
-            <h2 className="text-2xl font-bold text-text-primary mb-4">Complete Your Setup</h2>
-            <p className="text-text-secondary mb-6">
-              Please complete your onboarding to access this feature.
-            </p>
-            <button 
-              onClick={() => window.location.href = '/onboarding'}
-              className="primary-button"
-            >
-              Complete Onboarding
-            </button>
-          </div>
+      <div className="min-h-screen bg-primary-bg flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold text-text-primary mb-4">Complete Your Setup</h2>
+          <p className="text-text-secondary mb-6">
+            Please complete your onboarding to access this feature.
+          </p>
+          <button 
+            onClick={() => window.location.href = '/onboarding'}
+            className="primary-button"
+          >
+            Complete Onboarding
+          </button>
         </div>
-      </RouteErrorBoundary>
+      </div>
     );
   }
 
-  // Render protected content with error boundary
-  return (
-    <RouteErrorBoundary routeName={routeName}>
-      {children}
-    </RouteErrorBoundary>
-  );
+  // Render protected content
+  return <>{children}</>;
 }
 
 interface PublicRouteProps {
@@ -68,9 +58,5 @@ interface PublicRouteProps {
 }
 
 export function PublicRoute({ children, routeName }: PublicRouteProps) {
-  return (
-    <RouteErrorBoundary routeName={routeName}>
-      {children}
-    </RouteErrorBoundary>
-  );
+  return <>{children}</>;
 }
