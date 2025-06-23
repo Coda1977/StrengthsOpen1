@@ -216,17 +216,29 @@ const Dashboard = () => {
     onSuccess: (data: any) => {
       let insight = data?.insight || 'No insight generated';
       
-      // Check if response appears truncated (ends mid-sentence)
+      // Final safety check for truncation on frontend
       if (typeof insight === 'string' && insight.length > 50) {
-        // If it doesn't end with proper punctuation, try to complete the thought
-        if (!insight.match(/[.!?]\s*$/)) {
-          // Find the last complete sentence
-          const lastSentenceMatch = insight.match(/^(.*[.!?])\s*/);
-          if (lastSentenceMatch) {
-            insight = lastSentenceMatch[1];
-          } else {
-            // If no complete sentences, add ellipsis
-            insight = insight.trim() + '...';
+        // Remove any trailing incomplete words or phrases
+        if (insight.match(/\w+\s*$/) && !insight.match(/[.!?]\s*$/)) {
+          // Find last complete sentence or section
+          const sections = insight.split(/\n\n|\n(?=[A-Z])/);
+          const completeSections = [];
+          
+          for (const section of sections) {
+            if (section.match(/[.!?]\s*$/) || section.includes(':')) {
+              completeSections.push(section);
+            } else {
+              // Try to salvage partial section
+              const lastSentence = section.match(/^(.*[.!?])/);
+              if (lastSentence) {
+                completeSections.push(lastSentence[1]);
+              }
+              break; // Stop at first incomplete section
+            }
+          }
+          
+          if (completeSections.length > 0) {
+            insight = completeSections.join('\n\n');
           }
         }
       }

@@ -116,17 +116,34 @@ Keep each point to one sentence maximum. No markdown. Total response under 150 w
           content: prompt
         }
       ],
-      max_tokens: 200,
+      max_tokens: 300,
       temperature: 0.5
     });
 
-    const content = response.choices[0].message.content || "Unable to generate collaboration insight at this time.";
+    let content = response.choices[0].message.content || "Unable to generate collaboration insight at this time.";
     
-    // Ensure response ends properly - if it doesn't end with punctuation, truncate to last complete sentence
-    if (content.length > 50 && !content.match(/[.!?]\s*$/)) {
-      const lastSentenceMatch = content.match(/^(.*[.!?])\s*/);
-      if (lastSentenceMatch) {
-        return lastSentenceMatch[1];
+    // Aggressively handle truncation - if response doesn't end properly, find last complete thought
+    if (content.length > 50) {
+      // Check if ends mid-word or mid-sentence
+      if (!content.match(/[.!?]\s*$/) || content.match(/\w+\.\.\.$/) || content.endsWith('...')) {
+        // Find all complete sentences
+        const sentences = content.match(/[^.!?]*[.!?]/g);
+        if (sentences && sentences.length > 0) {
+          // Take all complete sentences
+          content = sentences.join(' ').trim();
+        } else {
+          // If no complete sentences, find complete bullet points or sections
+          const bulletPoints = content.match(/^[^•\n]*•[^•]*(?=[•]|$)/gm);
+          if (bulletPoints && bulletPoints.length > 0) {
+            content = bulletPoints.join('\n').trim();
+          } else {
+            // Last resort: truncate at last period before truncation
+            const lastPeriodIndex = content.lastIndexOf('.');
+            if (lastPeriodIndex > 20) {
+              content = content.substring(0, lastPeriodIndex + 1);
+            }
+          }
+        }
       }
     }
     
