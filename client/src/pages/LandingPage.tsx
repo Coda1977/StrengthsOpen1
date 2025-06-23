@@ -59,7 +59,12 @@ const LandingPage = () => {
               <p className="hero-subtitle">From the cradle to the cubicle, we devote more time to our shortcomings than to our strengths, it's time to flip the script!</p>
               <p><span className="yellow-highlight">Strengths Manager</span> will transform your strengths data into actionable coaching.</p>
               <div className="hero-buttons">
-                <a href="#features" className="primary-button">Get Started</a>
+                <button 
+                  className="primary-button"
+                  onClick={() => window.location.href = '/api/login'}
+                >
+                  Get Started
+                </button>
               </div>
             </div>
             <div className="hero-visual animate-in" style={{animationDelay: '0.2s'}}>
@@ -192,7 +197,12 @@ const LandingPage = () => {
       <footer>
         <div className="footer-content animate-in">
           <p>Don't waste time trying to put in what was left out. Try to draw out what was left in.</p>
-          <Link href="/dashboard" className="footer-button">Get Started</Link>
+          <button 
+            className="footer-button"
+            onClick={() => window.location.href = '/api/login'}
+          >
+            Get Started
+          </button>
         </div>
       </footer>
     </>

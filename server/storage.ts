@@ -41,13 +41,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserOnboarding(id: string, data: UpdateUserOnboarding): Promise<User | undefined> {
+    const updateData: any = {
+      updatedAt: new Date(),
+    };
+    
+    if (data.hasCompletedOnboarding !== undefined) {
+      updateData.hasCompletedOnboarding = data.hasCompletedOnboarding;
+    }
+    
+    if (data.topStrengths) {
+      updateData.topStrengths = JSON.stringify(data.topStrengths);
+    }
+
     const [user] = await db
       .update(users)
-      .set({
-        hasCompletedOnboarding: data.hasCompletedOnboarding,
-        topStrengths: data.topStrengths,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(users.id, id))
       .returning();
     return user;
