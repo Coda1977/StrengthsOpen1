@@ -19,14 +19,40 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-// Add authentication middleware with better typing
+// Enhanced authentication middleware with better error handling
 const authenticatedMiddleware = (req: Request, res: Response, next: NextFunction) => {
   isAuthenticated(req, res, (err?: any) => {
     if (err) {
-      return res.status(401).json({ message: "Unauthorized" });
+      console.error('Authentication middleware error:', err);
+      return res.status(401).json({ 
+        message: "Unauthorized",
+        code: "AUTH_REQUIRED",
+        redirect: "/auth/login"
+      });
     }
     next();
   });
+};
+
+// Middleware to check if user has completed onboarding
+const requireOnboarding = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user.claims.sub;
+    const user = await storage.getUser(userId);
+    
+    if (!user || !user.hasCompletedOnboarding) {
+      return res.status(403).json({
+        message: "Onboarding required",
+        code: "ONBOARDING_REQUIRED",
+        redirect: "/onboarding"
+      });
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Onboarding check error:', error);
+    res.status(500).json({ message: "Failed to verify onboarding status" });
+  }
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -98,8 +124,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Team member routes
-  app.get('/api/team-members', isAuthenticated, async (req: any, res) => {
+  // Team member routes - require authentication and completed onboarding
+  app.get('/api/team-members', isAuthenticated, requireOnboarding, async (req: any, res) => {
     try {
       const managerId = req.user.claims.sub;
       const members = await storage.getTeamMembers(managerId);
@@ -110,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/team-members', isAuthenticated, async (req: any, res) => {
+  app.post('/api/team-members', isAuthenticated, requireOnboarding, async (req: any, res) => {
     try {
       const managerId = req.user.claims.sub;
       const validatedData = insertTeamMemberSchema.parse({
@@ -130,7 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/team-members/:id', isAuthenticated, async (req: any, res) => {
+  app.put('/api/team-members/:id', isAuthenticated, requireOnboarding, async (req: any, res) => {
     try {
       const { id } = req.params;
       const validatedData = updateTeamMemberSchema.parse(req.body);
@@ -151,7 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/team-members/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/team-members/:id', isAuthenticated, requireOnboarding, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteTeamMember(id);

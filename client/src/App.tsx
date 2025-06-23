@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { EnhancedErrorBoundary } from "@/components/ErrorBoundary";
-import RouteErrorBoundary from "@/components/RouteErrorBoundary";
+import { ProtectedRoute, PublicRoute } from "@/components/ProtectedRoute";
 import LandingPage from "@/pages/LandingPage";
 import Dashboard from "@/pages/Dashboard";
 import Encyclopedia from "@/pages/Encyclopedia";
@@ -16,7 +16,7 @@ import NotFound from "@/pages/not-found";
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
 
-  // Show loading only for initial load, not for auth check
+  // Show loading only for initial load
   if (isLoading && user === undefined) {
     return (
       <div className="min-h-screen bg-primary-bg flex items-center justify-center">
@@ -30,99 +30,64 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/">
+      {/* Public landing page route */}
+      <Route path="/" nest>
         {() => {
-          if (!isAuthenticated) {
+          // If authenticated, check onboarding status and redirect accordingly
+          if (isAuthenticated) {
+            if (user && !(user as any).hasCompletedOnboarding) {
+              return (
+                <ProtectedRoute routeName="Onboarding">
+                  <Onboarding />
+                </ProtectedRoute>
+              );
+            }
             return (
-              <RouteErrorBoundary routeName="Landing Page">
-                <LandingPage />
-              </RouteErrorBoundary>
+              <ProtectedRoute routeName="Dashboard" requireOnboarding>
+                <Dashboard />
+              </ProtectedRoute>
             );
           }
-          if (user && !(user as any).hasCompletedOnboarding) {
-            return (
-              <RouteErrorBoundary routeName="Onboarding">
-                <Onboarding />
-              </RouteErrorBoundary>
-            );
-          }
+          // Show public landing page for unauthenticated users
           return (
-            <RouteErrorBoundary routeName="Dashboard">
-              <Dashboard />
-            </RouteErrorBoundary>
+            <PublicRoute routeName="Landing Page">
+              <LandingPage />
+            </PublicRoute>
           );
         }}
       </Route>
+
+      {/* Protected routes - require authentication */}
       <Route path="/dashboard">
-        {() => {
-          if (!isAuthenticated) {
-            return (
-              <RouteErrorBoundary routeName="Landing Page">
-                <LandingPage />
-              </RouteErrorBoundary>
-            );
-          }
-          return (
-            <RouteErrorBoundary routeName="Dashboard">
-              <Dashboard />
-            </RouteErrorBoundary>
-          );
-        }}
+        <ProtectedRoute routeName="Dashboard" requireOnboarding>
+          <Dashboard />
+        </ProtectedRoute>
       </Route>
+
       <Route path="/encyclopedia">
-        {() => {
-          if (!isAuthenticated) {
-            return (
-              <RouteErrorBoundary routeName="Landing Page">
-                <LandingPage />
-              </RouteErrorBoundary>
-            );
-          }
-          return (
-            <RouteErrorBoundary routeName="Encyclopedia">
-              <Encyclopedia />
-            </RouteErrorBoundary>
-          );
-        }}
+        <ProtectedRoute routeName="Encyclopedia" requireOnboarding>
+          <Encyclopedia />
+        </ProtectedRoute>
       </Route>
+
       <Route path="/coach">
-        {() => {
-          if (!isAuthenticated) {
-            return (
-              <RouteErrorBoundary routeName="Landing Page">
-                <LandingPage />
-              </RouteErrorBoundary>
-            );
-          }
-          return (
-            <RouteErrorBoundary routeName="AI Coach">
-              <ChatCoach />
-            </RouteErrorBoundary>
-          );
-        }}
+        <ProtectedRoute routeName="AI Coach" requireOnboarding>
+          <ChatCoach />
+        </ProtectedRoute>
       </Route>
+
+      {/* Special onboarding route - requires auth but not completed onboarding */}
       <Route path="/onboarding">
-        {() => {
-          if (!isAuthenticated) {
-            return (
-              <RouteErrorBoundary routeName="Landing Page">
-                <LandingPage />
-              </RouteErrorBoundary>
-            );
-          }
-          return (
-            <RouteErrorBoundary routeName="Onboarding">
-              <Onboarding />
-            </RouteErrorBoundary>
-          );
-        }}
+        <ProtectedRoute routeName="Onboarding">
+          <Onboarding />
+        </ProtectedRoute>
       </Route>
+
+      {/* 404 route - public */}
       <Route>
-        {() => (
-          <RouteErrorBoundary routeName="404 Page">
-            <NotFound />
-          </RouteErrorBoundary>
-        )}
+        <PublicRoute routeName="404 Page">
+          <NotFound />
+        </PublicRoute>
       </Route>
     </Switch>
   );

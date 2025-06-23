@@ -99,6 +99,8 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - June 23, 2025: Improved authentication route protection for all protected pages
 - June 23, 2025: Fixed session store configuration issues with proper table handling and corruption prevention
 - June 23, 2025: Implemented cryptographically secure UUID generation using Node.js crypto module with proper UUID v4 formatting
+- June 23, 2025: Fixed authentication route protection gaps with comprehensive ProtectedRoute and PublicRoute components
+- June 23, 2025: Added onboarding requirement checks for protected features and API endpoints
 
 ## User Preferences
 
