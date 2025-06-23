@@ -44,7 +44,8 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .update(users)
       .set({
-        ...data,
+        hasCompletedOnboarding: data.hasCompletedOnboarding,
+        topStrengths: data.topStrengths,
         updatedAt: new Date(),
       })
       .where(eq(users.id, id))

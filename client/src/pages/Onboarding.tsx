@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,9 +16,23 @@ const strengthsData = [
 const Onboarding = () => {
   const [selectedStrengths, setSelectedStrengths] = useState<string[]>([]);
   const [step, setStep] = useState(1);
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      window.location.href = '/api/login';
+    }
+  }, [isAuthenticated]);
+
+  // Redirect to dashboard if already completed onboarding
+  useEffect(() => {
+    if (user && user.hasCompletedOnboarding) {
+      setLocation('/dashboard');
+    }
+  }, [user, setLocation]);
 
   const onboardingMutation = useMutation({
     mutationFn: async (data: { hasCompletedOnboarding: boolean; topStrengths: string[] }) => {
@@ -32,7 +46,7 @@ const Onboarding = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      navigate("/dashboard");
+      setLocation("/dashboard");
     },
   });
 
