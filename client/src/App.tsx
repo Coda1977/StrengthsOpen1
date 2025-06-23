@@ -28,26 +28,12 @@ function Router() {
 
   return (
     <Switch>
-      {!isAuthenticated ? (
-        <>
-          <Route path="/" component={LandingPage} />
-          <Route path="/*" component={LandingPage} />
-        </>
-      ) : user && !(user as any).hasCompletedOnboarding ? (
-        <>
-          <Route path="/onboarding" component={Onboarding} />
-          <Route path="/*" component={Onboarding} />
-        </>
-      ) : (
-        <>
-          <Route path="/" component={Dashboard} />
-          <Route path="/dashboard" component={Dashboard} />
-          <Route path="/encyclopedia" component={Encyclopedia} />
-          <Route path="/coach" component={ChatCoach} />
-          <Route path="/onboarding" component={Onboarding} />
-          <Route component={NotFound} />
-        </>
-      )}
+      <Route path="/" component={!isAuthenticated ? LandingPage : user && !(user as any).hasCompletedOnboarding ? Onboarding : Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/encyclopedia" component={Encyclopedia} />
+      <Route path="/coach" component={ChatCoach} />
+      <Route path="/onboarding" component={Onboarding} />
+      <Route component={NotFound} />
     </Switch>
   );
 }
