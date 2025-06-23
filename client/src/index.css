@@ -767,6 +767,103 @@ footer {
   opacity: 0;
 }
 
+/* Insights Section Styles */
+.insight-section {
+  margin-bottom: var(--content-padding);
+}
+
+.insight-box {
+  background: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: 15px;
+  margin-bottom: 1rem;
+}
+
+.insight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.insight-title {
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.refresh-btn {
+  background: var(--accent-blue);
+  color: var(--white);
+  border: none;
+  padding: var(--btn-padding-sm);
+  border-radius: var(--card-radius);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 53, 102, 0.3);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.insight-text {
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.collaboration-section {
+  margin-top: var(--content-padding);
+}
+
+.collaboration-prompt {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.selected-members {
+  background: var(--accent-yellow);
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+/* Member selection buttons in insights */
+.member-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.member-btn {
+  background: var(--bg-primary);
+  border: 2px solid transparent;
+  padding: var(--btn-padding-md);
+  border-radius: var(--btn-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.member-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.member-btn.selected {
+  background: var(--accent-yellow);
+  border-color: var(--accent-blue);
+  transform: scale(1.05);
+}
+
 /* Chat Interface Styles */
 .chat-layout {
   display: flex;
