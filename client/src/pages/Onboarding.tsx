@@ -3,22 +3,32 @@ import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import { ChevronRight } from "lucide-react";
 
-const strengthsData = [
-  "Achiever", "Activator", "Adaptability", "Analytical", "Arranger", "Belief",
-  "Command", "Communication", "Competition", "Connectedness", "Consistency", "Context",
-  "Deliberative", "Developer", "Discipline", "Empathy", "Focus", "Futuristic",
-  "Harmony", "Ideation", "Includer", "Individualization", "Input", "Intellection",
-  "Learner", "Maximizer", "Positivity", "Relator", "Responsibility", "Restorative",
-  "Self-Assurance", "Significance", "Strategic", "Woo"
+const allStrengths = [
+  'Achiever', 'Activator', 'Adaptability', 'Analytical', 'Arranger',
+  'Belief', 'Command', 'Communication', 'Competition', 'Connectedness',
+  'Consistency', 'Context', 'Deliberative', 'Developer', 'Discipline',
+  'Empathy', 'Focus', 'Futuristic', 'Harmony', 'Ideation',
+  'Includer', 'Individualization', 'Input', 'Intellection', 'Learner',
+  'Maximizer', 'Positivity', 'Relator', 'Responsibility', 'Restorative',
+  'Self-Assurance', 'Significance', 'Strategic', 'Woo'
 ];
 
 const Onboarding = () => {
+  const [name, setName] = useState('');
   const [selectedStrengths, setSelectedStrengths] = useState<string[]>([]);
-  const [step, setStep] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { user, isAuthenticated } = useAuth();
+
+  // Initialize name from user data
+  useEffect(() => {
+    if (user && user.firstName) {
+      setName(`${user.firstName} ${user.lastName || ''}`.trim());
+    }
+  }, [user]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -29,10 +39,14 @@ const Onboarding = () => {
 
   // Redirect to dashboard if already completed onboarding
   useEffect(() => {
-    if (user && user.hasCompletedOnboarding) {
+    if (user && (user as any).hasCompletedOnboarding) {
       setLocation('/dashboard');
     }
   }, [user, setLocation]);
+
+  const filteredStrengths = allStrengths.filter(strength =>
+    strength.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const onboardingMutation = useMutation({
     mutationFn: async (data: { hasCompletedOnboarding: boolean; topStrengths: string[] }) => {
@@ -58,10 +72,10 @@ const Onboarding = () => {
     }
   };
 
-  const handleNext = () => {
-    if (step === 1) {
-      setStep(2);
-    } else if (step === 2 && selectedStrengths.length === 5) {
+  const canContinue = name.trim() && selectedStrengths.length === 5;
+
+  const handleContinue = () => {
+    if (canContinue) {
       onboardingMutation.mutate({
         hasCompletedOnboarding: true,
         topStrengths: selectedStrengths,
@@ -69,109 +83,249 @@ const Onboarding = () => {
     }
   };
 
-  const handleBack = () => {
-    if (step === 2) {
-      setStep(1);
-    }
-  };
-
   if (!user) {
     return (
-      <div className="min-h-screen bg-primary-bg flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-accent-yellow mx-auto"></div>
-          <p className="mt-4 text-text-secondary">Loading...</p>
+      <div style={{ 
+        minHeight: '100vh', 
+        backgroundColor: '#F5F0E8', 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '4px solid #FFD60A',
+            borderTop: '4px solid transparent',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }}></div>
+          <p style={{ color: '#4A4A4A' }}>Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-primary-bg">
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        {step === 1 && (
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-text-primary mb-6">
-              Welcome to Strengths Manager, {user.firstName || 'there'}!
-            </h1>
-            <p className="text-xl text-text-secondary mb-12 max-w-2xl mx-auto">
-              Let's get you set up so you can start exploring and developing your unique strengths.
-            </p>
-            
-            <div className="bg-white rounded-lg p-8 max-w-2xl mx-auto shadow-lg">
-              <h2 className="text-2xl font-semibold text-text-primary mb-4">
-                What you'll do:
-              </h2>
-              <div className="space-y-4 text-left">
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-accent-yellow rounded-full flex items-center justify-center text-sm font-bold">
-                    1
-                  </div>
-                  <p className="text-text-secondary">
-                    Select your top 5 CliftonStrengths themes
-                  </p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-accent-yellow rounded-full flex items-center justify-center text-sm font-bold">
-                    2
-                  </div>
-                  <p className="text-text-secondary">
-                    Get personalized insights and development recommendations
-                  </p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-accent-yellow rounded-full flex items-center justify-center text-sm font-bold">
-                    3
-                  </div>
-                  <p className="text-text-secondary">
-                    Access your dashboard, encyclopedia, and AI coach
-                  </p>
+    <div style={{ 
+      minHeight: '100vh', 
+      backgroundColor: '#F5F0E8', 
+      padding: '2rem 1rem',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    }}>
+      <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <h1 style={{
+            fontSize: 'clamp(32px, 5vw, 48px)',
+            fontWeight: '700',
+            letterSpacing: '-1px',
+            color: '#1A1A1A',
+            marginBottom: '0.5rem'
+          }}>
+            Let's Get Started
+          </h1>
+          <p style={{
+            fontSize: '18px',
+            color: '#4A4A4A',
+            lineHeight: '1.7'
+          }}>
+            Tell us your name and select your top 5 CliftonStrengths
+          </p>
+        </div>
+
+        {/* Main Card */}
+        <div style={{
+          background: '#FFFFFF',
+          borderRadius: '20px',
+          padding: '2.5rem',
+          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
+          marginBottom: '2rem'
+        }}>
+          {/* Name Input */}
+          <div style={{ marginBottom: '2.5rem' }}>
+            <label style={{
+              display: 'block',
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#1A1A1A',
+              marginBottom: '0.75rem'
+            }}>
+              Your Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your full name"
+              style={{
+                width: '100%',
+                padding: '1rem 1.25rem',
+                fontSize: '16px',
+                border: '2px solid #E5E7EB',
+                borderRadius: '12px',
+                backgroundColor: '#FFFFFF',
+                transition: 'border-color 0.2s ease',
+                outline: 'none'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#003566'}
+              onBlur={(e) => e.target.style.borderColor = '#E5E7EB'}
+            />
+          </div>
+
+          {/* Strengths Selection */}
+          <div>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '1rem'
+            }}>
+              <label style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#1A1A1A'
+              }}>
+                Select Your Top 5 CliftonStrengths
+              </label>
+              <span style={{
+                fontSize: '14px',
+                fontWeight: '600',
+                color: selectedStrengths.length === 5 ? '#059669' : '#4A4A4A',
+                backgroundColor: selectedStrengths.length === 5 ? '#D1FAE5' : '#F3F4F6',
+                padding: '0.25rem 0.75rem',
+                borderRadius: '12px'
+              }}>
+                {selectedStrengths.length}/5
+              </span>
+            </div>
+
+            {/* Search */}
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search strengths..."
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                fontSize: '14px',
+                border: '1px solid #D1D5DB',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                outline: 'none'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#003566'}
+              onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
+            />
+
+            {/* Selected Strengths Display */}
+            {selectedStrengths.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.5rem'
+                }}>
+                  {selectedStrengths.map((strength, index) => (
+                    <div
+                      key={strength}
+                      style={{
+                        background: '#FFD60A',
+                        color: '#1A1A1A',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '20px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <span style={{ 
+                        fontSize: '12px', 
+                        fontWeight: '700',
+                        backgroundColor: '#1A1A1A',
+                        color: '#FFD60A',
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        {index + 1}
+                      </span>
+                      {strength}
+                      <button
+                        onClick={() => handleStrengthToggle(strength)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#1A1A1A',
+                          cursor: 'pointer',
+                          fontSize: '16px',
+                          lineHeight: '1',
+                          padding: '0',
+                          marginLeft: '0.25rem'
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
-              
-              <button
-                onClick={handleNext}
-                className="mt-8 bg-text-primary text-white px-8 py-3 rounded-full font-semibold hover:bg-opacity-90 transition-all"
-              >
-                Let's Get Started
-              </button>
-            </div>
-          </div>
-        )}
+            )}
 
-        {step === 2 && (
-          <div>
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-text-primary mb-4">
-                Select Your Top 5 Strengths
-              </h1>
-              <p className="text-text-secondary mb-2">
-                Choose the 5 CliftonStrengths themes that best describe you.
-              </p>
-              <p className="text-sm text-text-secondary">
-                Selected: {selectedStrengths.length} / 5
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
-              {strengthsData.map((strength) => {
+            {/* Strengths Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+              gap: '0.75rem',
+              maxHeight: '300px',
+              overflowY: 'auto',
+              padding: '0.5rem',
+              border: '1px solid #E5E7EB',
+              borderRadius: '8px',
+              backgroundColor: '#FAFAFA'
+            }}>
+              {filteredStrengths.map((strength) => {
                 const isSelected = selectedStrengths.includes(strength);
-                const canSelect = selectedStrengths.length < 5 || isSelected;
+                const isDisabled = !isSelected && selectedStrengths.length >= 5;
                 
                 return (
                   <button
                     key={strength}
-                    onClick={() => handleStrengthToggle(strength)}
-                    disabled={!canSelect}
-                    className={`
-                      p-4 rounded-lg text-center font-medium transition-all
-                      ${isSelected 
-                        ? 'bg-accent-yellow text-text-primary border-2 border-accent-yellow' 
-                        : canSelect
-                          ? 'bg-white text-text-secondary border-2 border-transparent hover:border-text-primary'
-                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    onClick={() => !isDisabled && handleStrengthToggle(strength)}
+                    disabled={isDisabled}
+                    style={{
+                      padding: '0.75rem 0.5rem',
+                      border: isSelected ? '2px solid #003566' : '2px solid #E5E7EB',
+                      borderRadius: '8px',
+                      backgroundColor: isSelected ? '#003566' : '#FFFFFF',
+                      color: isSelected ? '#FFFFFF' : isDisabled ? '#9CA3AF' : '#1A1A1A',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: isDisabled ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s ease',
+                      opacity: isDisabled ? 0.5 : 1,
+                      textAlign: 'center'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isDisabled && !isSelected) {
+                        e.target.style.borderColor = '#003566';
+                        e.target.style.backgroundColor = '#F0F9FF';
                       }
-                    `}
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.target.style.borderColor = '#E5E7EB';
+                        e.target.style.backgroundColor = '#FFFFFF';
+                      }
+                    }}
                   >
                     {strength}
                   </button>
@@ -179,24 +333,58 @@ const Onboarding = () => {
               })}
             </div>
 
-            <div className="flex justify-between max-w-2xl mx-auto">
-              <button
-                onClick={handleBack}
-                className="px-6 py-3 text-text-secondary hover:text-text-primary transition-colors"
-              >
-                ← Back
-              </button>
-              
-              <button
-                onClick={handleNext}
-                disabled={selectedStrengths.length !== 5 || onboardingMutation.isPending}
-                className="bg-text-primary text-white px-8 py-3 rounded-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-opacity-90 transition-all"
-              >
-                {onboardingMutation.isPending ? 'Saving...' : 'Complete Setup'}
-              </button>
-            </div>
+            {selectedStrengths.length < 5 && (
+              <p style={{
+                fontSize: '14px',
+                color: '#6B7280',
+                marginTop: '1rem',
+                textAlign: 'center'
+              }}>
+                Select {5 - selectedStrengths.length} more strength{5 - selectedStrengths.length !== 1 ? 's' : ''}
+              </p>
+            )}
           </div>
-        )}
+        </div>
+
+        {/* Continue Button */}
+        <div style={{ textAlign: 'center' }}>
+          <button
+            onClick={handleContinue}
+            disabled={!canContinue || onboardingMutation.isPending}
+            style={{
+              background: canContinue && !onboardingMutation.isPending ? '#1A1A1A' : '#9CA3AF',
+              color: '#F5F0E8',
+              padding: '1rem 2.5rem',
+              borderRadius: '25px',
+              border: 'none',
+              fontSize: '18px',
+              fontWeight: '600',
+              cursor: canContinue && !onboardingMutation.isPending ? 'pointer' : 'not-allowed',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              margin: '0 auto',
+              transform: canContinue && !onboardingMutation.isPending ? 'translateY(0)' : 'translateY(0)',
+              boxShadow: canContinue && !onboardingMutation.isPending ? '0 4px 12px rgba(0, 0, 0, 0.15)' : 'none'
+            }}
+            onMouseEnter={(e) => {
+              if (canContinue && !onboardingMutation.isPending) {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.2)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (canContinue && !onboardingMutation.isPending) {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+              }
+            }}
+          >
+            {onboardingMutation.isPending ? 'Saving...' : 'Continue to Dashboard'}
+            {!onboardingMutation.isPending && <ChevronRight size={20} />}
+          </button>
+        </div>
       </div>
     </div>
   );
