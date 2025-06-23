@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { EnhancedErrorBoundary } from "@/components/ErrorBoundary";
+import RouteErrorBoundary from "@/components/RouteErrorBoundary";
 import LandingPage from "@/pages/LandingPage";
 import Dashboard from "@/pages/Dashboard";
 import Encyclopedia from "@/pages/Encyclopedia";
@@ -31,36 +32,98 @@ function Router() {
     <Switch>
       <Route path="/">
         {() => {
-          if (!isAuthenticated) return <LandingPage />;
-          if (user && !(user as any).hasCompletedOnboarding) return <Onboarding />;
-          return <Dashboard />;
+          if (!isAuthenticated) {
+            return (
+              <RouteErrorBoundary routeName="Landing Page">
+                <LandingPage />
+              </RouteErrorBoundary>
+            );
+          }
+          if (user && !(user as any).hasCompletedOnboarding) {
+            return (
+              <RouteErrorBoundary routeName="Onboarding">
+                <Onboarding />
+              </RouteErrorBoundary>
+            );
+          }
+          return (
+            <RouteErrorBoundary routeName="Dashboard">
+              <Dashboard />
+            </RouteErrorBoundary>
+          );
         }}
       </Route>
       <Route path="/dashboard">
         {() => {
-          if (!isAuthenticated) return <LandingPage />;
-          return <Dashboard />;
+          if (!isAuthenticated) {
+            return (
+              <RouteErrorBoundary routeName="Landing Page">
+                <LandingPage />
+              </RouteErrorBoundary>
+            );
+          }
+          return (
+            <RouteErrorBoundary routeName="Dashboard">
+              <Dashboard />
+            </RouteErrorBoundary>
+          );
         }}
       </Route>
       <Route path="/encyclopedia">
         {() => {
-          if (!isAuthenticated) return <LandingPage />;
-          return <Encyclopedia />;
+          if (!isAuthenticated) {
+            return (
+              <RouteErrorBoundary routeName="Landing Page">
+                <LandingPage />
+              </RouteErrorBoundary>
+            );
+          }
+          return (
+            <RouteErrorBoundary routeName="Encyclopedia">
+              <Encyclopedia />
+            </RouteErrorBoundary>
+          );
         }}
       </Route>
       <Route path="/coach">
         {() => {
-          if (!isAuthenticated) return <LandingPage />;
-          return <ChatCoach />;
+          if (!isAuthenticated) {
+            return (
+              <RouteErrorBoundary routeName="Landing Page">
+                <LandingPage />
+              </RouteErrorBoundary>
+            );
+          }
+          return (
+            <RouteErrorBoundary routeName="AI Coach">
+              <ChatCoach />
+            </RouteErrorBoundary>
+          );
         }}
       </Route>
       <Route path="/onboarding">
         {() => {
-          if (!isAuthenticated) return <LandingPage />;
-          return <Onboarding />;
+          if (!isAuthenticated) {
+            return (
+              <RouteErrorBoundary routeName="Landing Page">
+                <LandingPage />
+              </RouteErrorBoundary>
+            );
+          }
+          return (
+            <RouteErrorBoundary routeName="Onboarding">
+              <Onboarding />
+            </RouteErrorBoundary>
+          );
         }}
       </Route>
-      <Route component={NotFound} />
+      <Route>
+        {() => (
+          <RouteErrorBoundary routeName="404 Page">
+            <NotFound />
+          </RouteErrorBoundary>
+        )}
+      </Route>
     </Switch>
   );
 }

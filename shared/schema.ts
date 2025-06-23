@@ -42,23 +42,25 @@ export const users = pgTable("users", {
 // Team members table
 export const teamMembers = pgTable("team_members", {
   id: varchar("id").primaryKey().notNull().$defaultFn(() => {
-    // Generate cryptographically secure UUID
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    // Always use Node.js crypto for server-side UUID generation
+    try {
+      const crypto = require('crypto');
       return crypto.randomUUID();
-    }
-    // Server-side fallback using Node.js crypto
-    if (typeof require !== 'undefined') {
+    } catch (e) {
+      // If crypto.randomUUID is not available, use crypto.randomBytes for secure generation
       try {
         const crypto = require('crypto');
-        return crypto.randomUUID();
-      } catch (e) {
-        // Final fallback - more secure than Math.random
-        const timestamp = Date.now().toString(36);
-        const randomPart = Math.random().toString(36).substring(2, 15);
-        return `tm_${timestamp}_${randomPart}`;
+        const bytes = crypto.randomBytes(16);
+        // Format as UUID v4
+        bytes[6] = (bytes[6] & 0x0f) | 0x40; // Version 4
+        bytes[8] = (bytes[8] & 0x3f) | 0x80; // Variant bits
+        const hex = bytes.toString('hex');
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+      } catch (cryptoError) {
+        // Absolute fallback - throw error rather than use weak generation
+        throw new Error('Cryptographically secure UUID generation is not available. Cannot create team member ID.');
       }
     }
-    return `tm_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
   }),
   managerId: varchar("manager_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   name: varchar("name").notNull(),
@@ -91,6 +93,9 @@ export const insertTeamMemberSchema = createInsertSchema(teamMembers).pick({
   managerId: true,
   name: true,
   strengths: true,
+}).extend({
+  // Ensure ID is optional since it will be generated securely
+  id: z.string().uuid().optional(),
 });
 
 export const updateTeamMemberSchema = createInsertSchema(teamMembers).pick({

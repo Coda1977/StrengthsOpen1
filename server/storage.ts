@@ -159,14 +159,26 @@ export class DatabaseStorage implements IStorage {
     
     while (attempt < maxRetries) {
       try {
+        // Generate secure UUID if not provided
+        const memberData = {
+          ...data,
+          id: data.id || this.generateSecureId()
+        };
+        
         const [member] = await db
           .insert(teamMembers)
-          .values(data)
+          .values(memberData)
           .returning();
         return member;
       } catch (error) {
         attempt++;
         console.error(`Error creating team member (attempt ${attempt}):`, error);
+        
+        // Handle duplicate ID errors by generating a new one
+        if (error.code === '23505' && error.constraint?.includes('pkey')) {
+          console.log('Duplicate ID detected, generating new one...');
+          continue;
+        }
         
         // Retry on connection errors
         if (error.code === '57P01' && attempt < maxRetries) {
@@ -178,6 +190,26 @@ export class DatabaseStorage implements IStorage {
       }
     }
     throw new Error('Failed to create team member after retries');
+  }
+
+  private generateSecureId(): string {
+    try {
+      const crypto = require('crypto');
+      return crypto.randomUUID();
+    } catch (e) {
+      // Fallback to secure random bytes if randomUUID not available
+      try {
+        const crypto = require('crypto');
+        const bytes = crypto.randomBytes(16);
+        // Format as UUID v4
+        bytes[6] = (bytes[6] & 0x0f) | 0x40; // Version 4
+        bytes[8] = (bytes[8] & 0x3f) | 0x80; // Variant bits
+        const hex = bytes.toString('hex');
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+      } catch (cryptoError) {
+        throw new Error('Cryptographically secure ID generation is not available');
+      }
+    }
   }
 
   async updateTeamMember(id: string, data: UpdateTeamMember): Promise<TeamMember | undefined> {

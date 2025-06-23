@@ -205,12 +205,29 @@ export function EnhancedErrorBoundary({ children }: { children: React.ReactNode 
         <ErrorBoundary fallback={({ error, retry }) => (
           <div className="min-h-screen bg-primary-bg flex items-center justify-center p-4">
             <Card className="w-full max-w-lg">
-              <CardContent className="pt-6 text-center space-y-4">
-                <AlertTriangle className="h-12 w-12 text-red-500 mx-auto" />
-                <h2 className="text-xl font-bold text-text-primary">Query Error</h2>
-                <p className="text-text-secondary">{error.message}</p>
-                <div className="flex gap-2 justify-center">
-                  <Button onClick={() => { reset(); retry(); }}>
+              <CardHeader className="text-center">
+                <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                <CardTitle className="text-xl font-bold text-text-primary">
+                  Application Error
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-4">
+                <p className="text-text-secondary">
+                  {error?.message?.includes('fetch') || error?.message?.includes('network') 
+                    ? 'Unable to connect to the server. Please check your internet connection.'
+                    : 'An unexpected error occurred. Please try again.'}
+                </p>
+                
+                {error && process.env.NODE_ENV === 'development' && (
+                  <details className="text-left text-sm bg-gray-100 dark:bg-gray-800 p-3 rounded">
+                    <summary className="cursor-pointer font-medium">Error Details</summary>
+                    <pre className="mt-2 whitespace-pre-wrap text-xs">{error.message}</pre>
+                  </details>
+                )}
+                
+                <div className="flex gap-2 justify-center flex-wrap">
+                  <Button onClick={() => { reset(); retry(); }} className="flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4" />
                     Try Again
                   </Button>
                   <Button variant="outline" onClick={() => window.location.reload()}>
