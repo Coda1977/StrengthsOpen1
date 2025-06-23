@@ -533,6 +533,8 @@
 .bar-fill.influencing { background: var(--influencing); }
 .bar-fill.relationship { background: var(--relationship); }
 .bar-fill.strategic { background: var(--strategic); }
+.bar-fill.strategic-thinking { background: var(--strategic); }
+.bar-fill.relationship-building { background: var(--relationship); }
 
 /* Encyclopedia Styles */
 .encyclopedia-container {

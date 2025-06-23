@@ -1,46 +1,200 @@
-import { useState } from "react";
-import Navigation from "@/components/Navigation";
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/useAuth';
+import Navigation from '../components/Navigation';
+
+const strengthsDomain: { [key: string]: string } = {
+  'Achiever': 'Executing', 'Activator': 'Influencing', 'Adaptability': 'Relationship Building', 'Analytical': 'Strategic Thinking', 'Arranger': 'Executing',
+  'Belief': 'Executing', 'Command': 'Influencing', 'Communication': 'Influencing', 'Competition': 'Influencing', 'Connectedness': 'Relationship Building',
+  'Consistency': 'Executing', 'Context': 'Strategic Thinking', 'Deliberative': 'Executing', 'Developer': 'Relationship Building', 'Discipline': 'Executing',
+  'Empathy': 'Relationship Building', 'Focus': 'Executing', 'Futuristic': 'Strategic Thinking', 'Harmony': 'Relationship Building', 'Ideation': 'Strategic Thinking',
+  'Includer': 'Relationship Building', 'Individualization': 'Relationship Building', 'Input': 'Strategic Thinking', 'Intellection': 'Strategic Thinking', 'Learner': 'Strategic Thinking',
+  'Maximizer': 'Influencing', 'Positivity': 'Relationship Building', 'Relator': 'Relationship Building', 'Responsibility': 'Executing', 'Restorative': 'Executing',
+  'Self-Assurance': 'Influencing', 'Significance': 'Influencing', 'Strategic': 'Strategic Thinking', 'Woo': 'Influencing'
+};
+
+const allStrengths = [
+  'Achiever', 'Activator', 'Adaptability', 'Analytical', 'Arranger',
+  'Belief', 'Command', 'Communication', 'Competition', 'Connectedness',
+  'Consistency', 'Context', 'Deliberative', 'Developer', 'Discipline',
+  'Empathy', 'Focus', 'Futuristic', 'Harmony', 'Ideation',
+  'Includer', 'Individualization', 'Input', 'Intellection', 'Learner',
+  'Maximizer', 'Positivity', 'Relator', 'Responsibility', 'Restorative',
+  'Self-Assurance', 'Significance', 'Strategic', 'Woo'
+];
+
+interface TeamMember {
+  id: string;
+  name: string;
+  strengths: string[];
+}
 
 const Dashboard = () => {
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [refreshCount, setRefreshCount] = useState(3);
-  
-  // Mock data matching the HTML exactly
-  const managerStrengths = ['Strategic', 'Achiever', 'Learner', 'Responsibility', 'Analytical'];
-  const teamMembers = [
-    { id: 1, name: 'John Doe', initials: 'JD', strengths: ['Communication', 'Empathy', 'Developer'] },
-    { id: 2, name: 'Sarah Smith', initials: 'SS', strengths: ['Focus', 'Competition'] }
-  ];
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [memberName, setMemberName] = useState('');
+  const [selectedStrengths, setSelectedStrengths] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const teamInsight = "Your team excels in Executing and Relationship Building domains, creating a powerful combination of getting things done while maintaining strong connections. Consider organizing team challenges that leverage both - like collaborative sprints where pairs work together on time-bound projects. This could amplify your collective productivity while strengthening bonds.";
+  // Fetch team members
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ['/api/team-members'],
+  });
 
-  const collaborationInsights: Record<string, string> = {
-    "You,John Doe": "Your Strategic thinking combined with John's Communication strength creates a powerful dynamic for vision setting and stakeholder engagement. You can craft the direction while John translates it into compelling narratives that inspire action.",
-    "You,Sarah Smith": "Your Learner theme pairs beautifully with Sarah's Focus - you bring curiosity and new insights while she ensures sustained attention to priorities. This creates an excellent research and execution partnership.",
-    "John Doe,Sarah Smith": "John's Developer strength and Sarah's Competition create an interesting dynamic - John focuses on growing others while Sarah drives performance standards. Together they can create a culture of supportive excellence."
+  const createMemberMutation = useMutation({
+    mutationFn: async (data: { name: string; strengths: string[] }) => {
+      return await apiRequest('POST', '/api/team-members', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
+      resetModal();
+    },
+  });
+
+  const updateMemberMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { name: string; strengths: string[] } }) => {
+      return await apiRequest('PUT', `/api/team-members/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
+      resetModal();
+    },
+  });
+
+  const deleteMemberMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest('DELETE', `/api/team-members/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
+    },
+  });
+
+  const resetModal = () => {
+    setShowAddModal(false);
+    setEditingMember(null);
+    setMemberName('');
+    setSelectedStrengths([]);
+    setSearchTerm('');
   };
 
-  const handleMemberSelection = (memberName: string) => {
-    setSelectedMembers(prev => {
-      if (prev.includes(memberName)) {
-        return prev.filter(name => name !== memberName);
-      } else if (prev.length < 2) {
-        return [...prev, memberName];
+  const openAddModal = () => {
+    resetModal();
+    setShowAddModal(true);
+  };
+
+  const openEditModal = (member: TeamMember) => {
+    setEditingMember(member);
+    setMemberName(member.name);
+    setSelectedStrengths(member.strengths);
+    setShowAddModal(true);
+  };
+
+  const handleSaveMember = () => {
+    if (memberName.trim() && selectedStrengths.length > 0) {
+      const data = { name: memberName.trim(), strengths: selectedStrengths };
+      
+      if (editingMember) {
+        updateMemberMutation.mutate({ id: editingMember.id, data });
       } else {
-        return [prev[1], memberName];
+        createMemberMutation.mutate(data);
+      }
+    }
+  };
+
+  const handleDeleteMember = (id: string) => {
+    if (confirm('Are you sure you want to delete this team member?')) {
+      deleteMemberMutation.mutate(id);
+    }
+  };
+
+  const handleStrengthToggle = (strength: string) => {
+    if (selectedStrengths.includes(strength)) {
+      setSelectedStrengths(selectedStrengths.filter(s => s !== strength));
+    } else if (selectedStrengths.length < 5) {
+      setSelectedStrengths([...selectedStrengths, strength]);
+    }
+  };
+
+  const filteredStrengths = allStrengths.filter(strength =>
+    strength.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Calculate domain distribution
+  const calculateDomainDistribution = () => {
+    const allTeamStrengths = [
+      ...(user?.topStrengths || []),
+      ...teamMembers.flatMap((member: TeamMember) => member.strengths || [])
+    ];
+
+    const domainCounts = {
+      'Executing': 0,
+      'Influencing': 0,
+      'Relationship Building': 0,
+      'Strategic Thinking': 0
+    };
+
+    allTeamStrengths.forEach((strength: string) => {
+      const domain = strengthsDomain[strength];
+      if (domain) {
+        domainCounts[domain as keyof typeof domainCounts]++;
       }
     });
+
+    const total = Object.values(domainCounts).reduce((sum, count) => sum + count, 0);
+    
+    return Object.entries(domainCounts).map(([domain, count]) => ({
+      domain,
+      count,
+      percentage: total > 0 ? Math.round((count / total) * 100) : 0
+    }));
+  };
+
+  const domainDistribution = calculateDomainDistribution();
+
+  // Sample team insights
+  const teamInsights = [
+    "Your team shows strong execution capabilities. Consider leveraging this for project delivery.",
+    "The team has balanced relationship building which creates a collaborative environment.",
+    "Your team has good leadership potential that can be developed further."
+  ];
+
+  const [teamInsight, setTeamInsight] = useState(teamInsights[0]);
+
+  const collaborationInsights: { [key: string]: string } = {
+    'You & John Doe': 'Your Analytical strength complements John\'s Communication abilities, creating a powerful combination for presenting data-driven insights.',
+    'You & Sarah Smith': 'Your Strategic thinking pairs well with Sarah\'s Activator strength, enabling rapid execution of well-planned initiatives.',
+    'John Doe & Sarah Smith': 'John\'s Developer strength and Sarah\'s Competition drive create a dynamic for building and improving team capabilities.'
+  };
+
+  const getCollaborationKey = () => {
+    if (selectedMembers.length === 2) {
+      return selectedMembers.sort().join(' & ');
+    }
+    return '';
   };
 
   const handleRefreshInsight = () => {
     if (refreshCount > 0) {
-      setRefreshCount(prev => prev - 1);
-      // In a real app, this would generate a new insight
+      const randomInsight = teamInsights[Math.floor(Math.random() * teamInsights.length)];
+      setTeamInsight(randomInsight);
+      setRefreshCount(refreshCount - 1);
     }
   };
 
-  const getCollaborationKey = () => {
-    return selectedMembers.sort().join(',');
+  const handleMemberSelection = (memberName: string) => {
+    if (selectedMembers.includes(memberName)) {
+      setSelectedMembers(selectedMembers.filter(name => name !== memberName));
+    } else if (selectedMembers.length < 2) {
+      setSelectedMembers([...selectedMembers, memberName]);
+    } else {
+      setSelectedMembers([selectedMembers[1], memberName]);
+    }
   };
 
   return (
@@ -68,7 +222,7 @@ const Dashboard = () => {
           <div className="card">
             <h2 className="card-title">Team Synergy</h2>
             <div className="team-grid">
-              {teamMembers.map((member: any) => (
+              {teamMembers.map((member: TeamMember) => (
                 <div key={member.id} className="team-member-card">
                   <button className="delete-btn" onClick={() => handleDeleteMember(member.id)}>×</button>
                   <div className="member-header" onClick={() => openEditModal(member)}>
@@ -141,7 +295,7 @@ const Dashboard = () => {
                 >
                   You
                 </button>
-                {teamMembers.map((member: any) => (
+                {teamMembers.map((member: TeamMember) => (
                   <button 
                     key={member.id}
                     className={`member-btn ${selectedMembers.includes(member.name) ? 'selected' : ''}`}
