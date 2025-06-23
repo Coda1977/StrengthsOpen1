@@ -41,7 +41,13 @@ export const users = pgTable("users", {
 
 // Team members table
 export const teamMembers = pgTable("team_members", {
-  id: varchar("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => {
+    // Generate UUID using crypto.randomUUID if available, fallback to timestamp-based ID
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return `tm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }),
   managerId: varchar("manager_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   name: varchar("name").notNull(),
   strengths: jsonb("strengths").$type<string[]>().notNull(),

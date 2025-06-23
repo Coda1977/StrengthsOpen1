@@ -42,7 +42,7 @@ const Dashboard = () => {
   const queryClient = useQueryClient();
 
   // Fetch team members
-  const { data: teamMembers = [] } = useQuery({
+  const { data: teamMembers = [], isLoading: teamMembersLoading, error: teamMembersError } = useQuery({
     queryKey: ['/api/team-members'],
   });
 
@@ -221,6 +221,25 @@ const Dashboard = () => {
           {/* Team Synergy Section */}
           <div className="card">
             <h2 className="card-title">Team Synergy</h2>
+            {teamMembersLoading ? (
+              <div style={{ textAlign: 'center', padding: '2rem' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  border: '3px solid #f3f3f3',
+                  borderTop: '3px solid #003566',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  margin: '0 auto 1rem'
+                }}></div>
+                <p>Loading team members...</p>
+              </div>
+            ) : teamMembersError ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: '#DC2626' }}>
+                <p>Error loading team members. Please try again.</p>
+              </div>
+            ) : (
+              <>
             <div className="team-grid">
               {teamMembers.map((member: TeamMember) => (
                 <div key={member.id} className="team-member-card">
@@ -262,6 +281,8 @@ const Dashboard = () => {
                 </div>
               ))}
             </div>
+              </>
+            )}
           </div>
 
           {/* Insights Section */}

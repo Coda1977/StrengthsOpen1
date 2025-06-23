@@ -51,24 +51,44 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserOnboarding(id: string, data: UpdateUserOnboarding): Promise<User | undefined> {
-    const updateData: any = {
-      updatedAt: new Date(),
-    };
-    
-    if (data.hasCompletedOnboarding !== undefined) {
-      updateData.hasCompletedOnboarding = data.hasCompletedOnboarding;
-    }
-    
-    if (data.topStrengths) {
-      updateData.topStrengths = JSON.stringify(data.topStrengths);
-    }
-
     const [user] = await db
       .update(users)
-      .set(updateData)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+
+  // Team member operations
+  async getTeamMembers(managerId: string): Promise<TeamMember[]> {
+    return await db.select().from(teamMembers).where(eq(teamMembers.managerId, managerId));
+  }
+
+  async createTeamMember(data: InsertTeamMember): Promise<TeamMember> {
+    const [member] = await db
+      .insert(teamMembers)
+      .values(data)
+      .returning();
+    return member;
+  }
+
+  async updateTeamMember(id: string, data: UpdateTeamMember): Promise<TeamMember | undefined> {
+    const [member] = await db
+      .update(teamMembers)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(teamMembers.id, id))
+      .returning();
+    return member;
+  }
+
+  async deleteTeamMember(id: string): Promise<void> {
+    await db.delete(teamMembers).where(eq(teamMembers.id, id));
   }
 }
 
