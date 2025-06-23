@@ -1,28 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
+import { useTeamAnalytics, useChartData, useOptimizedQuery, useFilteredData, useDebouncedCallback, STRENGTHS_DOMAIN_MAP, ALL_STRENGTHS } from '@/hooks/usePerformanceOptimized';
+import { TeamMemberCard, StrengthSelector, DomainChart, TopStrengthsList } from '@/components/MemoizedComponents';
 import Navigation from '../components/Navigation';
-
-const strengthsDomain: { [key: string]: string } = {
-  'Achiever': 'Executing', 'Activator': 'Influencing', 'Adaptability': 'Relationship Building', 'Analytical': 'Strategic Thinking', 'Arranger': 'Executing',
-  'Belief': 'Executing', 'Command': 'Influencing', 'Communication': 'Influencing', 'Competition': 'Influencing', 'Connectedness': 'Relationship Building',
-  'Consistency': 'Executing', 'Context': 'Strategic Thinking', 'Deliberative': 'Executing', 'Developer': 'Relationship Building', 'Discipline': 'Executing',
-  'Empathy': 'Relationship Building', 'Focus': 'Executing', 'Futuristic': 'Strategic Thinking', 'Harmony': 'Relationship Building', 'Ideation': 'Strategic Thinking',
-  'Includer': 'Relationship Building', 'Individualization': 'Relationship Building', 'Input': 'Strategic Thinking', 'Intellection': 'Strategic Thinking', 'Learner': 'Strategic Thinking',
-  'Maximizer': 'Influencing', 'Positivity': 'Relationship Building', 'Relator': 'Relationship Building', 'Responsibility': 'Executing', 'Restorative': 'Executing',
-  'Self-Assurance': 'Influencing', 'Significance': 'Influencing', 'Strategic': 'Strategic Thinking', 'Woo': 'Influencing'
-};
-
-const allStrengths = [
-  'Achiever', 'Activator', 'Adaptability', 'Analytical', 'Arranger',
-  'Belief', 'Command', 'Communication', 'Competition', 'Connectedness',
-  'Consistency', 'Context', 'Deliberative', 'Developer', 'Discipline',
-  'Empathy', 'Focus', 'Futuristic', 'Harmony', 'Ideation',
-  'Includer', 'Individualization', 'Input', 'Intellection', 'Learner',
-  'Maximizer', 'Positivity', 'Relator', 'Responsibility', 'Restorative',
-  'Self-Assurance', 'Significance', 'Strategic', 'Woo'
-];
 
 interface TeamMember {
   id: string;
@@ -41,50 +23,53 @@ const Dashboard = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch team members
-  const { data: teamMembers = [], isLoading: teamMembersLoading, error: teamMembersError } = useQuery({
-    queryKey: ['/api/team-members'],
-  });
+  // Optimized team members query with proper caching
+  const { data: teamMembers = [], isLoading: teamMembersLoading, error: teamMembersError } = useOptimizedQuery<TeamMember[]>(
+    ['/api/team-members'],
+    true, // enabled
+    5 * 60 * 1000 // 5 minutes stale time
+  );
 
+  // Memoized mutation to prevent recreation on every render
   const createMemberMutation = useMutation({
-    mutationFn: async (data: { name: string; strengths: string[] }) => {
+    mutationFn: useCallback(async (data: { name: string; strengths: string[] }) => {
       return await apiRequest('POST', '/api/team-members', data);
-    },
-    onSuccess: () => {
+    }, []),
+    onSuccess: useCallback(() => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
       resetModal();
-    },
-    onError: (error) => {
+    }, [queryClient]),
+    onError: useCallback((error) => {
       console.error('Failed to create team member:', error);
       alert('Failed to add team member. Please try again.');
-    },
+    }, []),
   });
 
   const updateMemberMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { name: string; strengths: string[] } }) => {
+    mutationFn: useCallback(async ({ id, data }: { id: string; data: { name: string; strengths: string[] } }) => {
       return await apiRequest('PUT', `/api/team-members/${id}`, data);
-    },
-    onSuccess: () => {
+    }, []),
+    onSuccess: useCallback(() => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
       resetModal();
-    },
-    onError: (error) => {
+    }, [queryClient]),
+    onError: useCallback((error) => {
       console.error('Failed to update team member:', error);
       alert('Failed to update team member. Please try again.');
-    },
+    }, []),
   });
 
   const deleteMemberMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: useCallback(async (id: string) => {
       return await apiRequest('DELETE', `/api/team-members/${id}`);
-    },
-    onSuccess: () => {
+    }, []),
+    onSuccess: useCallback(() => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
-    },
-    onError: (error) => {
+    }, [queryClient]),
+    onError: useCallback((error) => {
       console.error('Failed to delete team member:', error);
       alert('Failed to delete team member. Please try again.');
-    },
+    }, []),
   });
 
   const uploadMutation = useMutation({
@@ -167,8 +152,19 @@ const Dashboard = () => {
     }
   };
 
-  const filteredStrengths = allStrengths.filter(strength =>
-    strength.toLowerCase().includes(searchTerm.toLowerCase())
+  // Use optimized performance hooks
+  const teamAnalytics = useTeamAnalytics(teamMembers);
+  const chartData = useChartData(teamMembers);
+  
+  // Memoized filtered strengths with debounced search
+  const debouncedSearch = useDebouncedCallback((term: string) => {
+    setSearchTerm(term);
+  }, 300);
+  
+  const filteredStrengths = useFilteredData(
+    ALL_STRENGTHS,
+    searchTerm,
+    (strength, search) => strength.toLowerCase().includes(search)
   );
 
   // Calculate domain distribution
