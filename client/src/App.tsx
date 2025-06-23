@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
-import ErrorBoundary from "@/components/ErrorBoundary";
+import { EnhancedErrorBoundary } from "@/components/ErrorBoundary";
 import LandingPage from "@/pages/LandingPage";
 import Dashboard from "@/pages/Dashboard";
 import Encyclopedia from "@/pages/Encyclopedia";
@@ -50,9 +50,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <ErrorBoundary>
+        <EnhancedErrorBoundary>
           <Router />
-        </ErrorBoundary>
+        </EnhancedErrorBoundary>
       </TooltipProvider>
     </QueryClientProvider>
   );
