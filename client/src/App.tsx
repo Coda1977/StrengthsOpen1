@@ -47,14 +47,14 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <EnhancedErrorBoundary>
+    <EnhancedErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
           <Router />
-        </EnhancedErrorBoundary>
-      </TooltipProvider>
-    </QueryClientProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </EnhancedErrorBoundary>
   );
 }
 
