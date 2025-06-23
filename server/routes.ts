@@ -59,27 +59,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // File upload middleware
+  // Enhanced file upload middleware with security measures
   const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    limits: { 
+      fileSize: 5 * 1024 * 1024, // Reduced to 5MB for security
+      files: 1, // Only allow single file upload
+      fields: 10, // Limit form fields
+    },
     fileFilter: (req, file, cb) => {
-      const allowedTypes = [
+      // Strict file type validation
+      const allowedMimeTypes = [
         'text/csv',
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/msword',
         'image/png',
-        'image/jpeg',
-        'image/jpg'
+        'image/jpeg'
       ];
-      if (allowedTypes.includes(file.mimetype)) {
-        cb(null, true);
-      } else {
-        cb(new Error('Unsupported file type'), false);
+      
+      // Check MIME type
+      if (!allowedMimeTypes.includes(file.mimetype)) {
+        return cb(new Error('File type not allowed. Only CSV, Excel, Word, PNG, and JPEG files are supported.'), false);
       }
+      
+      // Validate file extension matches MIME type
+      const fileExtension = file.originalname.toLowerCase().split('.').pop();
+      const mimeToExtension = {
+        'text/csv': ['csv'],
+        'application/vnd.ms-excel': ['xls'],
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['xlsx'],
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['docx'],
+        'image/png': ['png'],
+        'image/jpeg': ['jpg', 'jpeg']
+      };
+      
+      const allowedExtensions = mimeToExtension[file.mimetype] || [];
+      if (!allowedExtensions.includes(fileExtension)) {
+        return cb(new Error('File extension does not match file type'), false);
+      }
+      
+      // Validate filename for security
+      if (!/^[a-zA-Z0-9._-]+$/.test(file.originalname)) {
+        return cb(new Error('Invalid filename. Only alphanumeric characters, dots, hyphens, and underscores are allowed.'), false);
+      }
+      
+      cb(null, true);
     }
   });
 

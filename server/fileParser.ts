@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import * as mammoth from 'mammoth';
 import { createWorker } from 'tesseract.js';
 import OpenAI from 'openai';
+import { scanFileBuffer, validateFileIntegrity, sanitizeFilename, generateFileHash } from './fileSecurityScanner';
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -86,6 +87,28 @@ Rules:
 }
 
 export async function parseTeamMembersFile(buffer: Buffer, mimetype: string, filename: string): Promise<TeamMemberData[]> {
+  // Security validation first
+  const sanitizedFilename = sanitizeFilename(filename);
+  const fileHash = generateFileHash(buffer);
+  
+  console.log(`Processing file: ${sanitizedFilename} (hash: ${fileHash})`);
+  
+  // Scan for malicious content
+  const scanResult = scanFileBuffer(buffer, sanitizedFilename);
+  if (!scanResult.isSecure) {
+    throw new Error(`Security threat detected: ${scanResult.threats.join(', ')}`);
+  }
+  
+  // Log warnings but continue processing
+  if (scanResult.warnings.length > 0) {
+    console.warn(`File security warnings for ${sanitizedFilename}:`, scanResult.warnings);
+  }
+  
+  // Validate file integrity
+  if (!validateFileIntegrity(buffer, mimetype)) {
+    throw new Error('File integrity validation failed. File content does not match expected format.');
+  }
+  
   let extractedText = '';
 
   try {
@@ -93,12 +116,40 @@ export async function parseTeamMembersFile(buffer: Buffer, mimetype: string, fil
       case 'text/csv':
       case 'application/vnd.ms-excel':
       case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-        // Parse Excel/CSV files
-        const workbook = XLSX.read(buffer, { type: 'buffer' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const csvData = XLSX.utils.sheet_to_csv(worksheet);
-        extractedText = csvData;
+        // Parse Excel/CSV files with security measures
+        try {
+          const workbook = XLSX.read(buffer, { 
+            type: 'buffer',
+            cellFormula: false, // Disable formula parsing for security
+            cellHTML: false,    // Disable HTML parsing
+            cellNF: false,      // Disable number format parsing
+            cellDates: false,   // Disable date parsing to prevent injection
+            sheetStubs: false,  // Don't create stub cells
+          });
+          
+          if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+            throw new Error('No valid sheets found in file');
+          }
+          
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          
+          // Convert to CSV with security sanitization
+          const csvData = XLSX.utils.sheet_to_csv(worksheet, {
+            forceQuotes: false,
+            blankrows: false,
+          });
+          
+          // Sanitize CSV data to prevent injection attacks
+          extractedText = csvData
+            .replace(/^[=@+\-]/gm, '') // Remove formula prefixes
+            .replace(/\x00/g, '') // Remove null bytes
+            .substring(0, 50000); // Limit text size
+          
+        } catch (xlsxError) {
+          console.error('Excel/CSV parsing error:', xlsxError);
+          throw new Error('Failed to parse spreadsheet file. Please ensure it\'s a valid Excel or CSV file.');
+        }
         break;
 
       case 'application/pdf':
@@ -115,15 +166,36 @@ export async function parseTeamMembersFile(buffer: Buffer, mimetype: string, fil
       case 'image/png':
       case 'image/jpeg':
       case 'image/jpg':
-        // OCR for images with better error handling
+        // OCR for images with enhanced security and error handling
         let imageWorker;
         try {
+          // Additional image security checks
+          if (buffer.length < 100) {
+            throw new Error('Image file too small to be valid');
+          }
+          
+          // Check for suspicious embedded content
+          const imageString = buffer.toString('binary');
+          if (imageString.includes('<script') || imageString.includes('javascript:')) {
+            throw new Error('Potentially malicious content detected in image');
+          }
+          
           imageWorker = await createWorker('eng');
+          
+          // Set security-focused OCR options
+          await imageWorker.setParameters({
+            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,;:!?()-[]{}"\'/\\|@#$%^&*+=_~`',
+          });
+          
           const imageResult = await imageWorker.recognize(buffer);
           extractedText = imageResult.data.text;
+          
+          // Sanitize OCR output
+          extractedText = extractedText.replace(/[^\x20-\x7E\r\n]/g, ''); // Remove non-printable chars
+          
         } catch (ocrError) {
           console.error('OCR processing failed:', ocrError);
-          throw new Error('Image text recognition failed. Please ensure the image contains clear, readable text.');
+          throw new Error('Image text recognition failed. Please ensure the image contains clear, readable text and no embedded scripts.');
         } finally {
           if (imageWorker) {
             try {
