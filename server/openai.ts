@@ -88,20 +88,20 @@ export async function generateCollaborationInsight(member1: string, member2: str
 ${member1}: ${member1Strengths.join(', ')}
 ${member2}: ${member2Strengths.join(', ')}
 
-Provide a clear, actionable collaboration insight in exactly this format:
+Provide a concise collaboration insight with these 3 sections:
 
-COMPLEMENTARY STRENGTHS:
-Write 2-3 sentences about how their specific strengths work together.
+STRENGTHS SYNERGY:
+One sentence on how their strengths complement each other.
 
-COLLABORATION STRATEGIES:
-1. [Specific strategy #1 - one clear sentence]
-2. [Specific strategy #2 - one clear sentence] 
-3. [Specific strategy #3 - one clear sentence]
+TOP 3 STRATEGIES:
+1. One specific action they can take together
+2. One communication approach that works for both
+3. One way to leverage their combined strengths
 
-UNIQUE VALUE:
-Write 1-2 sentences about what makes this partnership special.
+PARTNERSHIP ADVANTAGE:
+One sentence on their unique collaborative value.
 
-Keep each section concise and immediately actionable. No markdown formatting. Use plain text only.`;
+Keep each point to one sentence maximum. No markdown. Total response under 150 words.`;
 
   try {
     const response = await openai.chat.completions.create({
@@ -116,11 +116,21 @@ Keep each section concise and immediately actionable. No markdown formatting. Us
           content: prompt
         }
       ],
-      max_tokens: 250,
-      temperature: 0.7
+      max_tokens: 200,
+      temperature: 0.5
     });
 
-    return response.choices[0].message.content || "Unable to generate collaboration insight at this time.";
+    const content = response.choices[0].message.content || "Unable to generate collaboration insight at this time.";
+    
+    // Ensure response ends properly - if it doesn't end with punctuation, truncate to last complete sentence
+    if (content.length > 50 && !content.match(/[.!?]\s*$/)) {
+      const lastSentenceMatch = content.match(/^(.*[.!?])\s*/);
+      if (lastSentenceMatch) {
+        return lastSentenceMatch[1];
+      }
+    }
+    
+    return content;
   } catch (error) {
     console.error("Error generating collaboration insight:", error);
     throw new Error("Failed to generate collaboration insight");

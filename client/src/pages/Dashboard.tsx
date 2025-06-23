@@ -214,7 +214,23 @@ const Dashboard = () => {
       return await response.json();
     },
     onSuccess: (data: any) => {
-      const insight = data?.insight || 'No insight generated';
+      let insight = data?.insight || 'No insight generated';
+      
+      // Check if response appears truncated (ends mid-sentence)
+      if (typeof insight === 'string' && insight.length > 50) {
+        // If it doesn't end with proper punctuation, try to complete the thought
+        if (!insight.match(/[.!?]\s*$/)) {
+          // Find the last complete sentence
+          const lastSentenceMatch = insight.match(/^(.*[.!?])\s*/);
+          if (lastSentenceMatch) {
+            insight = lastSentenceMatch[1];
+          } else {
+            // If no complete sentences, add ellipsis
+            insight = insight.trim() + '...';
+          }
+        }
+      }
+      
       const cleanInsight = typeof insight === 'string' 
         ? insight
             .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
