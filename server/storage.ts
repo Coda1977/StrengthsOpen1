@@ -1,8 +1,12 @@
 import {
   users,
+  teamMembers,
   type User,
   type UpsertUser,
   type UpdateUserOnboarding,
+  type TeamMember,
+  type InsertTeamMember,
+  type UpdateTeamMember,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -14,6 +18,12 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserOnboarding(id: string, data: UpdateUserOnboarding): Promise<User | undefined>;
+  
+  // Team member operations
+  getTeamMembers(managerId: string): Promise<TeamMember[]>;
+  createTeamMember(data: InsertTeamMember): Promise<TeamMember>;
+  updateTeamMember(id: string, data: UpdateTeamMember): Promise<TeamMember | undefined>;
+  deleteTeamMember(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {

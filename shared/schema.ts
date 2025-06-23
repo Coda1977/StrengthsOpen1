@@ -39,6 +39,16 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Team members table
+export const teamMembers = pgTable("team_members", {
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  managerId: varchar("manager_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(),
+  strengths: jsonb("strengths").$type<string[]>().notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   firstName: true,
@@ -59,7 +69,21 @@ export const updateUserOnboardingSchema = createInsertSchema(users).pick({
   topStrengths: true,
 });
 
+export const insertTeamMemberSchema = createInsertSchema(teamMembers).pick({
+  managerId: true,
+  name: true,
+  strengths: true,
+});
+
+export const updateTeamMemberSchema = createInsertSchema(teamMembers).pick({
+  name: true,
+  strengths: true,
+});
+
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpdateUserOnboarding = z.infer<typeof updateUserOnboardingSchema>;
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
+export type UpdateTeamMember = z.infer<typeof updateTeamMemberSchema>;

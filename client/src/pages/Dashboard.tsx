@@ -49,15 +49,13 @@ const Dashboard = () => {
       <div className="app-content">
         <div className="dashboard-container">
           <div className="dashboard-header">
-            <h1>Team Strengths Dashboard</h1>
-            <p>Empower your team through strengths-based leadership</p>
           </div>
 
           {/* Manager Strengths Card */}
           <div className="card">
             <h2 className="card-title">My Top 5 Strengths</h2>
             <div className="strengths-list">
-              {managerStrengths.map((strength, index) => (
+              {(user?.topStrengths || []).map((strength, index) => (
                 <span key={index} className="strength-pill">
                   {strength}
                 </span>
@@ -70,15 +68,17 @@ const Dashboard = () => {
           <div className="card">
             <h2 className="card-title">Team Synergy</h2>
             <div className="team-grid">
-              {teamMembers.map((member) => (
+              {teamMembers.map((member: any) => (
                 <div key={member.id} className="team-member-card">
-                  <button className="delete-btn">×</button>
-                  <div className="member-header">
-                    <div className="member-initials">{member.initials}</div>
+                  <button className="delete-btn" onClick={() => handleDeleteMember(member.id)}>×</button>
+                  <div className="member-header" onClick={() => openEditModal(member)}>
+                    <div className="member-initials">
+                      {member.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                    </div>
                     <div className="member-name">{member.name}</div>
                   </div>
                   <div className="member-strengths">
-                    {member.strengths.map((strength, index) => (
+                    {(member.strengths || []).map((strength: string, index: number) => (
                       <span key={index} className="small-strength">
                         {strength}
                       </span>
@@ -86,49 +86,27 @@ const Dashboard = () => {
                   </div>
                 </div>
               ))}
-              <div className="team-member-card add-member-card">
+              <div className="team-member-card add-member-card" onClick={openAddModal}>
                 <span className="add-icon">+</span>
               </div>
             </div>
 
             <h3 style={{fontSize: '20px', fontWeight: 700, marginBottom: '1rem', marginTop: '2rem'}}>Domain Distribution</h3>
             <div className="domain-chart">
-              <div className="domain-bar">
-                <div className="domain-label">
-                  <span>Executing</span>
-                  <span>35%</span>
+              {domainDistribution.map(({ domain, percentage }) => (
+                <div key={domain} className="domain-bar">
+                  <div className="domain-label">
+                    <span>{domain}</span>
+                    <span>{percentage}%</span>
+                  </div>
+                  <div className="bar-container">
+                    <div 
+                      className={`bar-fill ${domain.toLowerCase().replace(' ', '-')}`} 
+                      style={{width: `${percentage}%`}}
+                    ></div>
+                  </div>
                 </div>
-                <div className="bar-container">
-                  <div className="bar-fill executing" style={{width: '35%'}}></div>
-                </div>
-              </div>
-              <div className="domain-bar">
-                <div className="domain-label">
-                  <span>Influencing</span>
-                  <span>25%</span>
-                </div>
-                <div className="bar-container">
-                  <div className="bar-fill influencing" style={{width: '25%'}}></div>
-                </div>
-              </div>
-              <div className="domain-bar">
-                <div className="domain-label">
-                  <span>Relationship Building</span>
-                  <span>30%</span>
-                </div>
-                <div className="bar-container">
-                  <div className="bar-fill relationship" style={{width: '30%'}}></div>
-                </div>
-              </div>
-              <div className="domain-bar">
-                <div className="domain-label">
-                  <span>Strategic Thinking</span>
-                  <span>10%</span>
-                </div>
-                <div className="bar-container">
-                  <div className="bar-fill strategic" style={{width: '10%'}}></div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
@@ -163,18 +141,15 @@ const Dashboard = () => {
                 >
                   You
                 </button>
-                <button 
-                  className={`member-btn ${selectedMembers.includes('John Doe') ? 'selected' : ''}`}
-                  onClick={() => handleMemberSelection('John Doe')}
-                >
-                  John Doe
-                </button>
-                <button 
-                  className={`member-btn ${selectedMembers.includes('Sarah Smith') ? 'selected' : ''}`}
-                  onClick={() => handleMemberSelection('Sarah Smith')}
-                >
-                  Sarah Smith
-                </button>
+                {teamMembers.map((member: any) => (
+                  <button 
+                    key={member.id}
+                    className={`member-btn ${selectedMembers.includes(member.name) ? 'selected' : ''}`}
+                    onClick={() => handleMemberSelection(member.name)}
+                  >
+                    {member.name}
+                  </button>
+                ))}
               </div>
               
               {selectedMembers.length === 2 && (
@@ -193,6 +168,180 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Add/Edit Member Modal */}
+      {showAddModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '20px',
+            padding: '2.5rem',
+            width: '90%',
+            maxWidth: '600px',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1A1A1A', margin: 0 }}>
+                {editingMember ? 'Edit Team Member' : 'Add Team Member'}
+              </h2>
+              <button
+                onClick={resetModal}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#9CA3AF'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Name Input */}
+            <div style={{ marginBottom: '2rem' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '16px',
+                fontWeight: '600',
+                color: '#1A1A1A',
+                marginBottom: '0.5rem'
+              }}>
+                Name
+              </label>
+              <input
+                type="text"
+                value={memberName}
+                onChange={(e) => setMemberName(e.target.value)}
+                placeholder="Enter team member's name"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  fontSize: '14px',
+                  border: '2px solid #E5E7EB',
+                  borderRadius: '8px',
+                  outline: 'none'
+                }}
+              />
+            </div>
+
+            {/* Strengths Selection */}
+            <div style={{ marginBottom: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <label style={{ fontSize: '16px', fontWeight: '600', color: '#1A1A1A' }}>
+                  Select Strengths (up to 5)
+                </label>
+                <span style={{
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: selectedStrengths.length === 5 ? '#059669' : '#4A4A4A',
+                  backgroundColor: selectedStrengths.length === 5 ? '#D1FAE5' : '#F3F4F6',
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: '12px'
+                }}>
+                  {selectedStrengths.length}/5
+                </span>
+              </div>
+
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search strengths..."
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  fontSize: '14px',
+                  border: '1px solid #D1D5DB',
+                  borderRadius: '6px',
+                  marginBottom: '1rem',
+                  outline: 'none'
+                }}
+              />
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                gap: '0.5rem',
+                maxHeight: '200px',
+                overflowY: 'auto',
+                padding: '0.5rem',
+                border: '1px solid #E5E7EB',
+                borderRadius: '6px'
+              }}>
+                {filteredStrengths.map((strength) => {
+                  const isSelected = selectedStrengths.includes(strength);
+                  const isDisabled = !isSelected && selectedStrengths.length >= 5;
+                  
+                  return (
+                    <button
+                      key={strength}
+                      onClick={() => !isDisabled && handleStrengthToggle(strength)}
+                      disabled={isDisabled}
+                      style={{
+                        padding: '0.5rem',
+                        border: isSelected ? '2px solid #003566' : '1px solid #E5E7EB',
+                        borderRadius: '6px',
+                        backgroundColor: isSelected ? '#003566' : '#FFFFFF',
+                        color: isSelected ? '#FFFFFF' : isDisabled ? '#9CA3AF' : '#1A1A1A',
+                        fontSize: '12px',
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                        opacity: isDisabled ? 0.5 : 1
+                      }}
+                    >
+                      {strength}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={resetModal}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  border: '1px solid #D1D5DB',
+                  borderRadius: '8px',
+                  backgroundColor: '#FFFFFF',
+                  color: '#4A4A4A',
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveMember}
+                disabled={!memberName.trim() || selectedStrengths.length === 0 || createMemberMutation.isPending || updateMemberMutation.isPending}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  border: 'none',
+                  borderRadius: '8px',
+                  backgroundColor: memberName.trim() && selectedStrengths.length > 0 ? '#1A1A1A' : '#9CA3AF',
+                  color: '#FFFFFF',
+                  fontSize: '14px',
+                  cursor: memberName.trim() && selectedStrengths.length > 0 ? 'pointer' : 'not-allowed'
+                }}
+              >
+                {(createMemberMutation.isPending || updateMemberMutation.isPending) ? 'Saving...' : editingMember ? 'Save Changes' : 'Add Member'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
