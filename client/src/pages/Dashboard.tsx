@@ -268,16 +268,14 @@ const Dashboard = () => {
       
       <div className="dashboard-container">
         <div className="dashboard-header">
-          <h1 className="dashboard-title">Team Dashboard</h1>
-          <p className="dashboard-subtitle">
-            Manage your team's strengths and generate insights
-          </p>
+          <h1>Team Dashboard</h1>
+          <p>Manage your team's strengths and generate insights</p>
         </div>
 
         <div className="dashboard-content">
           {/* Team Overview Section */}
           <div className="card">
-            <div className="card-header">
+            <div className="overview-header">
               <h2 className="card-title">Team Synergy</h2>
               <div className="overview-actions">
                 <input
@@ -341,7 +339,22 @@ const Dashboard = () => {
             </div>
 
             <h3 style={{fontSize: '20px', fontWeight: 700, marginBottom: '1rem', marginTop: '2rem'}}>Domain Distribution</h3>
-            <DomainChart data={domainPercentages} />
+            <div className="domain-chart">
+              {domainPercentages.map(({ domain, percentage }) => (
+                <div key={domain} className="domain-bar">
+                  <div className="domain-label">
+                    <span>{domain}</span>
+                    <span>{percentage}%</span>
+                  </div>
+                  <div className="bar-container">
+                    <div 
+                      className={`bar-fill ${domain.toLowerCase().replace(' ', '-')}`} 
+                      style={{width: `${percentage}%`}}
+                    ></div>
+                  </div>
+                </div>
+              ))}
+            </div>
               </>
             )}
           </div>
@@ -441,7 +454,40 @@ const Dashboard = () => {
                 <p>Loading strengths data...</p>
               </div>
             ) : (
-              <TopStrengthsList strengths={topStrengths || []} />
+              <div className="strengths-list">
+                {(topStrengths || []).slice(0, 5).map(({ strength, count }, index) => (
+                  <div key={strength} style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    padding: '0.75rem',
+                    backgroundColor: 'var(--bg-primary)',
+                    borderRadius: '12px',
+                    marginBottom: '0.5rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span style={{ 
+                        fontSize: '18px', 
+                        fontWeight: 'bold', 
+                        color: 'var(--accent-blue)',
+                        minWidth: '24px'
+                      }}>
+                        #{index + 1}
+                      </span>
+                      <span style={{ fontWeight: '600' }}>{strength}</span>
+                    </div>
+                    <span style={{ 
+                      fontSize: '14px', 
+                      color: 'var(--text-secondary)',
+                      backgroundColor: 'var(--white)',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '12px'
+                    }}>
+                      {count} {count === 1 ? 'person' : 'people'}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -463,19 +509,21 @@ const Dashboard = () => {
           padding: '1rem'
         }}>
           <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            padding: '2rem',
-            maxWidth: '500px',
+            backgroundColor: 'var(--white)',
+            borderRadius: 'var(--card-radius)',
+            padding: 'var(--modal-padding)',
+            maxWidth: 'var(--modal-width)',
             width: '100%',
             maxHeight: '80vh',
-            overflowY: 'auto'
+            overflowY: 'auto',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15)'
           }}>
             <h3 style={{ 
-              fontSize: '24px', 
+              fontSize: '28px', 
               fontWeight: 700, 
               marginBottom: '1.5rem',
-              color: '#1A1A1A'
+              color: 'var(--text-primary)',
+              letterSpacing: '-1px'
             }}>
               {editingMember ? 'Edit Team Member' : 'Add Team Member'}
             </h3>
@@ -483,9 +531,9 @@ const Dashboard = () => {
             <div style={{ marginBottom: '1.5rem' }}>
               <label style={{
                 display: 'block',
-                fontSize: '14px',
+                fontSize: '16px',
                 fontWeight: 600,
-                color: '#374151',
+                color: 'var(--text-primary)',
                 marginBottom: '0.5rem'
               }}>
                 Name
@@ -497,11 +545,20 @@ const Dashboard = () => {
                 placeholder="Enter team member name"
                 style={{
                   width: '100%',
-                  padding: '0.75rem',
+                  padding: 'var(--input-padding)',
                   fontSize: '16px',
-                  border: '1px solid #D1D5DB',
-                  borderRadius: '8px',
-                  outline: 'none'
+                  border: '2px solid var(--bg-primary)',
+                  borderRadius: 'var(--input-radius)',
+                  outline: 'none',
+                  transition: 'all 0.3s ease'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = 'var(--accent-blue)';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(0, 53, 102, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'var(--bg-primary)';
+                  e.target.style.boxShadow = 'none';
                 }}
               />
             </div>
@@ -509,9 +566,9 @@ const Dashboard = () => {
             <div style={{ marginBottom: '1.5rem' }}>
               <label style={{
                 display: 'block',
-                fontSize: '14px',
+                fontSize: '16px',
                 fontWeight: 600,
-                color: '#374151',
+                color: 'var(--text-primary)',
                 marginBottom: '0.5rem'
               }}>
                 Strengths (select up to 5)
@@ -522,14 +579,9 @@ const Dashboard = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search strengths..."
+                className="search-input"
                 style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  fontSize: '14px',
-                  border: '1px solid #D1D5DB',
-                  borderRadius: '6px',
-                  marginBottom: '1rem',
-                  outline: 'none'
+                  marginBottom: '1rem'
                 }}
               />
 
