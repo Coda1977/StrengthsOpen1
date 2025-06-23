@@ -169,14 +169,7 @@ const Dashboard = () => {
 
   const domainDistribution = calculateDomainDistribution();
 
-  // Sample team insights
-  const teamInsights = [
-    "Your team shows strong execution capabilities. Consider leveraging this for project delivery.",
-    "The team has balanced relationship building which creates a collaborative environment.",
-    "Your team has good leadership potential that can be developed further."
-  ];
-
-  const [teamInsight, setTeamInsight] = useState(teamInsights[0]);
+  const [teamInsight, setTeamInsight] = useState("Click 'Refresh' to generate your team insight based on your actual strengths data.");
 
   const [collaborationInsight, setCollaborationInsight] = useState<string>('');
   const [loadingCollaboration, setLoadingCollaboration] = useState(false);
@@ -186,7 +179,12 @@ const Dashboard = () => {
       return await apiRequest('POST', '/api/generate-collaboration-insight', { member1, member2 });
     },
     onSuccess: (response: any) => {
-      setCollaborationInsight(response.insight);
+      // Clean up markdown formatting from AI response
+      const cleanInsight = response.insight
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
+        .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
+        .trim();
+      setCollaborationInsight(cleanInsight);
       setLoadingCollaboration(false);
     },
     onError: (error) => {
@@ -213,7 +211,12 @@ const Dashboard = () => {
       return await apiRequest('POST', '/api/generate-team-insight');
     },
     onSuccess: (response: any) => {
-      setTeamInsight(response.insight);
+      // Clean up markdown formatting from AI response
+      const cleanInsight = response.insight
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
+        .replace(/\*(.*?)\*/g, '$1')     // Remove italic markdown
+        .trim();
+      setTeamInsight(cleanInsight);
       setRefreshCount(refreshCount - 1);
     },
     onError: (error) => {
