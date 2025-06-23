@@ -31,13 +31,32 @@ export class DatabaseStorage implements IStorage {
   // (IMPORTANT) these user operations are mandatory for Replit Auth.
 
   async getUser(id: string): Promise<User | undefined> {
-    try {
-      const [user] = await db.select().from(users).where(eq(users.id, id));
-      return user;
-    } catch (error) {
-      console.error('Error getting user:', error);
-      return undefined;
+    const maxRetries = 3;
+    let attempt = 0;
+    
+    while (attempt < maxRetries) {
+      try {
+        const [user] = await db.select().from(users).where(eq(users.id, id));
+        return user;
+      } catch (error) {
+        attempt++;
+        console.error(`Error getting user (attempt ${attempt}):`, error);
+        
+        // Retry on connection errors
+        if (error.code === '57P01' && attempt < maxRetries) {
+          console.log('Retrying due to connection termination...');
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+        
+        // Don't return undefined on connection errors, let them propagate
+        if (error.message?.includes('FATAL') || error.code === '57P01') {
+          throw new Error('Database connection lost. Please try again.');
+        }
+        return undefined;
+      }
     }
+    return undefined;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
@@ -75,34 +94,63 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserOnboarding(id: string, data: UpdateUserOnboarding): Promise<User | undefined> {
-    try {
-      const [user] = await db
-        .update(users)
-        .set({
-          ...data,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, id))
-        .returning();
-      return user;
-    } catch (error) {
-      console.error('Error updating user onboarding:', error);
-      throw error;
+    const maxRetries = 3;
+    let attempt = 0;
+    
+    while (attempt < maxRetries) {
+      try {
+        const [user] = await db
+          .update(users)
+          .set({
+            ...data,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, id))
+          .returning();
+        return user;
+      } catch (error) {
+        attempt++;
+        console.error(`Error updating user onboarding (attempt ${attempt}):`, error);
+        
+        // Retry on connection errors
+        if (error.code === '57P01' && attempt < maxRetries) {
+          console.log('Retrying due to connection termination...');
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+        throw error;
+      }
     }
+    throw new Error('Failed to update user onboarding after retries');
   }
 
   // Team member operations
   async getTeamMembers(managerId: string): Promise<TeamMember[]> {
-    try {
-      return await db.select().from(teamMembers).where(eq(teamMembers.managerId, managerId));
-    } catch (error) {
-      console.error('Error getting team members:', error);
-      // Return empty array for database errors but log them
-      if (error.message?.includes('FATAL') || error.code === '57P01') {
-        console.warn('Database connection issue, returning empty team members list');
+    const maxRetries = 3;
+    let attempt = 0;
+    
+    while (attempt < maxRetries) {
+      try {
+        return await db.select().from(teamMembers).where(eq(teamMembers.managerId, managerId));
+      } catch (error) {
+        attempt++;
+        console.error(`Error getting team members (attempt ${attempt}):`, error);
+        
+        // Retry on connection errors
+        if (error.code === '57P01' && attempt < maxRetries) {
+          console.log('Retrying due to connection termination...');
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+        
+        // Return empty array for database errors but log them
+        if (error.message?.includes('FATAL') || error.code === '57P01') {
+          console.warn('Database connection issue, returning empty team members list');
+        }
+        return [];
       }
-      return [];
     }
+    return [];
   }
 
   async createTeamMember(data: InsertTeamMember): Promise<TeamMember> {
@@ -164,7 +212,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTeamMember(id: string): Promise<void> {
-    await db.delete(teamMembers).where(eq(teamMembers.id, id));
+    const maxRetries = 3;
+    let attempt = 0;
+    
+    while (attempt < maxRetries) {
+      try {
+        await db.delete(teamMembers).where(eq(teamMembers.id, id));
+        return;
+      } catch (error) {
+        attempt++;
+        console.error(`Error deleting team member (attempt ${attempt}):`, error);
+        
+        // Retry on connection errors
+        if (error.code === '57P01' && attempt < maxRetries) {
+          console.log('Retrying due to connection termination...');
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new Error('Failed to delete team member after retries');
   }
 }
 

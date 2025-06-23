@@ -30,20 +30,14 @@ export function getSession() {
     createTableIfMissing: false,
     ttl: sessionTtl,
     tableName: "sessions",
-    // Enhanced connection settings for stability
     schemaName: 'public',
+    pruneSessionInterval: 60 * 15, // 15 minutes
     errorLog: (err) => {
       console.error('Session store error:', err);
-      // Don't crash on session errors
+      // Don't crash on session errors - continue with in-memory fallback
     },
-    // Reduce connection pressure
-    pruneSessionInterval: 60 * 15, // 15 minutes
-    pool: {
-      max: 1,
-      idleTimeoutMillis: 0,
-      connectionTimeoutMillis: 20000,
-    }
   });
+  
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
