@@ -50,13 +50,7 @@ const Onboarding = () => {
 
   const onboardingMutation = useMutation({
     mutationFn: async (data: { hasCompletedOnboarding: boolean; topStrengths: string[] }) => {
-      return await apiRequest('/api/onboarding', {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      return await apiRequest('POST', '/api/onboarding', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
