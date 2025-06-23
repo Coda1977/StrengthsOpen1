@@ -1,16 +1,27 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertTeamMemberSchema, updateTeamMemberSchema } from "@shared/schema";
 import { updateUserOnboardingSchema } from "@shared/schema";
 
+interface AuthenticatedRequest extends Request {
+  user: {
+    claims: {
+      sub: string;
+      email: string;
+      first_name: string;
+      last_name: string;
+    };
+  };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
