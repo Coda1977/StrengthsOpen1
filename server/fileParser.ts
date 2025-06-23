@@ -1,8 +1,8 @@
 import * as XLSX from 'xlsx';
 import * as mammoth from 'mammoth';
-import { createWorker } from 'tesseract.js';
 import OpenAI from 'openai';
 import { scanFileBuffer, validateFileIntegrity, sanitizeFilename, generateFileHash } from './fileSecurityScanner';
+import { resourceManager, ocrWorkerPool } from './resourceManager';
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -87,28 +87,42 @@ Rules:
 }
 
 export async function parseTeamMembersFile(buffer: Buffer, mimetype: string, filename: string): Promise<TeamMemberData[]> {
-  // Security validation first
-  const sanitizedFilename = sanitizeFilename(filename);
-  const fileHash = generateFileHash(buffer);
+  // Track buffer for memory management
+  resourceManager.trackBuffer(buffer);
   
-  console.log(`Processing file: ${sanitizedFilename} (hash: ${fileHash})`);
-  
-  // Scan for malicious content
-  const scanResult = scanFileBuffer(buffer, sanitizedFilename);
-  if (!scanResult.isSecure) {
-    throw new Error(`Security threat detected: ${scanResult.threats.join(', ')}`);
+  try {
+    // Security validation first
+    const sanitizedFilename = sanitizeFilename(filename);
+    const fileHash = generateFileHash(buffer);
+    
+    console.log(`Processing file: ${sanitizedFilename} (hash: ${fileHash})`);
+    
+    // Scan for malicious content
+    const scanResult = scanFileBuffer(buffer, sanitizedFilename);
+    if (!scanResult.isSecure) {
+      throw new Error(`Security threat detected: ${scanResult.threats.join(', ')}`);
+    }
+    
+    // Log warnings but continue processing
+    if (scanResult.warnings.length > 0) {
+      console.warn(`File security warnings for ${sanitizedFilename}:`, scanResult.warnings);
+    }
+    
+    // Validate file integrity
+    if (!validateFileIntegrity(buffer, mimetype)) {
+      throw new Error('File integrity validation failed. File content does not match expected format.');
+    }
+    
+    let extractedText = '';
+
+    return await processFileWithCleanup(buffer, mimetype, sanitizedFilename);
+  } finally {
+    // Always release buffer regardless of success or failure
+    resourceManager.releaseBuffer(buffer);
   }
-  
-  // Log warnings but continue processing
-  if (scanResult.warnings.length > 0) {
-    console.warn(`File security warnings for ${sanitizedFilename}:`, scanResult.warnings);
-  }
-  
-  // Validate file integrity
-  if (!validateFileIntegrity(buffer, mimetype)) {
-    throw new Error('File integrity validation failed. File content does not match expected format.');
-  }
-  
+}
+
+async function processFileWithCleanup(buffer: Buffer, mimetype: string, sanitizedFilename: string): Promise<TeamMemberData[]> {
   let extractedText = '';
 
   try {
@@ -166,45 +180,8 @@ export async function parseTeamMembersFile(buffer: Buffer, mimetype: string, fil
       case 'image/png':
       case 'image/jpeg':
       case 'image/jpg':
-        // OCR for images with enhanced security and error handling
-        let imageWorker;
-        try {
-          // Additional image security checks
-          if (buffer.length < 100) {
-            throw new Error('Image file too small to be valid');
-          }
-          
-          // Check for suspicious embedded content
-          const imageString = buffer.toString('binary');
-          if (imageString.includes('<script') || imageString.includes('javascript:')) {
-            throw new Error('Potentially malicious content detected in image');
-          }
-          
-          imageWorker = await createWorker('eng');
-          
-          // Set security-focused OCR options
-          await imageWorker.setParameters({
-            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,;:!?()-[]{}"\'/\\|@#$%^&*+=_~`',
-          });
-          
-          const imageResult = await imageWorker.recognize(buffer);
-          extractedText = imageResult.data.text;
-          
-          // Sanitize OCR output
-          extractedText = extractedText.replace(/[^\x20-\x7E\r\n]/g, ''); // Remove non-printable chars
-          
-        } catch (ocrError) {
-          console.error('OCR processing failed:', ocrError);
-          throw new Error('Image text recognition failed. Please ensure the image contains clear, readable text and no embedded scripts.');
-        } finally {
-          if (imageWorker) {
-            try {
-              await imageWorker.terminate();
-            } catch (terminateError) {
-              console.error('Failed to terminate OCR worker:', terminateError);
-            }
-          }
-        }
+        // OCR for images with enhanced security and proper resource management
+        extractedText = await processImageWithOCR(buffer);
         break;
 
       default:
@@ -228,5 +205,78 @@ export async function parseTeamMembersFile(buffer: Buffer, mimetype: string, fil
   } catch (error) {
     console.error('File parsing error:', error);
     throw new Error(`Failed to parse file: ${error.message}`);
+  }
+}
+
+async function processImageWithOCR(buffer: Buffer): Promise<string> {
+  let worker = null;
+  
+  try {
+    // Additional image security checks
+    if (buffer.length < 100) {
+      throw new Error('Image file too small to be valid');
+    }
+    
+    // Check for suspicious embedded content
+    const imageString = buffer.toString('binary', 0, Math.min(buffer.length, 1024));
+    if (imageString.includes('<script') || imageString.includes('javascript:')) {
+      throw new Error('Potentially malicious content detected in image');
+    }
+    
+    // Get worker from pool with timeout
+    const workerPromise = ocrWorkerPool.getWorker();
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Timeout getting OCR worker'));
+      }, 30000);
+      resourceManager.trackTimeout(timeout);
+    });
+    
+    worker = await Promise.race([workerPromise, timeoutPromise]);
+    
+    // Set security-focused OCR options with timeout
+    const optionsTimeout = setTimeout(() => {
+      throw new Error('OCR options timeout');
+    }, 10000);
+    resourceManager.trackTimeout(optionsTimeout);
+    
+    await worker.setParameters({
+      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,;:!?()-[]{}"\'/\\|@#$%^&*+=_~`',
+      tessedit_pageseg_mode: '6', // Assume uniform block of text
+    });
+    
+    clearTimeout(optionsTimeout);
+    
+    // Process image with timeout
+    const recognitionTimeout = setTimeout(() => {
+      throw new Error('OCR recognition timeout');
+    }, 60000); // 1 minute timeout
+    resourceManager.trackTimeout(recognitionTimeout);
+    
+    const imageResult = await worker.recognize(buffer);
+    clearTimeout(recognitionTimeout);
+    
+    let extractedText = imageResult.data.text;
+    
+    // Sanitize OCR output
+    extractedText = extractedText.replace(/[^\x20-\x7E\r\n]/g, ''); // Remove non-printable chars
+    extractedText = extractedText.substring(0, 10000); // Limit output size
+    
+    return extractedText;
+    
+  } catch (ocrError) {
+    console.error('OCR processing failed:', ocrError);
+    throw new Error('Image text recognition failed. Please ensure the image contains clear, readable text and no embedded scripts.');
+  } finally {
+    // Always release worker back to pool
+    if (worker) {
+      try {
+        ocrWorkerPool.releaseWorker(worker);
+      } catch (releaseError) {
+        console.error('Failed to release OCR worker:', releaseError);
+        // Force cleanup if release fails
+        await resourceManager.terminateWorker(worker);
+      }
+    }
   }
 }

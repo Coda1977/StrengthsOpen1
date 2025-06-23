@@ -4,6 +4,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeamAnalytics, useChartData, useOptimizedQuery, useFilteredData, useDebouncedCallback, STRENGTHS_DOMAIN_MAP, ALL_STRENGTHS } from '@/hooks/usePerformanceOptimized';
 import { TeamMemberCard, StrengthSelector, DomainChart, TopStrengthsList } from '@/components/MemoizedComponents';
+import { useFileUploadCleanup, useCleanup } from '@/hooks/useCleanup';
 import Navigation from '../components/Navigation';
 
 interface TeamMember {
@@ -22,6 +23,10 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  
+  // Resource cleanup hooks
+  const { startUpload, finishUpload, getActiveUploadCount } = useFileUploadCleanup();
+  const { createTimeout, addCleanup } = useCleanup();
 
   // Optimized team members query with proper caching
   const { data: teamMembers = [], isLoading: teamMembersLoading, error: teamMembersError } = useOptimizedQuery<TeamMember[]>(

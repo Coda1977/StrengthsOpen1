@@ -62,6 +62,18 @@ app.use((req, res, next) => {
       res.status(status).json({ message: responseMessage });
     });
 
+    // Setup resource monitoring endpoint
+    app.get('/api/system/health', async (req, res) => {
+      const { resourceManager } = await import('./resourceManager');
+      const stats = resourceManager.getResourceStats();
+      res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        resources: stats,
+        uptime: process.uptime()
+      });
+    });
+
     // importantly only setup vite in development and after
     // setting up all the other routes so the catch-all route
     // doesn't interfere with the other routes

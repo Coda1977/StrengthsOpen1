@@ -285,42 +285,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // File upload endpoint for team members
   app.post('/api/upload-team-members', isAuthenticated, requireOnboarding, upload.single('file'), async (req: any, res) => {
+    const startTime = Date.now();
+    let processed = false;
+    
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
       const userId = req.user.claims.sub;
-      const teamMembers = await parseTeamMembersFile(req.file.buffer, req.file.mimetype, req.file.originalname);
+      const { buffer, mimetype, originalname } = req.file;
+      
+      // Log upload attempt for security monitoring
+      console.log(`File upload attempt: ${originalname} (${mimetype}) by user ${userId}`);
+      
+      // Rate limiting: max 50 team members per upload
+      const maxMembers = 50;
+      const maxFileSize = 5 * 1024 * 1024; // 5MB
+      
+      if (buffer.length > maxFileSize) {
+        return res.status(400).json({ 
+          message: "File too large. Maximum file size is 5MB." 
+        });
+      }
+      
+      const teamMembers = await parseTeamMembersFile(buffer, mimetype, originalname);
+      processed = true;
 
       if (teamMembers.length === 0) {
-        return res.status(400).json({ message: "No valid team members found in the file" });
+        return res.status(400).json({ message: "No valid team member data found in file" });
+      }
+
+      if (teamMembers.length > maxMembers) {
+        return res.status(400).json({ 
+          message: `Too many team members in file. Maximum ${maxMembers} members allowed per upload.` 
+        });
       }
 
       // Create team members in database
       const createdMembers = [];
-      for (const member of teamMembers) {
+      const errors = [];
+
+      for (const memberData of teamMembers) {
         try {
-          const created = await storage.createTeamMember({
+          // Additional validation
+          if (!memberData.name || memberData.name.length > 100) {
+            errors.push(`Invalid name: ${memberData.name}`);
+            continue;
+          }
+          
+          if (!Array.isArray(memberData.strengths) || memberData.strengths.length === 0) {
+            errors.push(`No valid strengths for ${memberData.name}`);
+            continue;
+          }
+
+          const member = await storage.createTeamMember({
             managerId: userId,
-            name: member.name,
-            strengths: member.strengths
+            name: memberData.name.trim(),
+            strengths: memberData.strengths
           });
-          createdMembers.push(created);
+          createdMembers.push(member);
         } catch (error) {
-          console.error(`Failed to create team member ${member.name}:`, error);
-          // Continue with other members even if one fails
+          console.error(`Failed to create team member ${memberData.name}:`, error);
+          errors.push(`Failed to create ${memberData.name}: ${error.message}`);
         }
       }
 
-      res.json({ 
-        message: `Successfully created ${createdMembers.length} team members`,
+      // Log processing time
+      const processingTime = Date.now() - startTime;
+      console.log(`File processing completed in ${processingTime}ms`);
+
+      res.json({
+        message: `Successfully imported ${createdMembers.length} team members`,
         members: createdMembers,
-        totalParsed: teamMembers.length
+        errors: errors.length > 0 ? errors : undefined,
+        total_processed: teamMembers.length,
+        successful: createdMembers.length,
+        failed: errors.length,
+        processing_time_ms: processingTime
       });
     } catch (error) {
-      console.error("Error uploading team members file:", error);
-      res.status(500).json({ message: error.message || "Failed to process file" });
+      const processingTime = Date.now() - startTime;
+      console.error("File upload error:", error);
+      console.log(`File processing failed after ${processingTime}ms`);
+      
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Failed to process uploaded file",
+        processing_time_ms: processingTime
+      });
     }
   });
 
