@@ -77,8 +77,8 @@ Keep the response to 2-3 sentences maximum. No fluff. Be nuanced - acknowledge b
 
     return response.choices[0].message.content || "Unable to generate insight at this time.";
   } catch (error) {
-    console.error("Error generating team insight:", error);
-    throw new Error("Failed to generate team insight");
+    console.error("Failed to generate team insight:", error);
+    return "Unable to generate team insight at this time. Please try again later.";
   }
 }
 
@@ -149,7 +149,7 @@ Keep each point to one sentence maximum. No markdown. Total response under 150 w
     
     return content;
   } catch (error) {
-    console.error("Error generating collaboration insight:", error);
-    throw new Error("Failed to generate collaboration insight");
+    console.error("Failed to generate collaboration insight:", error);
+    return "Unable to generate collaboration insight at this time. Please try again later.";
   }
 }

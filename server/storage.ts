@@ -31,60 +31,90 @@ export class DatabaseStorage implements IStorage {
   // (IMPORTANT) these user operations are mandatory for Replit Auth.
 
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user;
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return undefined;
+    }
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
+    try {
+      const [user] = await db
+        .insert(users)
+        .values(userData)
+        .onConflictDoUpdate({
+          target: users.id,
+          set: {
+            ...userData,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+      return user;
+    } catch (error) {
+      console.error('Error upserting user:', error);
+      throw error;
+    }
   }
 
   async updateUserOnboarding(id: string, data: UpdateUserOnboarding): Promise<User | undefined> {
-    const [user] = await db
-      .update(users)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, id))
-      .returning();
-    return user;
+    try {
+      const [user] = await db
+        .update(users)
+        .set({
+          ...data,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, id))
+        .returning();
+      return user;
+    } catch (error) {
+      console.error('Error updating user onboarding:', error);
+      throw error;
+    }
   }
 
   // Team member operations
   async getTeamMembers(managerId: string): Promise<TeamMember[]> {
-    return await db.select().from(teamMembers).where(eq(teamMembers.managerId, managerId));
+    try {
+      return await db.select().from(teamMembers).where(eq(teamMembers.managerId, managerId));
+    } catch (error) {
+      console.error('Error getting team members:', error);
+      return [];
+    }
   }
 
   async createTeamMember(data: InsertTeamMember): Promise<TeamMember> {
-    const [member] = await db
-      .insert(teamMembers)
-      .values(data)
-      .returning();
-    return member;
+    try {
+      const [member] = await db
+        .insert(teamMembers)
+        .values(data)
+        .returning();
+      return member;
+    } catch (error) {
+      console.error('Error creating team member:', error);
+      throw error;
+    }
   }
 
   async updateTeamMember(id: string, data: UpdateTeamMember): Promise<TeamMember | undefined> {
-    const [member] = await db
-      .update(teamMembers)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
-      .where(eq(teamMembers.id, id))
-      .returning();
-    return member;
+    try {
+      const [member] = await db
+        .update(teamMembers)
+        .set({
+          ...data,
+          updatedAt: new Date(),
+        })
+        .where(eq(teamMembers.id, id))
+        .returning();
+      return member;
+    } catch (error) {
+      console.error('Error updating team member:', error);
+      throw error;
+    }
   }
 
   async deleteTeamMember(id: string): Promise<void> {
