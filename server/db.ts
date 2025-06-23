@@ -17,9 +17,9 @@ if (!process.env.DATABASE_URL) {
 // Create pool with better error handling and connection settings
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 3, // Increase connections for better reliability
-  idleTimeoutMillis: 30000, // 30 second idle timeout
-  connectionTimeoutMillis: 15000, // 15 second timeout
+  max: 2, // Reduce for Replit environment
+  idleTimeoutMillis: 15000, // 15 second idle timeout
+  connectionTimeoutMillis: 10000, // 10 second timeout
   maxUses: 7500, // Limit reuse
   allowExitOnIdle: false,
 });
