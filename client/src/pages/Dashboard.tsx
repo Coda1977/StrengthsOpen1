@@ -1,9 +1,8 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeamAnalytics, useOptimizedQuery, STRENGTHS_DOMAIN_MAP, ALL_STRENGTHS } from '@/hooks/usePerformanceOptimized';
-import { TeamMemberCard, StrengthSelector, DomainChart, TopStrengthsList } from '@/components/MemoizedComponents';
 import { useFileUploadCleanup, useCleanup } from '@/hooks/useCleanup';
 import Navigation from '../components/Navigation';
 
@@ -24,37 +23,37 @@ const Dashboard = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  // Optimized team members query with proper caching
+  // Optimized team members query
   const { data: teamMembers = [], isLoading: teamMembersLoading, error: teamMembersError } = useOptimizedQuery<TeamMember[]>(
     ['/api/team-members'],
-    true, // enabled
-    5 * 60 * 1000 // 5 minutes stale time
+    true,
+    5 * 60 * 1000
   );
 
   // Resource cleanup hooks
-  const { startUpload, finishUpload, getActiveUploadCount } = useFileUploadCleanup();
+  const { startUpload, finishUpload } = useFileUploadCleanup();
   const { createTimeout, addCleanup } = useCleanup();
 
-  // File upload mutation with proper error handling
+  // Team analytics with safe data
+  const teamAnalytics = useTeamAnalytics(teamMembers || []);
+  const { topStrengths } = teamAnalytics;
+
+  // File upload mutation
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       const abortController = startUpload(`upload-${Date.now()}`);
-      
       try {
         const formData = new FormData();
         formData.append('file', file);
-        
         const response = await fetch('/api/upload-team-members', {
           method: 'POST',
           body: formData,
           signal: abortController.signal
         });
-        
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error?.message || 'Upload failed');
         }
-        
         return await response.json();
       } finally {
         finishUpload(`upload-${Date.now()}`);
@@ -69,12 +68,12 @@ const Dashboard = () => {
     }
   });
 
-  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       uploadMutation.mutate(file);
     }
-  }, [uploadMutation]);
+  };
 
   const deleteMemberMutation = useMutation({
     mutationFn: (id: string) => apiRequest('DELETE', `/api/team-members/${id}`),
@@ -101,6 +100,47 @@ const Dashboard = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
       resetModal();
+    }
+  });
+
+  const generateInsightMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/generate-team-insight', {
+        managerStrengths: user?.topStrengths || [],
+        teamMembers: teamMembers.map(member => ({
+          name: member.name,
+          strengths: member.strengths || []
+        }))
+      });
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      setTeamInsight(data?.insight || 'No insight generated');
+      setRefreshCount(prev => Math.max(0, prev - 1));
+    },
+    onError: (error: Error) => {
+      console.error('Failed to generate team insight:', error);
+      setTeamInsight('Failed to generate team insight. Please try again.');
+    }
+  });
+
+  const generateCollaborationMutation = useMutation({
+    mutationFn: async ({ member1, member2 }: { member1: string; member2: string }) => {
+      const response = await apiRequest('POST', '/api/generate-collaboration-insight', { member1, member2 });
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      let insight = data?.insight || 'No insight generated';
+      if (insight.length > 800) {
+        insight = insight.substring(0, 800) + '... [truncated for readability]';
+      }
+      setCollaborationInsight(insight);
+      setLoadingCollaboration(false);
+    },
+    onError: (error: Error) => {
+      console.error('Failed to generate collaboration insight:', error);
+      setCollaborationInsight('Failed to generate collaboration insight. Please try again.');
+      setLoadingCollaboration(false);
     }
   });
 
@@ -165,49 +205,6 @@ const Dashboard = () => {
     }
   };
 
-  // Use pre-calculated analytics from performance hook
-  const teamAnalytics = useTeamAnalytics(teamMembers || []);
-  const { domainDistribution, strengthCounts, totalMembers, topStrengths } = teamAnalytics;
-  
-  // Memoized domain percentages calculation
-  const domainPercentages = useMemo(() => {
-    if (!domainDistribution) return [];
-    const totalStrengths = Object.values(domainDistribution).reduce((sum, count) => sum + count, 0);
-    return Object.entries(domainDistribution).map(([domain, count]) => ({
-      domain,
-      count,
-      percentage: totalStrengths > 0 ? Math.round((count / totalStrengths) * 100) : 0
-    }));
-  }, [domainDistribution]);
-
-  const [teamInsight, setTeamInsight] = useState("Click 'Refresh' to generate your team insight based on your actual strengths data.");
-
-  const [collaborationInsight, setCollaborationInsight] = useState<string>('');
-  const [loadingCollaboration, setLoadingCollaboration] = useState(false);
-
-  const generateCollaborationMutation = useMutation({
-    mutationFn: async ({ member1, member2 }: { member1: string; member2: string }) => {
-      const response = await apiRequest('POST', '/api/generate-collaboration-insight', { member1, member2 });
-      return await response.json();
-    },
-    onSuccess: (data: any) => {
-      let insight = data?.insight || 'No insight generated';
-      
-      // Final safety check for truncation on frontend
-      if (insight.length > 800) {
-        insight = insight.substring(0, 800) + '... [truncated for readability]';
-      }
-      
-      setCollaborationInsight(insight);
-      setLoadingCollaboration(false);
-    },
-    onError: (error: Error) => {
-      console.error('Failed to generate collaboration insight:', error);
-      setCollaborationInsight('Failed to generate collaboration insight. Please try again.');
-      setLoadingCollaboration(false);
-    }
-  });
-
   const handleMemberSelection = (memberName: string) => {
     setSelectedMembers(prev => {
       if (prev.includes(memberName)) {
@@ -227,32 +224,47 @@ const Dashboard = () => {
     });
   };
 
-  const generateInsightMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/generate-team-insight', {
-        managerStrengths: user?.topStrengths || [],
-        teamMembers: teamMembers.map(member => ({
-          name: member.name,
-          strengths: member.strengths || []
-        }))
-      });
-      return await response.json();
-    },
-    onSuccess: (data: any) => {
-      setTeamInsight(data?.insight || 'No insight generated');
-      setRefreshCount(prev => Math.max(0, prev - 1));
-    },
-    onError: (error: Error) => {
-      console.error('Failed to generate team insight:', error);
-      setTeamInsight('Failed to generate team insight. Please try again.');
-    }
-  });
-
   const handleRefreshInsight = () => {
     if (refreshCount > 0) {
       generateInsightMutation.mutate();
     }
   };
+
+  // Domain distribution calculation
+  const calculateDomainDistribution = () => {
+    const allTeamStrengths = [
+      ...(user?.topStrengths || []),
+      ...teamMembers.flatMap((member: TeamMember) => member.strengths || [])
+    ];
+
+    const domainCounts = {
+      'Executing': 0,
+      'Influencing': 0,
+      'Relationship Building': 0,
+      'Strategic Thinking': 0
+    };
+
+    allTeamStrengths.forEach((strength: string) => {
+      const domain = STRENGTHS_DOMAIN_MAP[strength];
+      if (domain) {
+        domainCounts[domain as keyof typeof domainCounts]++;
+      }
+    });
+
+    const total = Object.values(domainCounts).reduce((sum, count) => sum + count, 0);
+    
+    return Object.entries(domainCounts).map(([domain, count]) => ({
+      domain,
+      count,
+      percentage: total > 0 ? Math.round((count / total) * 100) : 0
+    }));
+  };
+
+  const domainDistribution = calculateDomainDistribution();
+
+  const [teamInsight, setTeamInsight] = useState("Click 'Refresh' to generate your team insight based on your actual strengths data.");
+  const [collaborationInsight, setCollaborationInsight] = useState<string>('');
+  const [loadingCollaboration, setLoadingCollaboration] = useState(false);
 
   // Filter strengths based on search term
   const filteredStrengths = useMemo(() => {
@@ -295,6 +307,7 @@ const Dashboard = () => {
                 <button className="add-member-btn" onClick={() => openAddModal()}>+</button>
               </div>
             </div>
+            
             {teamMembersLoading ? (
               <div style={{ textAlign: 'center', padding: '2rem' }}>
                 <div style={{
@@ -314,47 +327,47 @@ const Dashboard = () => {
               </div>
             ) : (
               <>
-            <div className="team-grid">
-              {teamMembers.map((member: TeamMember) => (
-                <div key={member.id} className="team-member-card">
-                  <button className="delete-btn" onClick={() => handleDeleteMember(member.id)}>×</button>
-                  <div className="member-header" onClick={() => openEditModal(member)}>
-                    <div className="member-initials">
-                      {member.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                <div className="team-grid">
+                  {teamMembers.map((member: TeamMember) => (
+                    <div key={member.id} className="team-member-card">
+                      <button className="delete-btn" onClick={() => handleDeleteMember(member.id)}>×</button>
+                      <div className="member-header" onClick={() => openEditModal(member)}>
+                        <div className="member-initials">
+                          {member.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="member-name">{member.name}</div>
+                      </div>
+                      <div className="member-strengths">
+                        {(member.strengths || []).map((strength: string, index: number) => (
+                          <span key={index} className="small-strength">
+                            {strength}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <div className="member-name">{member.name}</div>
-                  </div>
-                  <div className="member-strengths">
-                    {(member.strengths || []).map((strength: string, index: number) => (
-                      <span key={index} className="small-strength">
-                        {strength}
-                      </span>
-                    ))}
+                  ))}
+                  <div className="team-member-card add-member-card" onClick={openAddModal}>
+                    <span className="add-icon">+</span>
                   </div>
                 </div>
-              ))}
-              <div className="team-member-card add-member-card" onClick={openAddModal}>
-                <span className="add-icon">+</span>
-              </div>
-            </div>
 
-            <h3 style={{fontSize: '20px', fontWeight: 700, marginBottom: '1rem', marginTop: '2rem'}}>Domain Distribution</h3>
-            <div className="domain-chart">
-              {domainPercentages.map(({ domain, percentage }) => (
-                <div key={domain} className="domain-bar">
-                  <div className="domain-label">
-                    <span>{domain}</span>
-                    <span>{percentage}%</span>
-                  </div>
-                  <div className="bar-container">
-                    <div 
-                      className={`bar-fill ${domain.toLowerCase().replace(' ', '-')}`} 
-                      style={{width: `${percentage}%`}}
-                    ></div>
-                  </div>
+                <h3 style={{fontSize: '20px', fontWeight: 700, marginBottom: '1rem', marginTop: '2rem'}}>Domain Distribution</h3>
+                <div className="domain-chart">
+                  {domainDistribution.map(({ domain, percentage }) => (
+                    <div key={domain} className="domain-bar">
+                      <div className="domain-label">
+                        <span>{domain}</span>
+                        <span>{percentage}%</span>
+                      </div>
+                      <div className="bar-container">
+                        <div 
+                          className={`bar-fill ${domain.toLowerCase().replace(' ', '-')}`} 
+                          style={{width: `${percentage}%`}}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
               </>
             )}
           </div>
@@ -444,51 +457,6 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Top Strengths Section */}
-          <div className="card">
-            <h2 className="card-title">Top Team Strengths</h2>
-            {teamMembersLoading ? (
-              <div style={{ textAlign: 'center', padding: '2rem' }}>
-                <p>Loading strengths data...</p>
-              </div>
-            ) : (
-              <div className="strengths-list">
-                {(topStrengths || []).slice(0, 5).map(({ strength, count }, index) => (
-                  <div key={strength} style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between',
-                    padding: '0.75rem',
-                    backgroundColor: 'var(--bg-primary)',
-                    borderRadius: '12px',
-                    marginBottom: '0.5rem'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <span style={{ 
-                        fontSize: '18px', 
-                        fontWeight: 'bold', 
-                        color: 'var(--accent-blue)',
-                        minWidth: '24px'
-                      }}>
-                        #{index + 1}
-                      </span>
-                      <span style={{ fontWeight: '600' }}>{strength}</span>
-                    </div>
-                    <span style={{ 
-                      fontSize: '14px', 
-                      color: 'var(--text-secondary)',
-                      backgroundColor: 'var(--white)',
-                      padding: '0.25rem 0.75rem',
-                      borderRadius: '12px'
-                    }}>
-                      {count} {count === 1 ? 'person' : 'people'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       </div>
