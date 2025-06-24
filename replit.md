@@ -93,6 +93,7 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Sessions Table**: Handles session persistence for authentication
 
 ## Recent Changes
+- June 24, 2025: Fixed resource cleanup loops causing memory leaks - reduced cleanup interval from 30s to 5min, implemented smart cleanup that only processes expired resources, fixed useEffect dependency loops in ChatCoach component, added proper timeout management using useCleanup hook
 - June 24, 2025: Fixed navigation overlap issue where "Team Dashboard" heading was cut off by the fixed navigation bar
 - June 24, 2025: Restored original dashboard design by removing inline styles and ensuring CSS classes work properly
 - June 24, 2025: Fixed AI insight generation functions in the dashboard - both team insights and collaboration insights now work correctly

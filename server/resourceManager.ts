@@ -270,7 +270,46 @@ class ResourceManager {
   // Emergency cleanup method
   async emergencyCleanup(): Promise<void> {
     console.log('Emergency cleanup initiated...');
-    await this.performCleanup();
+    
+    // Force cleanup all resources without checks
+    const allWorkers = Array.from(this.resources.workers);
+    for (const worker of allWorkers) {
+      try {
+        await this.terminateWorker(worker);
+      } catch (error) {
+        console.error('Error during emergency worker cleanup:', error);
+      }
+    }
+
+    // Clear all timeouts and intervals
+    this.resources.timeouts.forEach(timeout => {
+      try {
+        clearTimeout(timeout);
+      } catch (error) {
+        console.error('Error clearing timeout during emergency:', error);
+      }
+    });
+    this.resources.timeouts.clear();
+
+    this.resources.intervals.forEach(interval => {
+      try {
+        clearInterval(interval);
+      } catch (error) {
+        console.error('Error clearing interval during emergency:', error);
+      }
+    });
+    this.resources.intervals.clear();
+
+    // Clear buffers
+    this.resources.buffers.clear();
+    
+    // Stop periodic cleanup
+    if (this.cleanupTimeout) {
+      clearInterval(this.cleanupTimeout);
+      this.cleanupTimeout = null;
+    }
+
+    console.log('Emergency cleanup completed');
   }
 }
 
