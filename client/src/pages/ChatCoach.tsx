@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Navigation from "@/components/Navigation";
 import { useCleanup } from "@/hooks/useCleanup";
 import { useConversations, useMigration } from "@/hooks/useConversations";
