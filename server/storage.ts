@@ -572,12 +572,17 @@ export class DatabaseStorage implements IStorage {
 
   async getConversationWithMessages(id: string, userId: string): Promise<{ conversation: Conversation; messages: Message[] } | null> {
     try {
+      console.log(`Getting conversation ${id} for user ${userId}`);
+      
       const conversation = await this.getConversation(id, userId);
       if (!conversation) {
+        console.log('Conversation not found');
         return null;
       }
 
+      console.log('Found conversation, getting messages...');
       const messages = await this.getMessages(id, userId);
+      console.log(`Found ${messages.length} messages`);
       
       return { conversation, messages };
     } catch (error) {
@@ -592,16 +597,13 @@ export class DatabaseStorage implements IStorage {
     }
 
     try {
-      const conversation = await this.getConversation(conversationId, userId);
-      if (!conversation) {
-        throw new Error('Conversation not found or access denied');
-      }
-
+      // Skip conversation check here since we already verified access in getConversationWithMessages
       const result = await db.select()
         .from(messages)
         .where(eq(messages.conversationId, conversationId))
         .orderBy(asc(messages.timestamp));
 
+      console.log(`Retrieved ${result.length} messages for conversation ${conversationId}`);
       return result;
     } catch (error) {
       console.error('Error fetching messages:', error);

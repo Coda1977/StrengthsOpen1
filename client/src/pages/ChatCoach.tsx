@@ -382,15 +382,33 @@ const ChatCoach = () => {
 
   const loadChat = async (conversationId: string) => {
     try {
-      const conversationQuery = getConversation(conversationId);
-      const { data } = await conversationQuery.refetch();
+      console.log('Loading conversation:', conversationId);
       
-      if (data) {
+      const response = await fetch(`/api/conversations/${conversationId}`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Failed to load conversation:', response.status, errorText);
+        throw new Error(`Failed to load conversation: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      const data = result.data;
+      
+      if (data && data.conversation && data.messages) {
+        console.log('Successfully loaded conversation with', data.messages.length, 'messages');
         setMessages(data.messages.map(msg => ({
           id: msg.id,
           content: msg.content,
           type: msg.type as 'user' | 'ai',
-          timestamp: msg.timestamp || new Date()
+          timestamp: new Date(msg.timestamp || Date.now())
         })));
         setCurrentMode(data.conversation.mode);
         setCurrentChatId(conversationId);
@@ -399,12 +417,18 @@ const ChatCoach = () => {
         if (isMobile) {
           setSidebarHidden(true);
         }
+        
+        toast({
+          title: "Chat Loaded",
+          description: `Loaded conversation with ${data.messages.length} messages`,
+          duration: 2000
+        });
       }
     } catch (error) {
       console.error('Failed to load conversation:', error);
       toast({
         title: "Load Failed",
-        description: "Could not load the conversation",
+        description: "Could not load the conversation. Please try refreshing the page.",
         variant: "destructive"
       });
     }

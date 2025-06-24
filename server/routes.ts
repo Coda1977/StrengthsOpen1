@@ -334,15 +334,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/conversations/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
       
+      if (!req.user || !req.user.claims || !req.user.claims.sub) {
+        console.error('Authentication failed - no user or claims found');
+        return res.status(401).json(createErrorResponse(req, new AppError(ERROR_CODES.UNAUTHORIZED, 'Authentication required', 401)));
+      }
+      
+      const userId = req.user.claims.sub;
       console.log(`Loading conversation ${id} for user ${userId}`);
       
       const result = await storage.getConversationWithMessages(id, userId);
       if (!result) {
+        console.log('Conversation not found or access denied');
         return res.status(404).json(createErrorResponse(req, new AppError(ERROR_CODES.NOT_FOUND, 'Conversation not found', 404)));
       }
       
+      console.log('Successfully loaded conversation with', result.messages.length, 'messages');
       res.json(createSuccessResponse(result));
     } catch (error) {
       console.error('Error loading conversation:', error);

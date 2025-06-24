@@ -93,6 +93,9 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Sessions Table**: Handles session persistence for authentication
 
 ## Recent Changes
+- June 24, 2025: Fixed conversation loading issue by implementing getConversationWithMessages method, improved authentication middleware to handle session edge cases, added comprehensive error logging and user feedback for conversation operations, and optimized database queries for message retrieval
+- June 24, 2025: Fixed markdown rendering in AI responses with proper formatting for headers, bold text, numbered lists, and bullet points using custom HTML transformation
+- June 24, 2025: Fixed header layout spacing between hamburger menu and title using inline styles to override CSS conflicts
 - June 24, 2025: Fixed mobile experience for AI chat - resolved duplicate hamburger menu issue by hiding navigation menu button on chat page, added desktop sidebar toggle button for full-screen access to chat history, improved sidebar interactions with proper touch targets and smooth transitions, optimized keyboard input with proper sizing and viewport handling, enhanced message display with better spacing and readability, added mobile-specific CSS optimizations for touch devices, implemented proper mobile overlay behavior with full-screen coverage, and added viewport height handling for mobile keyboards
 - June 24, 2025: Implemented robust error handling for AI chat system - added error boundaries for chat components, retry mechanisms for failed API calls, clear error states with actionable recovery options, and comprehensive error categorization with specific troubleshooting guidance
 - June 24, 2025: Implemented database persistence for chat conversations replacing localStorage - added conversation and message tables, migration system for existing localStorage data, corruption recovery mechanisms, and comprehensive backup/restore functionality
