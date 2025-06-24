@@ -827,7 +827,13 @@ const ChatCoach = () => {
                           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
                         }}
                       >
-                        <div dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }} />
+                        <div>
+                          {msg.type === 'user' ? (
+                            <span>{msg.content}</span>
+                          ) : (
+                            <div dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }} />
+                          )}
+                        </div>
                         <button 
                           style={{
                             position: 'absolute',
