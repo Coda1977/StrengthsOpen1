@@ -1309,8 +1309,7 @@ footer {
   position: relative;
   z-index: 50;
   flex-shrink: 0;
-  height: 100vh;
-  padding-top: 80px;
+  height: 100%;
 }
 
 .sidebar.hidden {
@@ -1447,7 +1446,6 @@ footer {
   flex-direction: column;
   background: var(--bg-primary);
   min-width: 0;
-  padding-top: 80px;
 }
 
 .chat-header {
@@ -1811,10 +1809,11 @@ footer {
   .sidebar {
     position: fixed;
     left: -320px;
-    top: 80px;
-    height: calc(100vh - 80px);
+    top: 0;
+    height: 100vh;
     z-index: 200;
     transition: left 0.3s ease;
+    padding-top: 80px;
   }
 
   .sidebar:not(.hidden) {
