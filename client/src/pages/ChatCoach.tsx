@@ -527,45 +527,61 @@ const ChatCoach = () => {
     }
   }, [messages, currentChatId, currentMode, createTimeout]);
 
-  const getAIResponse = (userInput: string): string => {
-    // Simple response logic based on input
-    if (userInput.toLowerCase().includes('strategic')) {
-      return "Your Strategic thinking is a powerful asset! Here are some ways to leverage it with your team:\n\n• **Pattern Recognition**: Help your team see connections and implications they might miss\n• **Alternative Planning**: Present multiple pathways to achieve goals\n• **Risk Assessment**: Use your ability to anticipate obstacles to help the team prepare\n\nTry leading a planning session where you guide the team through different scenarios. Your Strategic talent can help everyone think more systematically about challenges and opportunities.";
-    }
+  // Mobile input handling functions
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessage(e.target.value);
     
-    if (userInput.toLowerCase().includes('empathy')) {
-      return "Developing your Empathy theme is about tuning into others' emotions more intentionally:\n\n• **Active Listening**: Practice focusing completely on what others are saying and feeling\n• **Perspective Taking**: Before meetings, consider how different team members might react\n• **Emotional Check-ins**: Start conversations by genuinely asking how someone is doing\n\nRemember, your Empathy is like an emotional radar. The more you practice using it consciously, the stronger it becomes at helping you connect with and understand others.";
+    // Auto-resize textarea
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const newHeight = Math.min(textareaRef.current.scrollHeight, 120);
+      textareaRef.current.style.height = `${newHeight}px`;
+      setInputHeight(newHeight);
     }
-
-    return "That's a great question about leveraging your strengths! Based on your CliftonStrengths profile, I'd recommend:\n\n• **Strengths Partnerships**: Identify team members whose strengths complement yours\n• **Daily Application**: Find small ways to use your top themes in everyday tasks\n• **Development Focus**: Choose one strength to develop more intentionally this month\n\nWhat specific situation are you facing where you'd like to apply your strengths more effectively?";
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
-  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessage(e.target.value);
-    
-    // Auto-resize textarea
-    const textarea = e.target;
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-  };
-
   const handleStarterQuestion = (question: string) => {
     setMessage(question);
-    if (textareaRef.current) {
-      textareaRef.current.focus();
+    // Small delay to ensure message is set before sending
+    setTimeout(() => {
+      handleSendMessage();
+    }, 100);
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied to clipboard",
+        description: "Message content copied successfully",
+      });
+    } catch (error) {
+      console.error('Failed to copy text:', error);
+      toast({
+        title: "Copy failed",
+        description: "Could not copy to clipboard",
+        variant: "destructive"
+      });
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    // Could add a toast notification here
+  // Handle mobile sidebar overlay clicks
+  const handleOverlayClick = () => {
+    if (isMobile) {
+      setSidebarHidden(true);
+    }
+  };
+
+  // Handle mobile sidebar toggle
+  const handleSidebarToggle = () => {
+    setSidebarHidden(!sidebarHidden);
   };
 
   return (
@@ -594,7 +610,7 @@ const ChatCoach = () => {
           {/* Swipe Overlay */}
           <div 
             className="swipe-overlay"
-            onClick={() => setSidebarHidden(true)}
+            onClick={handleOverlayClick}
           ></div>
 
           {/* Sidebar */}
@@ -662,7 +678,8 @@ const ChatCoach = () => {
             <div className="chat-header">
               <button 
                 className="mobile-sidebar-toggle"
-                onClick={() => setSidebarHidden(!sidebarHidden)}
+                onClick={handleSidebarToggle}
+                aria-label="Toggle sidebar"
               >
                 ☰
               </button>
@@ -741,7 +758,8 @@ const ChatCoach = () => {
                   value={message}
                   onChange={handleTextareaChange}
                   onKeyDown={handleKeyPress}
-                  style={{ height: 'auto' }}
+                  style={{ height: `${inputHeight}px` }}
+                  rows={1}
                 />
                 <button 
                   className="send-button"
