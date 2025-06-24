@@ -1730,9 +1730,10 @@ footer {
   border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   flex-shrink: 0;
   margin-top: 0;
+  gap: 1rem;
 }
 
 .mobile-sidebar-toggle {
@@ -1779,9 +1780,16 @@ footer {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
+/* Ensure chat title has proper spacing when hamburger is visible */
+.chat-header .mobile-sidebar-toggle + .chat-title {
+  margin-left: 0;
+}
+
 .chat-title {
   font-size: 22px;
   font-weight: 700;
+  margin: 0;
+  flex: 1;
 }
 
 .messages-container {
@@ -2178,11 +2186,14 @@ footer {
     z-index: 10;
     background: var(--white);
     border-bottom: 1px solid var(--border-light);
+    gap: 0.75rem;
   }
 
   .chat-title {
     font-size: 18px;
     font-weight: 700;
+    margin: 0;
+    flex: 1;
   }
 
   /* Mobile Message Display */
