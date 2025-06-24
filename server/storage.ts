@@ -688,7 +688,7 @@ export class DatabaseStorage implements IStorage {
 
   async getConversationBackups(userId: string): Promise<ConversationBackup[]> {
     if (!userId) {
-      throw new Error('User ID is required');
+      return [];
     }
 
     try {
@@ -697,10 +697,10 @@ export class DatabaseStorage implements IStorage {
         .where(eq(conversationBackups.userId, userId))
         .orderBy(desc(conversationBackups.createdAt));
 
-      return result;
+      return result || [];
     } catch (error) {
-      console.error('Error fetching backups:', error);
-      throw new Error('Failed to fetch backups');
+      // Return empty array instead of throwing error to prevent 404 spam
+      return [];
     }
   }
 

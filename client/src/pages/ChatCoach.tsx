@@ -271,7 +271,7 @@ const ChatCoach = () => {
       setMigrationNeeded(false);
       
     } catch (error) {
-      console.error('Migration failed:', error);
+
       toast({
         title: "Migration Failed",
         description: error instanceof Error ? error.message : "Unknown error occurred",
@@ -375,7 +375,7 @@ const ChatCoach = () => {
         }
       }
     } catch (error) {
-      console.error('Failed to save conversation:', error);
+
       toast({
         title: "Save Failed",
         description: "Could not save the conversation",
@@ -399,7 +399,7 @@ const ChatCoach = () => {
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Failed to load conversation:', response.status, errorText);
+
         throw new Error(`Failed to load conversation: ${response.status}`);
       }
       
@@ -421,11 +421,7 @@ const ChatCoach = () => {
           timestamp: new Date(msg.timestamp || Date.now())
         }));
         
-        console.log('All loaded messages:', loadedMessages.map(m => ({ 
-          type: m.type, 
-          content: m.content.substring(0, 100),
-          timestamp: m.timestamp.toISOString()
-        })));
+
         
         setMessages(loadedMessages);
         setCurrentMode(data.conversation.mode);
@@ -444,7 +440,7 @@ const ChatCoach = () => {
         });
       }
     } catch (error) {
-      console.error('Failed to load conversation:', error);
+
       toast({
         title: "Load Failed",
         description: "Could not load the conversation. Please try refreshing the page.",
@@ -500,10 +496,9 @@ const ChatCoach = () => {
     setMessage('');
     setIsTyping(true);
 
-    // Auto-resize textarea
+    // Clear textarea
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      setInputHeight(44);
+      textareaRef.current.value = '';
     }
 
     try {
@@ -561,7 +556,7 @@ const ChatCoach = () => {
                 }
               });
             } catch (error) {
-              console.error('Failed to create conversation:', error);
+
             }
           } else {
             // Add AI message to existing conversation
@@ -574,14 +569,14 @@ const ChatCoach = () => {
                 }
               });
             } catch (error) {
-              console.error('Failed to add message:', error);
+
             }
           }
         }, 100);
         return updatedMessages;
       });
     } catch (error) {
-      console.error('Error getting AI response:', error);
+
       
       // Determine error type for better UX
       const errorType = error instanceof Error && error.message.includes('fetch') 
@@ -652,7 +647,7 @@ const ChatCoach = () => {
         description: "Message content copied successfully",
       });
     } catch (error) {
-      console.error('Failed to copy text:', error);
+
       toast({
         title: "Copy failed",
         description: "Could not copy to clipboard",
@@ -701,7 +696,7 @@ const ChatCoach = () => {
         duration: 2000
       });
     } catch (error) {
-      console.error('Failed to delete conversation:', error);
+
       toast({
         title: "Delete Failed",
         description: "Could not delete the conversation. Please try again.",
