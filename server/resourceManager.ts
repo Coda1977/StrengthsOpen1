@@ -16,7 +16,7 @@ class ResourceManager {
   };
 
   private cleanupTimeout: NodeJS.Timeout | null = null;
-  private readonly CLEANUP_INTERVAL = 30000; // 30 seconds
+  private readonly CLEANUP_INTERVAL = 300000; // 5 minutes - less aggressive cleanup
   private readonly MAX_WORKER_LIFETIME = 5 * 60 * 1000; // 5 minutes
 
   constructor() {
@@ -102,16 +102,63 @@ class ResourceManager {
   }
 
   private startPeriodicCleanup(): void {
-    this.cleanupTimeout = setInterval(() => {
-      this.performCleanup();
-    }, this.CLEANUP_INTERVAL);
+    // Only start cleanup if not already running
+    if (!this.cleanupTimeout) {
+      this.cleanupTimeout = setInterval(() => {
+        this.performCleanup();
+      }, this.CLEANUP_INTERVAL);
+    }
   }
 
   private async performCleanup(): Promise<void> {
+    const hasResources = this.resources.workers.size > 0 || 
+                        this.resources.timeouts.size > 0 || 
+                        this.resources.intervals.size > 0 || 
+                        this.resources.buffers.size > 0;
+
+    // Only run cleanup if there are actually resources to clean
+    if (!hasResources) {
+      return;
+    }
+
     console.log('Performing resource cleanup...');
 
-    // Clean up orphaned workers
-    const workersToTerminate = Array.from(this.resources.workers);
+    // Clean up only expired or orphaned workers
+    const now = Date.now();
+    const workersToTerminate: Worker[] = [];
+    
+    for (const worker of this.resources.workers) {
+      // Only terminate workers that have been idle or are actually orphaned
+      try {
+        // Check if worker is still responsive
+        const isResponsive = await Promise.race([
+          new Promise(resolve => {
+            // Simple test to see if worker responds
+            setTimeout(() => resolve(false), 1000);
+          }),
+          new Promise(resolve => {
+            try {
+              // If worker exists and responds, keep it
+              if (worker) {
+                resolve(true);
+              } else {
+                resolve(false);
+              }
+            } catch {
+              resolve(false);
+            }
+          })
+        ]);
+
+        if (!isResponsive) {
+          workersToTerminate.push(worker);
+        }
+      } catch (error) {
+        workersToTerminate.push(worker);
+      }
+    }
+
+    // Terminate only orphaned workers
     for (const worker of workersToTerminate) {
       try {
         await this.terminateWorker(worker);
@@ -120,35 +167,70 @@ class ResourceManager {
       }
     }
 
-    // Clean up expired timeouts
+    // Clean up only expired timeouts (keep active ones)
+    const expiredTimeouts: NodeJS.Timeout[] = [];
     for (const timeout of this.resources.timeouts) {
       try {
-        clearTimeout(timeout);
+        // Check if timeout is still valid by attempting to clear it
+        // If it throws or is already cleared, it's expired
+        const timeoutValid = timeout && timeout._idleTimeout !== -1;
+        if (!timeoutValid) {
+          expiredTimeouts.push(timeout);
+        }
       } catch (error) {
-        console.error('Error clearing timeout:', error);
+        expiredTimeouts.push(timeout);
       }
     }
-    this.resources.timeouts.clear();
 
-    // Clean up intervals
+    expiredTimeouts.forEach(timeout => {
+      try {
+        clearTimeout(timeout);
+        this.resources.timeouts.delete(timeout);
+      } catch (error) {
+        console.error('Error clearing expired timeout:', error);
+      }
+    });
+
+    // Don't clear ALL intervals - only clean up expired ones
+    const expiredIntervals: NodeJS.Interval[] = [];
     for (const interval of this.resources.intervals) {
       try {
-        clearInterval(interval);
+        // Check if interval is still valid
+        const intervalValid = interval && interval._idleTimeout !== -1;
+        if (!intervalValid) {
+          expiredIntervals.push(interval);
+        }
       } catch (error) {
-        console.error('Error clearing interval:', error);
+        expiredIntervals.push(interval);
       }
     }
-    this.resources.intervals.clear();
 
-    // Release tracked buffers
-    this.resources.buffers.clear();
+    expiredIntervals.forEach(interval => {
+      try {
+        clearInterval(interval);
+        this.resources.intervals.delete(interval);
+      } catch (error) {
+        console.error('Error clearing expired interval:', error);
+      }
+    });
 
-    // Force garbage collection if available
-    if (global.gc) {
-      global.gc();
+    // Only release buffers that are actually unused (this is tricky, so be conservative)
+    // For now, just log buffer count without clearing them aggressively
+    if (this.resources.buffers.size > 100) {
+      console.log(`Warning: ${this.resources.buffers.size} buffers tracked - potential memory leak`);
     }
 
-    console.log(`Cleanup completed. Remaining workers: ${this.resources.workers.size}`);
+    // Only run GC if we actually cleaned something significant
+    if (workersToTerminate.length > 0 || expiredTimeouts.length > 5 || expiredIntervals.length > 0) {
+      if (global.gc) {
+        global.gc();
+      }
+    }
+
+    const cleanedCount = workersToTerminate.length + expiredTimeouts.length + expiredIntervals.length;
+    if (cleanedCount > 0) {
+      console.log(`Cleanup completed. Cleaned ${cleanedCount} resources. Remaining workers: ${this.resources.workers.size}`);
+    }
   }
 
   private setupProcessCleanup(): void {

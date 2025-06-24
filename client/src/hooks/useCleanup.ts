@@ -82,10 +82,52 @@ export function useCleanup() {
     abortControllers.current.clear();
   }, []);
 
-  // Cleanup on component unmount
+  // Cleanup on component unmount - don't include cleanup in dependencies to avoid loops
   useEffect(() => {
-    return cleanup;
-  }, [cleanup]);
+    return () => {
+      // Run all cleanup functions
+      cleanupFunctions.current.forEach(fn => {
+        try {
+          fn();
+        } catch (error) {
+          console.error('Error during cleanup:', error);
+        }
+      });
+      cleanupFunctions.current = [];
+
+      // Clear all timeouts
+      timeouts.current.forEach(timeout => {
+        try {
+          clearTimeout(timeout);
+        } catch (error) {
+          console.error('Error clearing timeout:', error);
+        }
+      });
+      timeouts.current.clear();
+
+      // Clear all intervals
+      intervals.current.forEach(interval => {
+        try {
+          clearInterval(interval);
+        } catch (error) {
+          console.error('Error clearing interval:', error);
+        }
+      });
+      intervals.current.clear();
+
+      // Abort all controllers
+      abortControllers.current.forEach(controller => {
+        try {
+          if (!controller.signal.aborted) {
+            controller.abort();
+          }
+        } catch (error) {
+          console.error('Error aborting controller:', error);
+        }
+      });
+      abortControllers.current.clear();
+    };
+  }, []); // Empty dependency array to prevent recreation
 
   return {
     addCleanup,

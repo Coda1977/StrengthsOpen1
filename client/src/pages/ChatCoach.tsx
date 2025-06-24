@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
+import { useCleanup } from "@/hooks/useCleanup";
 
 interface Message {
   id: string;
@@ -26,6 +27,9 @@ const ChatCoach = () => {
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Use cleanup hook for better resource management
+  const { createTimeout, addCleanup } = useCleanup();
 
   const formatMessageText = (text: string): string => {
     return text
@@ -184,8 +188,8 @@ const ChatCoach = () => {
       
       setMessages(prev => {
         const updatedMessages = [...prev, aiMessage];
-        // Auto-save chat after AI response
-        setTimeout(() => {
+        // Auto-save chat after AI response - using cleanup hook
+        createTimeout(() => {
           if (!currentChatId) {
             setCurrentChatId(Date.now().toString());
           }
@@ -206,15 +210,14 @@ const ChatCoach = () => {
     }
   };
 
-  // Auto-save chat when messages change
+  // Auto-save chat when messages change - using cleanup hook
   useEffect(() => {
     if (messages.length > 0 && currentChatId) {
-      const timeoutId = setTimeout(() => {
+      createTimeout(() => {
         saveCurrentChat();
       }, 1000); // Save 1 second after last message
-      return () => clearTimeout(timeoutId);
     }
-  }, [messages, currentChatId, currentMode, chatHistory]);
+  }, [messages, currentChatId, currentMode, createTimeout]);
 
   const getAIResponse = (userInput: string): string => {
     // Simple response logic based on input
