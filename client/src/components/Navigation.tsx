@@ -67,12 +67,15 @@ const Navigation = ({ simplified = false }: NavigationProps) => {
           )}
         </div>
         
-        <button 
-          className="mobile-menu-btn"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          ☰
-        </button>
+        {/* Hide mobile menu button on chat page to avoid duplicate hamburgers */}
+        {!location.includes('/coach') && !location.includes('/chat') && (
+          <button 
+            className="mobile-menu-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            ☰
+          </button>
+        )}
       </div>
     </nav>
   );

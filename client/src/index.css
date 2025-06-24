@@ -2039,11 +2039,6 @@ footer {
     display: block;
   }
 
-  /* Hide nav mobile menu on chat page */
-  .nav-container .mobile-menu-btn {
-    display: none;
-  }
-
   .hero-container {
     grid-template-columns: 1fr;
     gap: 60px;
@@ -2094,6 +2089,13 @@ footer {
     min-height: 44px;
     z-index: 100;
     position: relative;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .mobile-sidebar-toggle:hover {
+    background: var(--border-light);
   }
 
   .sidebar {
@@ -2118,6 +2120,11 @@ footer {
     pointer-events: none;
     transition: opacity 0.3s ease;
     z-index: 150;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
   }
 
   .main-container:not(.sidebar-hidden) .swipe-overlay {
