@@ -4,7 +4,7 @@ import multer from 'multer';
 import { isAuthenticated, setupAuth } from './replitAuth';
 import { storage } from './storage';
 import { parseTeamMembersFile } from './fileParser';
-import { generateTeamInsight, generateCollaborationInsight } from './openai';
+import { generateTeamInsight, generateCollaborationInsight, generateCoachResponse } from './openai';
 import { errors, createSuccessResponse, AppError } from './errorHandler';
 import { insertTeamMemberSchema, updateTeamMemberSchema, updateUserOnboardingSchema } from '../shared/schema';
 
@@ -311,6 +311,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // File upload endpoint for team members
+  app.post('/api/chat-with-coach', isAuthenticated, requireOnboarding, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const { message, mode, conversationHistory } = req.body;
+      
+      if (!message || typeof message !== 'string') {
+        throw new AppError('Message is required', 400, ERROR_CODES.VALIDATION_ERROR);
+      }
+
+      if (!mode || !['personal', 'team'].includes(mode)) {
+        throw new AppError('Valid mode (personal or team) is required', 400, ERROR_CODES.VALIDATION_ERROR);
+      }
+
+      // Get user data for context
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user) {
+        throw new AppError('User not found', 404, ERROR_CODES.USER_NOT_FOUND);
+      }
+
+      const teamMembers = await storage.getTeamMembers(req.user.claims.sub);
+      
+      // Generate AI response using the coaching system prompt
+      const response = await generateCoachResponse(message, mode, user, teamMembers, conversationHistory);
+      
+      res.json(createSuccessResponse({ response }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.post('/api/upload-team-members', isAuthenticated, requireOnboarding, upload.single('file'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const startTime = Date.now();
     

@@ -100,6 +100,7 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - June 24, 2025: Fixed navigation overlap issues on Encyclopedia and AI Coach pages by adding proper top padding
 - June 24, 2025: Fixed chat input field styling to span full width in AI Coach interface
 - June 24, 2025: Fixed chat message styling and added markdown parsing for proper text formatting in AI Coach
+- June 24, 2025: Implemented AI coaching system with expert strengths-based leadership coaching personality and deep CliftonStrengths knowledge
 - June 23, 2025: Fixed critical React hooks error by removing "use client" directives from all UI components
 - June 23, 2025: Enhanced database connection stability with optimized pool settings for Neon serverless
 - June 23, 2025: Added retry logic for database operations to handle connection terminations
