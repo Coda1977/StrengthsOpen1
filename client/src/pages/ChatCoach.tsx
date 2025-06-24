@@ -808,54 +808,15 @@ const ChatCoach = () => {
 
           {/* Chat Container */}
           <div className="chat-container">
-            <div 
-              className="chat-header"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px',
-                padding: '1rem',
-                background: 'var(--white)',
-                borderBottom: '1px solid var(--border-light)',
-                position: 'sticky',
-                top: 0,
-                zIndex: 10
-              }}
-            >
+            <div className="chat-header">
               <button 
                 className="mobile-sidebar-toggle"
                 onClick={toggleSidebar}
                 aria-label="Toggle sidebar"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '40px',
-                  height: '40px',
-                  minWidth: '40px',
-                  minHeight: '40px',
-                  padding: '8px',
-                  margin: '0',
-                  background: 'var(--bg-primary)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '18px',
-                  cursor: 'pointer',
-                  flexShrink: 0
-                }}
               >
                 ☰
               </button>
-              <h1 
-                className="chat-title"
-                style={{
-                  fontSize: '22px',
-                  fontWeight: '700',
-                  margin: '0',
-                  flex: 1,
-                  textAlign: 'left'
-                }}
-              >
+              <h1 className="chat-title">
                 AI Strengths Coach
               </h1>
             </div>
@@ -886,44 +847,12 @@ const ChatCoach = () => {
                     return (
                       <div 
                         key={`${msg.id}-${index}`}
-                        style={{ 
-                          display: 'flex',
-                          gap: '12px',
-                          marginBottom: '20px',
-                          alignItems: 'flex-start',
-                          flexDirection: msg.type === 'user' ? 'row-reverse' : 'row',
-                          width: '100%'
-                        }}
+                        className={`message ${msg.type}`}
                       >
-                        <div 
-                          style={{
-                            background: msg.type === 'user' ? '#FCD34D' : '#3B82F6',
-                            color: msg.type === 'user' ? '#1F2937' : '#FFFFFF',
-                            padding: '8px 12px',
-                            borderRadius: '20px',
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            flexShrink: 0,
-                            minWidth: '50px',
-                            textAlign: 'center'
-                          }}
-                        >
+                        <div className={`message-avatar ${msg.type}`}>
                           {msg.type === 'user' ? 'You' : 'AI'}
                         </div>
-                        <div 
-                          style={{ 
-                            background: msg.type === 'user' ? '#3B82F6' : '#FFFFFF',
-                            color: msg.type === 'user' ? '#FFFFFF' : '#1F2937',
-                            padding: '16px 20px',
-                            borderRadius: '20px',
-                            maxWidth: '70%',
-                            lineHeight: '1.6',
-                            position: 'relative',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
-                            wordWrap: 'break-word',
-                            overflowWrap: 'break-word'
-                          }}
-                        >
+                        <div className={`message-content ${msg.type}`}>
                           {msg.type === 'user' ? (
                             <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
                           ) : (
