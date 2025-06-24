@@ -262,6 +262,17 @@ const ChatCoach = () => {
       <Navigation />
       
       <div className={`main-container ${sidebarHidden ? 'sidebar-hidden' : ''}`}>
+        {/* Floating Hamburger Menu */}
+        <button 
+          className={`floating-hamburger ${sidebarHidden ? 'visible' : 'hidden'}`}
+          onClick={() => setSidebarHidden(false)}
+          aria-label="Open chat history"
+        >
+          <div className="hamburger-line"></div>
+          <div className="hamburger-line"></div>
+          <div className="hamburger-line"></div>
+        </button>
+
         {/* Edge Swipe Handle */}
         <div 
           className="edge-swipe-handle"

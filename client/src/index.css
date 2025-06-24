@@ -1795,6 +1795,16 @@ footer {
     display: block !important;
   }
 
+  .floating-hamburger {
+    left: 16px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .hamburger-line {
+    width: 16px;
+  }
+
   .sidebar {
     position: fixed;
     left: -320px;
