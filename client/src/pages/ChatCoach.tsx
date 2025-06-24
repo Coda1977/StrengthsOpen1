@@ -258,7 +258,7 @@ const ChatCoach = () => {
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
       <Navigation />
       
       <div className={`main-container ${sidebarHidden ? 'sidebar-hidden' : ''}`}>
