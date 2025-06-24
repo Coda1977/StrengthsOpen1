@@ -1269,6 +1269,7 @@ footer {
   display: flex;
   overflow: hidden;
   position: relative;
+  height: calc(100vh - 80px);
   margin-top: 80px; /* Add space for fixed navigation */
 }
 
