@@ -816,7 +816,10 @@ const ChatCoach = () => {
                         }}
                         title="Delete conversation"
                       >
-                        🗑️
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c0 1 1 2 2 2v2"/>
+                          <path d="M10 11v6M14 11v6"/>
+                        </svg>
                       </button>
                     </div>
                   ))}
@@ -862,7 +865,7 @@ const ChatCoach = () => {
               ) : (
                 <>
                   {messages.map((msg, index) => {
-                    console.log(`Rendering message ${index}:`, { type: msg.type, content: msg.content.substring(0, 50) });
+
                     return (
                       <div 
                         key={`${msg.id}-${index}`}
@@ -874,26 +877,30 @@ const ChatCoach = () => {
                         <div className={`message-content ${msg.type}`}>
                           {msg.type === 'user' ? (
                             <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                          ) : msg.content.startsWith('ERROR:') ? (
+                            <ErrorMessage 
+                              type={msg.content.split(':')[1] as 'connection' | 'server' | 'ai_service' | 'validation' | 'unknown'}
+                              retry={() => {
+                                const lastUserMessage = messages.filter(m => m.type === 'user').pop();
+                                if (lastUserMessage) {
+                                  setMessage(lastUserMessage.content);
+                                  setTimeout(() => handleSendMessage(), 100);
+                                }
+                              }}
+                            />
                           ) : (
                             <div dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }} />
                           )}
                           <button 
-                            style={{
-                              position: 'absolute',
-                              top: '8px',
-                              right: '8px',
-                              background: 'none',
-                              border: 'none',
-                              cursor: 'pointer',
-                              opacity: '0.6',
-                              fontSize: '16px',
-                              padding: '4px',
-                              borderRadius: '4px'
-                            }}
+                            className="copy-message-button"
                             onClick={() => copyToClipboard(msg.content)}
                             title="Copy message"
+                            aria-label="Copy message to clipboard"
                           >
-                            📋
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+                              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                            </svg>
                           </button>
                         </div>
                       </div>
@@ -929,7 +936,7 @@ const ChatCoach = () => {
                   value={message}
                   onChange={handleTextareaChange}
                   onKeyDown={handleKeyPress}
-                  style={{ height: `${inputHeight}px` }}
+
                   rows={1}
                 />
                 <button 
