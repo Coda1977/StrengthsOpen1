@@ -17,6 +17,18 @@ const ChatCoach = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const formatMessageText = (text: string): string => {
+    return text
+      // Bold text **text** -> <strong>text</strong>
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      // Italic text *text* -> <em>text</em>
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      // Bullet points • -> styled bullets
+      .replace(/^• (.+)/, '<div class="bullet-point">• $1</div>')
+      // Handle line breaks
+      .replace(/\n/g, '<br/>');
+  };
+
   const modes = [
     { id: 'personal', label: 'My Strengths' },
     { id: 'team', label: 'Team' }
@@ -194,10 +206,9 @@ const ChatCoach = () => {
                     </div>
                     <div className="message-content">
                       {msg.content.split('\n').map((line, index) => (
-                        <div key={index}>
-                          {line}
-                          {index < msg.content.split('\n').length - 1 && <br />}
-                        </div>
+                        <div key={index} dangerouslySetInnerHTML={{ 
+                          __html: formatMessageText(line) 
+                        }} />
                       ))}
                       <button 
                         className="copy-button"

@@ -1639,6 +1639,35 @@ footer {
   30% { transform: translateY(-10px); opacity: 1; }
 }
 
+/* Message Text Formatting */
+.message-content strong {
+  font-weight: 700;
+  color: inherit;
+}
+
+.message-content em {
+  font-style: italic;
+  color: inherit;
+}
+
+.bullet-point {
+  margin: 8px 0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.bullet-point::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  font-weight: bold;
+  color: var(--accent-blue);
+}
+
+.message.user .bullet-point::before {
+  color: var(--accent-yellow);
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .nav-container {
