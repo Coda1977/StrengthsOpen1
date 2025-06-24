@@ -594,14 +594,25 @@ const ChatCoach = () => {
     }
   };
 
-  // Auto-save chat when messages change - using cleanup hook
+  // Debounced auto-save function
+  const debouncedSave = useMemo(() => {
+    let timeoutId: NodeJS.Timeout;
+    return () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (messages.length > 0 && currentChatId) {
+          saveCurrentChat();
+        }
+      }, 1000);
+    };
+  }, [messages.length, currentChatId]);
+
+  // Auto-save when messages change
   useEffect(() => {
     if (messages.length > 0 && currentChatId) {
-      createTimeout(() => {
-        saveCurrentChat();
-      }, 1000); // Save 1 second after last message
+      debouncedSave();
     }
-  }, [messages, currentChatId, currentMode, createTimeout]);
+  }, [messages, currentChatId, debouncedSave]);
 
   // Mobile input handling functions
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
