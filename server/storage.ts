@@ -98,10 +98,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   private setCachedTeamMembers(managerId: string, members: TeamMember[]): void {
+    if (!managerId) return;
     // Implement LRU eviction
     if (this.teamMembersCache.size >= this.MAX_CACHE_SIZE) {
       const firstKey = this.teamMembersCache.keys().next().value;
-      this.teamMembersCache.delete(firstKey);
+      if (firstKey) this.teamMembersCache.delete(firstKey);
     }
     this.teamMembersCache.set(managerId, { members, timestamp: Date.now() });
   }

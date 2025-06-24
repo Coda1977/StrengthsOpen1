@@ -525,10 +525,11 @@ const ChatCoach = () => {
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <Navigation />
-      
-      <div className={`main-container ${sidebarHidden ? 'sidebar-hidden' : ''}`} style={{ flex: 1 }}>
+    <ErrorBoundary>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Navigation />
+        
+        <div className={`main-container ${sidebarHidden ? 'sidebar-hidden' : ''}`} style={{ flex: 1 }}>
         {/* Floating Hamburger Menu */}
         <button 
           className={`floating-hamburger ${sidebarHidden ? 'visible' : 'hidden'}`}
@@ -714,7 +715,6 @@ const ChatCoach = () => {
             </div>
           </div>
         </div>
-      </div>
       </div>
     </ErrorBoundary>
   );
