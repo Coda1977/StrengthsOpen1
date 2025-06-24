@@ -93,6 +93,7 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Sessions Table**: Handles session persistence for authentication
 
 ## Recent Changes
+- June 24, 2025: Improved copy message button with proper SVG icon from lucide-react, enhanced styling with backdrop blur and smooth animations, better positioning and accessibility with ARIA labels and focus states
 - June 24, 2025: Fixed "New Chat" button focus issue by adding proper setTimeout delay to ensure focus happens after React state updates complete
 - June 24, 2025: Fixed user message display by using hardcoded colors instead of CSS variables, added proper message rendering with unique keys, fixed delete button positioning to stay within sidebar bounds, and ensured all conversation messages display correctly
 - June 24, 2025: Fixed conversation loading issue by implementing getConversationWithMessages method, improved authentication middleware to handle session edge cases, added comprehensive error logging and user feedback for conversation operations, and optimized database queries for message retrieval
