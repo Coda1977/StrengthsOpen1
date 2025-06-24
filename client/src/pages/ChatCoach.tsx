@@ -55,6 +55,11 @@ const ChatCoach = () => {
   const [migrationInProgress, setMigrationInProgress] = useState(false);
   const [chatError, setChatError] = useState<Error | null>(null);
   const [chatStarted, setChatStarted] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    show: boolean;
+    conversationId: string | null;
+    conversationTitle: string;
+  }>({ show: false, conversationId: null, conversationTitle: '' });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [inputHeight, setInputHeight] = useState(44);
