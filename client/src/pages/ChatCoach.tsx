@@ -404,16 +404,24 @@ const ChatCoach = () => {
       
       if (data && data.conversation && data.messages) {
         console.log('Successfully loaded conversation with', data.messages.length, 'messages');
-        console.log('Messages:', data.messages.map(m => ({ type: m.type, content: m.content.substring(0, 50) + '...' })));
         
-        const loadedMessages = data.messages.map(msg => ({
+        // Sort messages by timestamp to ensure proper order
+        const sortedMessages = data.messages.sort((a, b) => 
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        
+        const loadedMessages = sortedMessages.map(msg => ({
           id: msg.id,
           content: msg.content,
           type: msg.type as 'user' | 'ai',
           timestamp: new Date(msg.timestamp || Date.now())
         }));
         
-        console.log('Mapped messages:', loadedMessages.map(m => ({ type: m.type, content: m.content.substring(0, 50) + '...' })));
+        console.log('All loaded messages:', loadedMessages.map(m => ({ 
+          type: m.type, 
+          content: m.content.substring(0, 100),
+          timestamp: m.timestamp.toISOString()
+        })));
         
         setMessages(loadedMessages);
         setCurrentMode(data.conversation.mode);
@@ -630,6 +638,46 @@ const ChatCoach = () => {
     setSidebarHidden(!sidebarHidden);
   };
 
+  // Handle conversation deletion
+  const handleDeleteConversation = async (conversationId: string) => {
+    if (!confirm('Are you sure you want to delete this conversation? This cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/conversations/${conversationId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete conversation');
+      }
+
+      // Clear current chat if it's the one being deleted
+      if (currentChatId === conversationId) {
+        setCurrentChatId(null);
+        setMessages([]);
+      }
+
+      // Refresh conversations list by calling the refetch function
+      window.location.reload(); // Simple refresh for now
+      
+      toast({
+        title: "Conversation Deleted",
+        description: "The conversation has been permanently removed",
+        duration: 2000
+      });
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Could not delete the conversation. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <ErrorBoundary>
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -697,15 +745,29 @@ const ChatCoach = () => {
                     <div 
                       key={conversation.id}
                       className={`history-item ${currentChatId === conversation.id ? 'active' : ''}`}
-                      onClick={() => loadChat(conversation.id)}
                     >
-                      <div className="history-title">{conversation.title}</div>
-                      <div className="history-meta">
-                        <span className="history-mode">{conversation.mode === 'personal' ? 'My Strengths' : 'Team'}</span>
-                        <span className="history-date">
-                          {conversation.lastActivity ? new Date(conversation.lastActivity).toLocaleDateString() : 'Unknown'}
-                        </span>
+                      <div 
+                        className="history-content"
+                        onClick={() => loadChat(conversation.id)}
+                      >
+                        <div className="history-title">{conversation.title}</div>
+                        <div className="history-meta">
+                          <span className="history-mode">{conversation.mode === 'personal' ? 'My Strengths' : 'Team'}</span>
+                          <span className="history-date">
+                            {conversation.lastActivity ? new Date(conversation.lastActivity).toLocaleDateString() : 'Unknown'}
+                          </span>
+                        </div>
                       </div>
+                      <button 
+                        className="delete-conversation-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteConversation(conversation.id);
+                        }}
+                        title="Delete conversation"
+                      >
+                        🗑️
+                      </button>
                     </div>
                   ))}
                 </div>
