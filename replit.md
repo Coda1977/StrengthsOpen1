@@ -93,7 +93,7 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Sessions Table**: Handles session persistence for authentication
 
 ## Recent Changes
-- June 24, 2025: Fixed user message visibility issue by completely bypassing conflicting CSS classes and using inline styles for message rendering, ensuring all loaded conversation messages display properly
+- June 24, 2025: Fixed user message display by using hardcoded colors instead of CSS variables, added proper message rendering with unique keys, fixed delete button positioning to stay within sidebar bounds, and ensured all conversation messages display correctly
 - June 24, 2025: Fixed conversation loading issue by implementing getConversationWithMessages method, improved authentication middleware to handle session edge cases, added comprehensive error logging and user feedback for conversation operations, and optimized database queries for message retrieval
 - June 24, 2025: Fixed markdown rendering in AI responses with proper formatting for headers, bold text, numbered lists, and bullet points using custom HTML transformation
 - June 24, 2025: Fixed header layout spacing between hamburger menu and title using inline styles to override CSS conflicts

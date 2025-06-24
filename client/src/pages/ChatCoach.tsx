@@ -850,73 +850,76 @@ const ChatCoach = () => {
                 </div>
               ) : (
                 <>
-                  {messages.map((msg, index) => (
-                    <div 
-                      key={msg.id} 
-                      className={`chat-message-wrapper ${msg.type}-message`}
-                      style={{ 
-                        display: 'flex',
-                        gap: '12px',
-                        marginBottom: '20px',
-                        alignItems: 'flex-start',
-                        flexDirection: msg.type === 'user' ? 'row-reverse' : 'row'
-                      }}
-                    >
+                  {messages.map((msg, index) => {
+                    console.log(`Rendering message ${index}:`, { type: msg.type, content: msg.content.substring(0, 50) });
+                    return (
                       <div 
-                        style={{
-                          background: msg.type === 'user' ? 'var(--accent-yellow)' : 'var(--accent-blue)',
-                          color: msg.type === 'user' ? 'var(--text-primary)' : 'var(--white)',
-                          padding: '8px 12px',
-                          borderRadius: '20px',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          flexShrink: '0',
-                          minWidth: '50px',
-                          textAlign: 'center'
-                        }}
-                      >
-                        {msg.type === 'user' ? 'You' : 'AI'}
-                      </div>
-                      <div 
+                        key={`${msg.id}-${index}`}
                         style={{ 
-                          background: msg.type === 'user' ? 'var(--accent-blue)' : 'var(--white)',
-                          color: msg.type === 'user' ? 'var(--white)' : 'var(--text-primary)',
-                          padding: '16px 20px',
-                          borderRadius: '20px',
-                          maxWidth: '70%',
-                          lineHeight: '1.6',
-                          position: 'relative',
-                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
+                          display: 'flex',
+                          gap: '12px',
+                          marginBottom: '20px',
+                          alignItems: 'flex-start',
+                          flexDirection: msg.type === 'user' ? 'row-reverse' : 'row',
+                          width: '100%'
                         }}
                       >
-                        <div>
+                        <div 
+                          style={{
+                            background: msg.type === 'user' ? '#FCD34D' : '#3B82F6',
+                            color: msg.type === 'user' ? '#1F2937' : '#FFFFFF',
+                            padding: '8px 12px',
+                            borderRadius: '20px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            flexShrink: 0,
+                            minWidth: '50px',
+                            textAlign: 'center'
+                          }}
+                        >
+                          {msg.type === 'user' ? 'You' : 'AI'}
+                        </div>
+                        <div 
+                          style={{ 
+                            background: msg.type === 'user' ? '#3B82F6' : '#FFFFFF',
+                            color: msg.type === 'user' ? '#FFFFFF' : '#1F2937',
+                            padding: '16px 20px',
+                            borderRadius: '20px',
+                            maxWidth: '70%',
+                            lineHeight: '1.6',
+                            position: 'relative',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+                            wordWrap: 'break-word',
+                            overflowWrap: 'break-word'
+                          }}
+                        >
                           {msg.type === 'user' ? (
-                            <span>{msg.content}</span>
+                            <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
                           ) : (
                             <div dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }} />
                           )}
+                          <button 
+                            style={{
+                              position: 'absolute',
+                              top: '8px',
+                              right: '8px',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              opacity: '0.6',
+                              fontSize: '16px',
+                              padding: '4px',
+                              borderRadius: '4px'
+                            }}
+                            onClick={() => copyToClipboard(msg.content)}
+                            title="Copy message"
+                          >
+                            📋
+                          </button>
                         </div>
-                        <button 
-                          style={{
-                            position: 'absolute',
-                            top: '8px',
-                            right: '8px',
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            opacity: '0.6',
-                            fontSize: '16px',
-                            padding: '4px',
-                            borderRadius: '4px'
-                          }}
-                          onClick={() => copyToClipboard(msg.content)}
-                          title="Copy message"
-                        >
-                          📋
-                        </button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   
                   {isTyping && (
                     <div className="typing-indicator">
