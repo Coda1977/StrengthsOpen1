@@ -165,9 +165,7 @@ const ChatCoach = () => {
     "How do I identify and develop my team's strengths?"
   ];
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+
 
   // Check for migration needs on component mount
   useEffect(() => {
@@ -179,17 +177,13 @@ const ChatCoach = () => {
     setSidebarOpen(!isMobile);
   }, [isMobile]);
 
-  // Simple keyboard handling
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
-    const handleResize = () => {
-      if (messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoViewIfNeeded?.() || 
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
 
   // Handle focus when new chat starts
   useEffect(() => {
@@ -327,14 +321,7 @@ const ChatCoach = () => {
     }
   };
 
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ 
-        behavior: isMobile ? "auto" : "smooth",
-        block: "end"
-      });
-    }
-  };
+
 
   const generateChatTitle = (firstMessage: string): string => {
     const words = firstMessage.split(' ').slice(0, 6);
@@ -468,9 +455,8 @@ const ChatCoach = () => {
     setChatStarted(true); // Mark that a new chat has been started
     setCurrentChatId('new-chat-active'); // Set a temporary ID to indicate active chat
     
-    // Reset textarea height and clear value
+    // Clear textarea value
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
       textareaRef.current.value = '';
     }
     
@@ -608,14 +594,6 @@ const ChatCoach = () => {
   // Mobile input handling functions
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
-    
-    // Auto-resize textarea
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      const newHeight = Math.min(textareaRef.current.scrollHeight, 120);
-      textareaRef.current.style.height = `${newHeight}px`;
-      setInputHeight(newHeight);
-    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

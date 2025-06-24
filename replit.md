@@ -93,6 +93,7 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Sessions Table**: Handles session persistence for authentication
 
 ## Recent Changes
+- June 24, 2025: Simplified textarea resizing from manual height calculations to CSS field-sizing: content, replaced complex scroll management with scrollIntoViewIfNeeded
 - June 24, 2025: Simplified sidebar toggle conflicts by replacing multiple state variables with single sidebarOpen state and clean CSS classes
 - June 24, 2025: Simplified complex viewport/keyboard handling by replacing 150+ lines of JavaScript with modern CSS dvh units for automatic keyboard handling
 - June 24, 2025: Fixed message text wrapping with proper word-wrap, overflow-wrap, and word-break properties for chat bubbles, added URL and long string handling, enhanced mobile text wrapping behavior
