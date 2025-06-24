@@ -459,10 +459,10 @@ const ChatCoach = () => {
     // Clear current state
     setMessages([]);
     setMessage('');
-    setCurrentChatId(null);
     setChatError(null);
     setInputHeight(44);
     setChatStarted(true); // Mark that a new chat has been started
+    setCurrentChatId('new-chat-active'); // Set a temporary ID to indicate active chat
     
     // Reset textarea height
     if (textareaRef.current) {

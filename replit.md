@@ -127,3 +127,4 @@ The Strengths Manager is a full-stack web application designed to help managers 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+User expects efficient solutions completed in fewer iterations, not incremental debugging.
