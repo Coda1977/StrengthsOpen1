@@ -1529,6 +1529,116 @@ footer {
   transform: none;
 }
 
+/* Message Styling */
+.message {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-items: flex-start;
+}
+
+.message.user {
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  background: var(--accent-blue);
+  color: var(--white);
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+  min-width: 50px;
+  text-align: center;
+}
+
+.message.user .message-avatar {
+  background: var(--accent-yellow);
+  color: var(--text-primary);
+}
+
+.message-content {
+  background: var(--white);
+  padding: 16px 20px;
+  border-radius: 20px;
+  max-width: 70%;
+  line-height: 1.6;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.message.user .message-content {
+  background: var(--accent-blue);
+  color: var(--white);
+}
+
+.copy-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.copy-button:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.message.user .copy-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Typing Indicator */
+.typing-indicator {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.typing-content {
+  background: var(--white);
+  padding: 16px 20px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.typing-text {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.typing-dots {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--text-secondary);
+  border-radius: 50%;
+  animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-10px); opacity: 1; }
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .nav-container {
