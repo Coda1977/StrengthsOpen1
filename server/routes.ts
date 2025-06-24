@@ -5,7 +5,7 @@ import { isAuthenticated, setupAuth } from './replitAuth';
 import { storage } from './storage';
 import { parseTeamMembersFile } from './fileParser';
 import { generateTeamInsight, generateCollaborationInsight, generateCoachResponse } from './openai';
-import { errors, createSuccessResponse, AppError } from './errorHandler';
+import { errors, createSuccessResponse, createErrorResponse, AppError, ERROR_CODES } from './errorHandler';
 import { insertTeamMemberSchema, updateTeamMemberSchema, updateUserOnboardingSchema } from '../shared/schema';
 
 interface AuthenticatedRequest extends Request {

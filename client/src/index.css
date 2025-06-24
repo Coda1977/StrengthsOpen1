@@ -2039,6 +2039,11 @@ footer {
     display: block;
   }
 
+  /* Hide nav mobile menu on chat page */
+  .nav-container .mobile-menu-btn {
+    display: none;
+  }
+
   .hero-container {
     grid-template-columns: 1fr;
     gap: 60px;
@@ -2087,6 +2092,8 @@ footer {
     font-size: 18px;
     min-width: 44px;
     min-height: 44px;
+    z-index: 100;
+    position: relative;
   }
 
   .sidebar {
@@ -2106,9 +2113,11 @@ footer {
   }
 
   .swipe-overlay {
+    display: block;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
+    z-index: 150;
   }
 
   .main-container:not(.sidebar-hidden) .swipe-overlay {
@@ -2365,6 +2374,7 @@ footer {
   .swipe-overlay {
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
+    background: rgba(0, 0, 0, 0.3);
   }
 
   /* Improved mobile keyboard handling */

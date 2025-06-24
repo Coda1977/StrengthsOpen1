@@ -574,9 +574,7 @@ const ChatCoach = () => {
 
   // Handle mobile sidebar overlay clicks
   const handleOverlayClick = () => {
-    if (isMobile) {
-      setSidebarHidden(true);
-    }
+    setSidebarHidden(true);
   };
 
   // Handle mobile sidebar toggle
@@ -590,22 +588,6 @@ const ChatCoach = () => {
         <Navigation />
         
         <div className={`main-container ${sidebarHidden ? 'sidebar-hidden' : ''}`} style={{ flex: 1 }}>
-          {/* Floating Hamburger Menu */}
-          <button 
-            className={`floating-hamburger ${sidebarHidden ? 'visible' : 'hidden'}`}
-            onClick={() => setSidebarHidden(false)}
-            aria-label="Open chat history"
-          >
-            <div className="hamburger-line"></div>
-            <div className="hamburger-line"></div>
-            <div className="hamburger-line"></div>
-          </button>
-
-          {/* Edge Swipe Handle */}
-          <div 
-            className="edge-swipe-handle"
-            onClick={() => setSidebarHidden(false)}
-          ></div>
 
           {/* Swipe Overlay */}
           <div 
