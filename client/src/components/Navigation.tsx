@@ -50,7 +50,10 @@ const Navigation = ({ simplified = false }: NavigationProps) => {
               key={item.path}
               href={item.path}
               className={`nav-item ${location === item.path ? 'active' : ''}`}
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={(e) => {
+                console.log('Navigation clicked:', item.path);
+                setMobileMenuOpen(false);
+              }}
             >
               {item.label}
             </Link>
