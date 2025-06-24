@@ -681,10 +681,10 @@ const ChatCoach = () => {
 
   return (
     <ErrorBoundary>
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="app-container">
         <Navigation />
         
-        <div className={`main-container ${sidebarOpen ? 'sidebar-open' : ''}`} style={{ flex: 1 }}>
+        <div className={`main-container ${sidebarOpen ? 'sidebar-open' : ''}`}>
           {/* Sidebar Toggle Button */}
           {!sidebarOpen && (
             <button 
