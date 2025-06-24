@@ -812,7 +812,7 @@ const ChatCoach = () => {
             >
               <button 
                 className="mobile-sidebar-toggle"
-                onClick={handleSidebarToggle}
+                onClick={toggleSidebar}
                 aria-label="Toggle sidebar"
                 style={{
                   display: 'flex',
