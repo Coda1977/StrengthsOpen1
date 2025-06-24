@@ -181,7 +181,16 @@ const ChatCoach = () => {
                 </button>
               ))}
             </div>
-            <button className="new-chat-button">
+            <button 
+              className="new-chat-button"
+              onClick={() => {
+                setMessages([]);
+                setMessage('');
+                if (textareaRef.current) {
+                  textareaRef.current.style.height = 'auto';
+                }
+              }}
+            >
               <span style={{fontSize: '20px', marginRight: '4px'}}>+</span>
               New Chat
             </button>
