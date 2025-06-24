@@ -464,23 +464,17 @@ const ChatCoach = () => {
     setChatStarted(true); // Mark that a new chat has been started
     setCurrentChatId('new-chat-active'); // Set a temporary ID to indicate active chat
     
-    // Reset textarea height
+    // Reset textarea height and focus immediately
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.value = '';
+      textareaRef.current.focus(); // Focus immediately without timeout
     }
     
     // Hide sidebar on mobile to show chat interface
     if (isMobile) {
       setSidebarHidden(true);
     }
-    
-    // Focus on input field for immediate typing
-    setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-      }
-    }, 200);
     
     // Show notification
     toast({
