@@ -49,6 +49,8 @@ const ChatCoach = () => {
   const [currentMode, setCurrentMode] = useState<'personal' | 'team'>('personal');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [displayedMessages, setDisplayedMessages] = useState<Message[]>([]);
+  const [messageLimit, setMessageLimit] = useState(50);
   const [isTyping, setIsTyping] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [migrationNeeded, setMigrationNeeded] = useState(false);
@@ -177,13 +179,23 @@ const ChatCoach = () => {
     setSidebarOpen(!isMobile);
   }, [isMobile]);
 
-  // Auto-scroll to bottom when messages change
+  // Manage displayed messages for performance
+  useEffect(() => {
+    if (messages.length <= messageLimit) {
+      setDisplayedMessages(messages);
+    } else {
+      // Show most recent messages
+      setDisplayedMessages(messages.slice(-messageLimit));
+    }
+  }, [messages, messageLimit]);
+
+  // Auto-scroll to bottom when displayed messages change
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoViewIfNeeded?.() || 
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages]);
+  }, [displayedMessages]);
 
   // Handle focus when new chat starts
   useEffect(() => {
