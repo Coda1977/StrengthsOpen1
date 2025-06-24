@@ -44,8 +44,86 @@ const ChatCoach = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Load chat history from localStorage on component mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('chat-history');
+    if (savedHistory) {
+      try {
+        const parsedHistory = JSON.parse(savedHistory).map((chat: any) => ({
+          ...chat,
+          lastActivity: new Date(chat.lastActivity),
+          messages: chat.messages.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }))
+        }));
+        setChatHistory(parsedHistory);
+      } catch (error) {
+        console.error('Failed to parse chat history:', error);
+      }
+    }
+  }, []);
+
+  // Save chat history to localStorage whenever it changes
+  useEffect(() => {
+    if (chatHistory.length > 0) {
+      localStorage.setItem('chat-history', JSON.stringify(chatHistory));
+    }
+  }, [chatHistory]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const generateChatTitle = (firstMessage: string): string => {
+    const words = firstMessage.split(' ').slice(0, 6);
+    return words.length < firstMessage.split(' ').length 
+      ? words.join(' ') + '...' 
+      : words.join(' ');
+  };
+
+  const saveCurrentChat = () => {
+    if (messages.length === 0) return;
+
+    const chatToSave: ChatHistory = {
+      id: currentChatId || Date.now().toString(),
+      title: generateChatTitle(messages.find(m => m.type === 'user')?.content || 'New Chat'),
+      messages: [...messages],
+      lastActivity: new Date(),
+      mode: currentMode
+    };
+
+    setChatHistory(prev => {
+      const existingIndex = prev.findIndex(chat => chat.id === chatToSave.id);
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex] = chatToSave;
+        return updated.sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
+      } else {
+        return [chatToSave, ...prev].sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
+      }
+    });
+  };
+
+  const loadChat = (chatId: string) => {
+    const chat = chatHistory.find(c => c.id === chatId);
+    if (chat) {
+      setMessages(chat.messages);
+      setCurrentMode(chat.mode);
+      setCurrentChatId(chatId);
+    }
+  };
+
+  const startNewChat = () => {
+    if (messages.length > 0) {
+      saveCurrentChat();
+    }
+    setMessages([]);
+    setMessage('');
+    setCurrentChatId(null);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
   };
 
   const handleSendMessage = async () => {
@@ -94,7 +172,16 @@ const ChatCoach = () => {
         timestamp: new Date()
       };
       
-      setMessages(prev => [...prev, aiMessage]);
+      setMessages(prev => {
+        const updatedMessages = [...prev, aiMessage];
+        // Auto-save chat after AI response
+        setTimeout(() => {
+          if (!currentChatId) {
+            setCurrentChatId(Date.now().toString());
+          }
+        }, 100);
+        return updatedMessages;
+      });
     } catch (error) {
       console.error('Error getting AI response:', error);
       const errorMessage: Message = {
@@ -108,6 +195,16 @@ const ChatCoach = () => {
       setIsTyping(false);
     }
   };
+
+  // Auto-save chat when messages change
+  useEffect(() => {
+    if (messages.length > 0 && currentChatId) {
+      const timeoutId = setTimeout(() => {
+        saveCurrentChat();
+      }, 1000); // Save 1 second after last message
+      return () => clearTimeout(timeoutId);
+    }
+  }, [messages, currentChatId]);
 
   const getAIResponse = (userInput: string): string => {
     // Simple response logic based on input
@@ -183,13 +280,7 @@ const ChatCoach = () => {
             </div>
             <button 
               className="new-chat-button"
-              onClick={() => {
-                setMessages([]);
-                setMessage('');
-                if (textareaRef.current) {
-                  textareaRef.current.style.height = 'auto';
-                }
-              }}
+              onClick={startNewChat}
             >
               <span style={{fontSize: '20px', marginRight: '4px'}}>+</span>
               New Chat
@@ -197,10 +288,30 @@ const ChatCoach = () => {
           </div>
 
           <div className="chat-history">
-            <div className="empty-history">
-              <h3>No conversations yet</h3>
-              <p>Start a new chat to begin exploring your strengths with AI guidance.</p>
-            </div>
+            {chatHistory.length === 0 ? (
+              <div className="empty-history">
+                <h3>No conversations yet</h3>
+                <p>Start a new chat to begin exploring your strengths with AI guidance.</p>
+              </div>
+            ) : (
+              <div className="history-list">
+                {chatHistory.map((chat) => (
+                  <div 
+                    key={chat.id}
+                    className={`history-item ${currentChatId === chat.id ? 'active' : ''}`}
+                    onClick={() => loadChat(chat.id)}
+                  >
+                    <div className="history-title">{chat.title}</div>
+                    <div className="history-meta">
+                      <span className="history-mode">{chat.mode === 'personal' ? 'My Strengths' : 'Team'}</span>
+                      <span className="history-date">
+                        {chat.lastActivity.toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
