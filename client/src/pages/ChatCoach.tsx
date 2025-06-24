@@ -238,7 +238,7 @@ const ChatCoach = () => {
   };
 
   const performMigration = async () => {
-    setMigrationInProgress(true);
+    setUiState('migrating');
     
     try {
       const localData = LocalStorageManager.getChatHistory();
@@ -266,7 +266,7 @@ const ChatCoach = () => {
         variant: "destructive"
       });
     } finally {
-      setMigrationInProgress(false);
+      setUiState('idle');
     }
   };
 
@@ -975,7 +975,7 @@ const ChatCoach = () => {
                 <button 
                   className="send-button"
                   onClick={handleSendMessage}
-                  disabled={!message.trim() || isTyping}
+                  disabled={!message.trim() || uiState === 'typing'}
                 >
                   {isTyping ? (
                     <div className="send-spinner"></div>
