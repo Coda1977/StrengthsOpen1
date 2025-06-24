@@ -791,28 +791,56 @@ const ChatCoach = () => {
                   {messages.map((msg, index) => (
                     <div 
                       key={msg.id} 
-                      className={`message ${msg.type}`}
+                      className={`chat-message-wrapper ${msg.type}-message`}
                       style={{ 
-                        display: 'flex !important', 
-                        opacity: '1 !important', 
-                        visibility: 'visible !important',
+                        display: 'flex',
+                        gap: '12px',
+                        marginBottom: '20px',
+                        alignItems: 'flex-start',
                         flexDirection: msg.type === 'user' ? 'row-reverse' : 'row'
                       }}
                     >
-                      <div className="message-avatar">
+                      <div 
+                        style={{
+                          background: msg.type === 'user' ? 'var(--accent-yellow)' : 'var(--accent-blue)',
+                          color: msg.type === 'user' ? 'var(--text-primary)' : 'var(--white)',
+                          padding: '8px 12px',
+                          borderRadius: '20px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          flexShrink: '0',
+                          minWidth: '50px',
+                          textAlign: 'center'
+                        }}
+                      >
                         {msg.type === 'user' ? 'You' : 'AI'}
                       </div>
                       <div 
-                        className="message-content"
                         style={{ 
-                          display: 'block !important', 
-                          opacity: '1 !important', 
-                          visibility: 'visible !important' 
+                          background: msg.type === 'user' ? 'var(--accent-blue)' : 'var(--white)',
+                          color: msg.type === 'user' ? 'var(--white)' : 'var(--text-primary)',
+                          padding: '16px 20px',
+                          borderRadius: '20px',
+                          maxWidth: '70%',
+                          lineHeight: '1.6',
+                          position: 'relative',
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
                         }}
                       >
                         <div dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }} />
                         <button 
-                          className="copy-button"
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            opacity: '0.6',
+                            fontSize: '16px',
+                            padding: '4px',
+                            borderRadius: '4px'
+                          }}
                           onClick={() => copyToClipboard(msg.content)}
                           title="Copy message"
                         >
