@@ -667,15 +667,56 @@ const ChatCoach = () => {
 
           {/* Chat Container */}
           <div className="chat-container">
-            <div className="chat-header">
+            <div 
+              className="chat-header"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                padding: '1rem',
+                background: 'var(--white)',
+                borderBottom: '1px solid var(--border-light)',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10
+              }}
+            >
               <button 
                 className="mobile-sidebar-toggle"
                 onClick={handleSidebarToggle}
                 aria-label="Toggle sidebar"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '40px',
+                  height: '40px',
+                  minWidth: '40px',
+                  minHeight: '40px',
+                  padding: '8px',
+                  margin: '0',
+                  background: 'var(--bg-primary)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  flexShrink: 0
+                }}
               >
                 ☰
               </button>
-              <h1 className="chat-title">AI Strengths Coach</h1>
+              <h1 
+                className="chat-title"
+                style={{
+                  fontSize: '22px',
+                  fontWeight: '700',
+                  margin: '0',
+                  flex: 1,
+                  textAlign: 'left'
+                }}
+              >
+                AI Strengths Coach
+              </h1>
             </div>
 
             <div className="messages-container">

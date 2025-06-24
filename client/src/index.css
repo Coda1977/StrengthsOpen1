@@ -1726,19 +1726,24 @@ footer {
 
 .chat-header {
   background: var(--white);
-  padding: 1rem 2rem;
+  padding: 1rem 1rem 1rem 2rem;
   border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
   justify-content: flex-start;
   flex-shrink: 0;
   margin-top: 0;
-  gap: 1rem;
+  gap: 16px;
 }
 
 .chat-header .mobile-sidebar-toggle {
   flex-shrink: 0;
-  margin-right: 0;
+  margin: 0;
+  padding: 8px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
 }
 
 .mobile-sidebar-toggle {
@@ -1790,37 +1795,16 @@ footer {
   margin-left: 0;
 }
 
-/* Force proper layout in mobile */
-@media (max-width: 768px) {
-  .chat-header {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 12px !important;
-    padding: 1rem !important;
-  }
-  
-  .chat-header .mobile-sidebar-toggle {
-    flex-shrink: 0 !important;
-    margin-right: 0 !important;
-    order: 1;
-  }
-  
-  .chat-header .chat-title {
-    flex: 1 !important;
-    text-align: left !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    order: 2;
-    font-size: 18px !important;
-  }
-}
+
 
 .chat-title {
   font-size: 22px;
   font-weight: 700;
   margin: 0;
   flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .messages-container {
@@ -2214,13 +2198,26 @@ footer {
   }
 
   .chat-header {
-    padding: 1rem;
+    padding: 12px 16px;
     position: sticky;
     top: 0;
     z-index: 10;
     background: var(--white);
     border-bottom: 1px solid var(--border-light);
-    gap: 0.75rem;
+    gap: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .chat-header .mobile-sidebar-toggle {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 6px;
+    margin: 0;
+    flex-shrink: 0;
   }
 
   .chat-title {
@@ -2228,6 +2225,7 @@ footer {
     font-weight: 700;
     margin: 0;
     flex: 1;
+    text-align: left;
   }
 
   /* Mobile Message Display */
