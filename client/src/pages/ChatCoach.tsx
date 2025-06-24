@@ -45,7 +45,7 @@ interface ChatHistory {
 
 const ChatCoach = () => {
   const isMobile = useIsMobile();
-  const [sidebarHidden, setSidebarHidden] = useState(isMobile);
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [currentMode, setCurrentMode] = useState<'personal' | 'team'>('personal');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -176,7 +176,7 @@ const ChatCoach = () => {
 
   // Handle mobile sidebar behavior
   useEffect(() => {
-    setSidebarHidden(isMobile);
+    setSidebarOpen(!isMobile);
   }, [isMobile]);
 
   // Simple keyboard handling
@@ -474,9 +474,9 @@ const ChatCoach = () => {
       textareaRef.current.value = '';
     }
     
-    // Hide sidebar on mobile to show chat interface
+    // Hide sidebar on mobile after starting new chat
     if (isMobile) {
-      setSidebarHidden(true);
+      setSidebarOpen(false);
     }
     
     // Show notification
@@ -652,14 +652,8 @@ const ChatCoach = () => {
     }
   };
 
-  // Handle mobile sidebar overlay clicks
-  const handleOverlayClick = () => {
-    setSidebarHidden(true);
-  };
-
-  // Handle mobile sidebar toggle
-  const handleSidebarToggle = () => {
-    setSidebarHidden(!sidebarHidden);
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
   };
 
   // Handle conversation deletion
@@ -712,26 +706,28 @@ const ChatCoach = () => {
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Navigation />
         
-        <div className={`main-container ${sidebarHidden ? 'sidebar-hidden' : ''}`} style={{ flex: 1 }}>
-          {/* Desktop Sidebar Toggle - Shows when sidebar is hidden */}
-          {sidebarHidden && (
+        <div className={`main-container ${sidebarOpen ? 'sidebar-open' : ''}`} style={{ flex: 1 }}>
+          {/* Sidebar Toggle Button */}
+          {!sidebarOpen && (
             <button 
-              className="desktop-sidebar-toggle"
-              onClick={() => setSidebarHidden(false)}
+              className="sidebar-toggle"
+              onClick={toggleSidebar}
               aria-label="Open chat history"
             >
               ☰
             </button>
           )}
 
-          {/* Swipe Overlay */}
-          <div 
-            className="swipe-overlay"
-            onClick={handleOverlayClick}
-          ></div>
+          {/* Mobile Overlay */}
+          {isMobile && sidebarOpen && (
+            <div 
+              className="sidebar-overlay"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
 
           {/* Sidebar */}
-          <div className={`sidebar ${sidebarHidden ? 'hidden' : ''}`}>
+          <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
             <div className="sidebar-header">
               <div className="mode-toggle">
                 {modes.map((mode) => (

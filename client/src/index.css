@@ -1428,7 +1428,7 @@ footer {
   cursor: pointer;
 }
 
-.swipe-overlay {
+.sidebar-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -1436,14 +1436,6 @@ footer {
   bottom: 0;
   background: rgba(0, 0, 0, 0.3);
   z-index: 998;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-.main-container:not(.sidebar-hidden) .swipe-overlay {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 .starter-questions {
