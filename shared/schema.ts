@@ -181,6 +181,11 @@ export const updateConversationSchema = createInsertSchema(conversations).pick({
   lastActivity: true,
   isArchived: true,
   metadata: true,
+}).partial().extend({
+  lastActivity: z.union([z.string(), z.date()]).optional().transform((val) => {
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  })
 });
 
 export const insertMessageSchema = createInsertSchema(messages).pick({

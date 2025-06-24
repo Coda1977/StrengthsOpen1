@@ -348,8 +348,7 @@ const ChatCoach = () => {
           id: currentChatId,
           data: {
             title: generateChatTitle(messages.find(m => m.type === 'user')?.content || 'New Chat'),
-            mode: currentMode,
-            lastActivity: new Date()
+            mode: currentMode
           }
         });
       } else {

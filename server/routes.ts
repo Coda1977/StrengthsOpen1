@@ -366,6 +366,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const userId = req.user.claims.sub;
+      
+      // Log the incoming data for debugging
+      console.log('Update conversation request body:', JSON.stringify(req.body, null, 2));
+      
       const validatedData = updateConversationSchema.parse(req.body);
       
       const conversation = await storage.updateConversation(id, userId, validatedData);
@@ -375,6 +379,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(createSuccessResponse(conversation));
     } catch (error) {
+      console.error('Conversation update error:', error);
       next(error);
     }
   });
