@@ -8,12 +8,22 @@ interface Message {
   timestamp: Date;
 }
 
+interface ChatHistory {
+  id: string;
+  title: string;
+  messages: Message[];
+  lastActivity: Date;
+  mode: 'personal' | 'team';
+}
+
 const ChatCoach = () => {
   const [sidebarHidden, setSidebarHidden] = useState(false);
-  const [currentMode, setCurrentMode] = useState('personal');
+  const [currentMode, setCurrentMode] = useState<'personal' | 'team'>('personal');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -204,7 +214,7 @@ const ChatCoach = () => {
       }, 1000); // Save 1 second after last message
       return () => clearTimeout(timeoutId);
     }
-  }, [messages, currentChatId]);
+  }, [messages, currentChatId, currentMode, chatHistory]);
 
   const getAIResponse = (userInput: string): string => {
     // Simple response logic based on input
