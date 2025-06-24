@@ -1807,6 +1807,8 @@ footer {
   flex-direction: column;
   gap: 20px;
   scroll-behavior: smooth;
+  background: #F9FAFB;
+  min-height: 0;
 }
 
 .welcome-message {
@@ -1860,8 +1862,11 @@ footer {
 
 .input-container {
   padding: 2rem;
-  background: var(--white);
-  border-top: 1px solid var(--border-light);
+  background: #FFFFFF;
+  border-top: 1px solid #E5E7EB;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 
 .chat-input-wrapper {
@@ -1875,25 +1880,30 @@ footer {
 .chat-input {
   flex: 1;
   padding: 16px 20px;
-  border: 2px solid var(--border-light);
+  border: 2px solid #E5E7EB;
   border-radius: 24px;
+  background: #FFFFFF;
+  color: #1F2937;
   font-size: 16px;
   line-height: 1.4;
   resize: none;
   transition: all 0.3s ease;
   min-height: 56px;
   max-height: 120px;
+  field-sizing: content;
+  overflow-y: auto;
 }
 
 .chat-input:focus {
   outline: none;
-  border-color: var(--accent-blue);
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .send-button {
   padding: 16px;
-  background: var(--accent-blue);
-  color: var(--white);
+  background: #3B82F6;
+  color: #FFFFFF;
   border: none;
   border-radius: 50%;
   cursor: pointer;
@@ -1904,11 +1914,13 @@ footer {
   width: 56px;
   height: 56px;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .send-button:hover {
+  background: #2563EB;
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 53, 102, 0.3);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
 }
 
 .send-button:disabled {
