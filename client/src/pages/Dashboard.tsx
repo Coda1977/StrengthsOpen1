@@ -346,20 +346,20 @@ const Dashboard = () => {
                       </div>
                     </div>
                   ))}
-                  <div className="team-member-card add-member-card" onClick={openAddModal} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '120px', border: '2px dashed var(--text-secondary)', background: 'transparent', cursor: 'pointer', borderRadius: 'var(--input-radius)' }}>
+                  <div className="team-member-card add-member-card" onClick={openAddModal}>
                     <span className="add-icon">+</span>
                   </div>
                 </div>
 
                 <h3 style={{fontSize: '20px', fontWeight: 700, marginBottom: '1rem', marginTop: '2rem'}}>Domain Distribution</h3>
-                <div className="domain-chart" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div className="domain-chart">
                   {domainDistribution.map(({ domain, percentage }) => (
-                    <div key={domain} className="domain-bar" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <div className="domain-label" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, fontSize: '14px' }}>
+                    <div key={domain} className="domain-bar">
+                      <div className="domain-label">
                         <span>{domain}</span>
                         <span>{percentage}%</span>
                       </div>
-                      <div className="bar-container" style={{ height: '8px', background: 'var(--bg-primary)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div className="bar-container">
                         <div 
                           className={`bar-fill ${domain.toLowerCase().replace(' ', '-')}`} 
                           style={{width: `${percentage}%`}}
@@ -374,12 +374,12 @@ const Dashboard = () => {
 
           {/* Insights Section */}
           <div className="card" style={{ background: 'var(--white)', borderRadius: 'var(--card-radius)', padding: 'var(--card-padding)', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)' }}>
-            <h2 className="card-title" style={{ fontSize: '28px', fontWeight: 700, marginBottom: '1.5rem', letterSpacing: '-1px' }}>Insights</h2>
+            <h2 className="card-title">Insights</h2>
             
-            <div className="insight-section" style={{ marginBottom: 'var(--content-padding)' }}>
+            <div className="insight-section">
               <div className="insight-box">
-                <div className="insight-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h3 className="insight-title" style={{ fontWeight: 700, fontSize: '20px' }}>Team Insight</h3>
+                <div className="insight-header">
+                  <h3 className="insight-title">Team Insight</h3>
                   <button 
                     className="refresh-btn" 
                     onClick={handleRefreshInsight}
@@ -402,16 +402,16 @@ const Dashboard = () => {
                     <p style={{ fontSize: '16px', color: '#6B7280' }}>Generating team insight...</p>
                   </div>
                 ) : (
-                  <p className="insight-text" style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+                  <p className="insight-text">
                     {teamInsight}
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="collaboration-section" style={{ marginTop: 'var(--content-padding)' }}>
+            <div className="collaboration-section">
               <p className="collaboration-prompt">Click on two names below to see collaboration insights:</p>
-              <div className="member-buttons" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', margin: '1rem 0' }}>
+              <div className="member-buttons">
                 <button 
                   className={`member-btn ${selectedMembers.includes('You') ? 'selected' : ''}`}
                   onClick={() => handleMemberSelection('You')}
