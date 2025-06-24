@@ -556,163 +556,163 @@ const ChatCoach = () => {
           {/* Sidebar */}
           <div className={`sidebar ${sidebarHidden ? 'hidden' : ''}`}>
             <div className="sidebar-header">
-            <div className="mode-toggle">
-              {modes.map((mode) => (
-                <button
-                  key={mode.id}
-                  className={`mode-button ${currentMode === mode.id ? 'active' : ''}`}
-                  onClick={() => setCurrentMode(mode.id)}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
-            <button 
-              className="new-chat-button"
-              onClick={startNewChat}
-            >
-              <span style={{fontSize: '20px', marginRight: '4px'}}>+</span>
-              New Chat
-            </button>
-          </div>
-
-          <div className="chat-history">
-            {conversationsLoading ? (
-              <div className="empty-history">
-                <h3>Loading conversations...</h3>
-              </div>
-            ) : conversations.length === 0 ? (
-              <div className="empty-history">
-                <h3>No conversations yet</h3>
-                <p>Start a new chat to begin exploring your strengths with AI guidance.</p>
-                {migrationNeeded && (
-                  <div className="migration-notice">
-                    <p className="text-sm text-blue-600">Found chat history to migrate</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="history-list">
-                {conversations.map((conversation) => (
-                  <div 
-                    key={conversation.id}
-                    className={`history-item ${currentChatId === conversation.id ? 'active' : ''}`}
-                    onClick={() => loadChat(conversation.id)}
+              <div className="mode-toggle">
+                {modes.map((mode) => (
+                  <button
+                    key={mode.id}
+                    className={`mode-button ${currentMode === mode.id ? 'active' : ''}`}
+                    onClick={() => setCurrentMode(mode.id)}
                   >
-                    <div className="history-title">{conversation.title}</div>
-                    <div className="history-meta">
-                      <span className="history-mode">{conversation.mode === 'personal' ? 'My Strengths' : 'Team'}</span>
-                      <span className="history-date">
-                        {conversation.lastActivity ? new Date(conversation.lastActivity).toLocaleDateString() : 'Unknown'}
-                      </span>
-                    </div>
-                  </div>
+                    {mode.label}
+                  </button>
                 ))}
               </div>
-            )}
+              <button 
+                className="new-chat-button"
+                onClick={startNewChat}
+              >
+                <span style={{fontSize: '20px', marginRight: '4px'}}>+</span>
+                New Chat
+              </button>
+            </div>
+
+            <div className="chat-history">
+              {conversationsLoading ? (
+                <div className="empty-history">
+                  <h3>Loading conversations...</h3>
+                </div>
+              ) : conversations.length === 0 ? (
+                <div className="empty-history">
+                  <h3>No conversations yet</h3>
+                  <p>Start a new chat to begin exploring your strengths with AI guidance.</p>
+                  {migrationNeeded && (
+                    <div className="migration-notice">
+                      <p className="text-sm text-blue-600">Found chat history to migrate</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="history-list">
+                  {conversations.map((conversation) => (
+                    <div 
+                      key={conversation.id}
+                      className={`history-item ${currentChatId === conversation.id ? 'active' : ''}`}
+                      onClick={() => loadChat(conversation.id)}
+                    >
+                      <div className="history-title">{conversation.title}</div>
+                      <div className="history-meta">
+                        <span className="history-mode">{conversation.mode === 'personal' ? 'My Strengths' : 'Team'}</span>
+                        <span className="history-date">
+                          {conversation.lastActivity ? new Date(conversation.lastActivity).toLocaleDateString() : 'Unknown'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Chat Container */}
           <div className="chat-container">
             <div className="chat-header">
-            <button 
-              className="mobile-sidebar-toggle"
-              onClick={() => setSidebarHidden(!sidebarHidden)}
-            >
-              ☰
-            </button>
-            <h1 className="chat-title">AI Strengths Coach</h1>
-          </div>
+              <button 
+                className="mobile-sidebar-toggle"
+                onClick={() => setSidebarHidden(!sidebarHidden)}
+              >
+                ☰
+              </button>
+              <h1 className="chat-title">AI Strengths Coach</h1>
+            </div>
 
-          <div className="messages-container">
-            {messages.length === 0 ? (
-              <div className="welcome-message">
-                <div className="welcome-content">
-                  <h2>Welcome to your AI Strengths Coach!</h2>
-                  <p>I'm here to help you understand and leverage your CliftonStrengths for better leadership and team dynamics.</p>
-                  <div className="starter-questions">
-                    {starterQuestions.map((question, index) => (
-                      <button 
-                        key={index}
-                        className="starter-question"
-                        onClick={() => handleStarterQuestion(question)}
-                      >
-                        {question}
-                      </button>
-                    ))}
+            <div className="messages-container">
+              {messages.length === 0 ? (
+                <div className="welcome-message">
+                  <div className="welcome-content">
+                    <h2>Welcome to your AI Strengths Coach!</h2>
+                    <p>I'm here to help you understand and leverage your CliftonStrengths for better leadership and team dynamics.</p>
+                    <div className="starter-questions">
+                      {starterQuestions.map((question, index) => (
+                        <button 
+                          key={index}
+                          className="starter-question"
+                          onClick={() => handleStarterQuestion(question)}
+                        >
+                          {question}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <>
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`message ${msg.type}`}>
-                    <div className="message-avatar">
-                      {msg.type === 'user' ? 'You' : 'AI'}
-                    </div>
-                    <div className="message-content">
-                      {msg.content.split('\n').map((line, index) => (
-                        <div key={index} dangerouslySetInnerHTML={{ 
-                          __html: formatMessageText(line) 
-                        }} />
-                      ))}
-                      <button 
-                        className="copy-button"
-                        onClick={() => copyToClipboard(msg.content)}
-                        title="Copy message"
-                      >
-                        📋
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                
-                {isTyping && (
-                  <div className="typing-indicator">
-                    <div className="message-avatar">AI</div>
-                    <div className="typing-content">
-                      <span className="typing-text">AI is thinking</span>
-                      <div className="typing-dots">
-                        <div className="typing-dot"></div>
-                        <div className="typing-dot"></div>
-                        <div className="typing-dot"></div>
+              ) : (
+                <>
+                  {messages.map((msg) => (
+                    <div key={msg.id} className={`message ${msg.type}`}>
+                      <div className="message-avatar">
+                        {msg.type === 'user' ? 'You' : 'AI'}
+                      </div>
+                      <div className="message-content">
+                        {msg.content.split('\n').map((line, index) => (
+                          <div key={index} dangerouslySetInnerHTML={{ 
+                            __html: formatMessageText(line) 
+                          }} />
+                        ))}
+                        <button 
+                          className="copy-button"
+                          onClick={() => copyToClipboard(msg.content)}
+                          title="Copy message"
+                        >
+                          📋
+                        </button>
                       </div>
                     </div>
-                  </div>
-                )}
-                
-                <div ref={messagesEndRef} />
-              </>
-            )}
+                  ))}
+                  
+                  {isTyping && (
+                    <div className="typing-indicator">
+                      <div className="message-avatar">AI</div>
+                      <div className="typing-content">
+                        <span className="typing-text">AI is thinking</span>
+                        <div className="typing-dots">
+                          <div className="typing-dot"></div>
+                          <div className="typing-dot"></div>
+                          <div className="typing-dot"></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div ref={messagesEndRef} />
+                </>
+              )}
             </div>
 
             {/* Input Area */}
             <div className="input-container">
-            <div className="chat-input-wrapper">
-              <textarea
-                ref={textareaRef}
-                className="chat-input"
-                placeholder="Ask about your strengths or team..."
-                value={message}
-                onChange={handleTextareaChange}
-                onKeyDown={handleKeyPress}
-                style={{ height: 'auto' }}
-              />
-              <button 
-                className="send-button"
-                onClick={handleSendMessage}
-                disabled={!message.trim() || isTyping}
-              >
-                {isTyping ? (
-                  <div className="send-spinner"></div>
-                ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                  </svg>
-                )}
-              </button>
-            </div>
+              <div className="chat-input-wrapper">
+                <textarea
+                  ref={textareaRef}
+                  className="chat-input"
+                  placeholder="Ask about your strengths or team..."
+                  value={message}
+                  onChange={handleTextareaChange}
+                  onKeyDown={handleKeyPress}
+                  style={{ height: 'auto' }}
+                />
+                <button 
+                  className="send-button"
+                  onClick={handleSendMessage}
+                  disabled={!message.trim() || isTyping}
+                >
+                  {isTyping ? (
+                    <div className="send-spinner"></div>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
