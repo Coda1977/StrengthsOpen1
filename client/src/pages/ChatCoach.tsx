@@ -464,11 +464,17 @@ const ChatCoach = () => {
     setChatStarted(true); // Mark that a new chat has been started
     setCurrentChatId('new-chat-active'); // Set a temporary ID to indicate active chat
     
-    // Reset textarea height and focus immediately
+    // Reset textarea height and focus after DOM update
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.value = '';
-      textareaRef.current.focus(); // Focus immediately without timeout
+      
+      // Use setTimeout to ensure focus happens after React state updates
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+        }
+      }, 100);
     }
     
     // Hide sidebar on mobile to show chat interface
