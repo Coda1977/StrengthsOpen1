@@ -194,6 +194,13 @@ const ChatCoach = () => {
     };
   }, [isMobile]);
 
+  // Handle focus when new chat starts
+  useEffect(() => {
+    if (chatStarted && textareaRef.current && messages.length === 0) {
+      textareaRef.current.focus();
+    }
+  }, [chatStarted, messages.length]);
+
   const checkMigrationNeeds = async () => {
     // Check migration status
     const migrationStatus = LocalStorageManager.getMigrationStatus();
@@ -464,17 +471,10 @@ const ChatCoach = () => {
     setChatStarted(true); // Mark that a new chat has been started
     setCurrentChatId('new-chat-active'); // Set a temporary ID to indicate active chat
     
-    // Reset textarea height and focus after DOM update
+    // Reset textarea height and clear value
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.value = '';
-      
-      // Use setTimeout to ensure focus happens after React state updates
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.focus();
-        }
-      }, 100);
     }
     
     // Hide sidebar on mobile to show chat interface
