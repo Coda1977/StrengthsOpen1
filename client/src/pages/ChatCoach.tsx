@@ -54,6 +54,7 @@ const ChatCoach = () => {
   const [migrationNeeded, setMigrationNeeded] = useState(false);
   const [migrationInProgress, setMigrationInProgress] = useState(false);
   const [chatError, setChatError] = useState<Error | null>(null);
+  const [chatStarted, setChatStarted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [inputHeight, setInputHeight] = useState(44);
@@ -426,6 +427,7 @@ const ChatCoach = () => {
         setMessages(loadedMessages);
         setCurrentMode(data.conversation.mode);
         setCurrentChatId(conversationId);
+        setChatStarted(true); // Mark that chat is active when loading conversation
         
         // Hide sidebar on mobile after loading chat
         if (isMobile) {
@@ -460,6 +462,7 @@ const ChatCoach = () => {
     setCurrentChatId(null);
     setChatError(null);
     setInputHeight(44);
+    setChatStarted(true); // Mark that a new chat has been started
     
     // Reset textarea height
     if (textareaRef.current) {
@@ -868,7 +871,7 @@ const ChatCoach = () => {
             </div>
 
             <div className="messages-container">
-              {messages.length === 0 ? (
+              {messages.length === 0 && !chatStarted ? (
                 <div className="welcome-message">
                   <div className="welcome-content">
                     <h2>Welcome to your AI Strengths Coach!</h2>
