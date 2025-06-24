@@ -93,6 +93,7 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Sessions Table**: Handles session persistence for authentication
 
 ## Recent Changes
+- June 24, 2025: Optimized markdown parsing performance by memoizing parsed content to prevent expensive re-renders on every message update
 - June 24, 2025: Implemented message pagination for performance optimization, limiting displayed messages to 50 with "Load more" functionality to prevent UI slowdown with large message counts
 - June 24, 2025: Improved error UX by replacing technical error messages with user-friendly ErrorMessage component, added retry functionality and clear error categorization
 - June 24, 2025: Simplified complex loading states by consolidating multiple boolean flags into single UI state enum ('idle' | 'typing' | 'migrating' | 'error')
