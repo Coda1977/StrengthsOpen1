@@ -582,9 +582,17 @@ const ChatCoach = () => {
       });
     } catch (error) {
       console.error('Error getting AI response:', error);
+      
+      // Determine error type for better UX
+      const errorType = error instanceof Error && error.message.includes('fetch') 
+        ? 'connection' 
+        : error instanceof Error && error.message.includes('500')
+        ? 'server'
+        : 'ai_service';
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm having trouble connecting right now. Please try again in a moment.",
+        content: `ERROR:${errorType}`,
         type: 'ai',
         timestamp: new Date()
       };
