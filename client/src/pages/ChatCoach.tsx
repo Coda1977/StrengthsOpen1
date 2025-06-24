@@ -530,8 +530,8 @@ const ChatCoach = () => {
         <Navigation />
         
         <div className={`main-container ${sidebarHidden ? 'sidebar-hidden' : ''}`} style={{ flex: 1 }}>
-        {/* Floating Hamburger Menu */}
-        <button 
+          {/* Floating Hamburger Menu */}
+          <button 
           className={`floating-hamburger ${sidebarHidden ? 'visible' : 'hidden'}`}
           onClick={() => setSidebarHidden(false)}
           aria-label="Open chat history"
