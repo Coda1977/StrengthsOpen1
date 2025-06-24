@@ -97,6 +97,8 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - June 24, 2025: Restored original dashboard design by removing inline styles and ensuring CSS classes work properly
 - June 24, 2025: Fixed AI insight generation functions in the dashboard - both team insights and collaboration insights now work correctly
 - June 24, 2025: Fixed navigation menu routing issues by adding fallback navigation mechanism for Encyclopedia and AI Coach pages
+- June 24, 2025: Fixed navigation overlap issues on Encyclopedia and AI Coach pages by adding proper top padding
+- June 24, 2025: Fixed chat input field styling to span full width in AI Coach interface
 - June 23, 2025: Fixed critical React hooks error by removing "use client" directives from all UI components
 - June 23, 2025: Enhanced database connection stability with optimized pool settings for Neon serverless
 - June 23, 2025: Added retry logic for database operations to handle connection terminations

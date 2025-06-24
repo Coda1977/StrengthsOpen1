@@ -231,10 +231,10 @@ const ChatCoach = () => {
 
           {/* Input Area */}
           <div className="input-container">
-            <div className="input-wrapper">
+            <div className="chat-input-wrapper">
               <textarea
                 ref={textareaRef}
-                className="message-input"
+                className="chat-input"
                 placeholder="Ask about your strengths or team..."
                 value={message}
                 onChange={handleTextareaChange}
