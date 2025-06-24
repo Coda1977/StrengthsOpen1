@@ -386,7 +386,7 @@ const ChatCoach = () => {
 
   const loadChat = async (conversationId: string) => {
     try {
-      console.log('Loading conversation:', conversationId);
+
       
       const response = await fetch(`/api/conversations/${conversationId}`, {
         credentials: 'include',
@@ -395,7 +395,7 @@ const ChatCoach = () => {
         }
       });
       
-      console.log('Response status:', response.status);
+
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -407,7 +407,7 @@ const ChatCoach = () => {
       const data = result.data;
       
       if (data && data.conversation && data.messages) {
-        console.log('Successfully loaded conversation with', data.messages.length, 'messages');
+
         
         // Sort messages by timestamp to ensure proper order
         const sortedMessages = data.messages.sort((a, b) => 
