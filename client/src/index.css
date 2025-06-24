@@ -388,6 +388,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: var(--content-padding);
+  padding-top: calc(var(--content-padding) + 80px);
   min-height: calc(100vh - 80px);
 }
 
@@ -661,6 +662,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: var(--content-padding);
+  padding-top: calc(var(--content-padding) + 80px);
 }
 
 .page-header {
