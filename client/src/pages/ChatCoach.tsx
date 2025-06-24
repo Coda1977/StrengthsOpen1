@@ -449,20 +449,42 @@ const ChatCoach = () => {
   };
 
   const startNewChat = async () => {
+    // Save current chat if it exists
     if (messages.length > 0 && currentChatId) {
       await saveCurrentChat();
     }
+    
+    // Clear current state
     setMessages([]);
     setMessage('');
     setCurrentChatId(null);
+    setChatError(null);
     setInputHeight(44);
+    
+    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
+      textareaRef.current.value = '';
     }
-    // Hide sidebar on mobile after starting new chat
+    
+    // Hide sidebar on mobile to show chat interface
     if (isMobile) {
       setSidebarHidden(true);
     }
+    
+    // Focus on input field for immediate typing
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    }, 200);
+    
+    // Show notification
+    toast({
+      title: "New Chat Started",
+      description: "You can now start asking questions about your strengths",
+      duration: 2000
+    });
   };
 
   const handleSendMessage = async () => {
