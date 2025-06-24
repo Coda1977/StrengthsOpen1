@@ -1736,6 +1736,11 @@ footer {
   gap: 1rem;
 }
 
+.chat-header .mobile-sidebar-toggle {
+  flex-shrink: 0;
+  margin-right: 0;
+}
+
 .mobile-sidebar-toggle {
   display: none;
   background: none;
@@ -1783,6 +1788,32 @@ footer {
 /* Ensure chat title has proper spacing when hamburger is visible */
 .chat-header .mobile-sidebar-toggle + .chat-title {
   margin-left: 0;
+}
+
+/* Force proper layout in mobile */
+@media (max-width: 768px) {
+  .chat-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+    padding: 1rem !important;
+  }
+  
+  .chat-header .mobile-sidebar-toggle {
+    flex-shrink: 0 !important;
+    margin-right: 0 !important;
+    order: 1;
+  }
+  
+  .chat-header .chat-title {
+    flex: 1 !important;
+    text-align: left !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    order: 2;
+    font-size: 18px !important;
+  }
 }
 
 .chat-title {
@@ -2117,7 +2148,7 @@ footer {
     align-items: center;
     justify-content: center;
     padding: 12px;
-    margin-right: 8px;
+    margin-right: 12px;
     background: var(--bg-primary);
     border-radius: 8px;
     font-size: 18px;
@@ -2128,6 +2159,7 @@ footer {
     border: none;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    flex-shrink: 0;
   }
 
   .mobile-sidebar-toggle:hover {
@@ -2138,6 +2170,8 @@ footer {
   .desktop-sidebar-toggle {
     display: none;
   }
+
+
 
   .sidebar {
     position: fixed;
