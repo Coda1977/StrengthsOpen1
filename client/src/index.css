@@ -235,6 +235,13 @@
   min-height: calc(100vh - 80px);
 }
 
+.main-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--content-padding);
+  padding-top: calc(var(--content-padding) + 80px); /* Add space for fixed navigation */
+}
+
 /* Landing Page Styles */
 .yellow-highlight {
   background: linear-gradient(120deg, var(--marker-yellow) 0%, var(--marker-yellow) 100%);
@@ -988,12 +995,7 @@ footer {
   transform: scale(1.05);
 }
 
-/* Encyclopedia Styles */
-.main-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--content-padding);
-}
+/* Encyclopedia Styles - removed duplicate, now defined above */
 
 .page-header {
   text-align: center;
@@ -1255,6 +1257,7 @@ footer {
   display: flex;
   overflow: hidden;
   position: relative;
+  margin-top: 80px; /* Add space for fixed navigation */
 }
 
 .edge-swipe-handle {
