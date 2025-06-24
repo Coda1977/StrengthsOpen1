@@ -1716,6 +1716,7 @@ footer {
   background: #F9FAFB;
   min-width: 0;
   height: 100%;
+  width: 100%;
 }
 
 .chat-header {
