@@ -23,6 +23,17 @@
   --destructive-foreground: hsl(60, 9.1%, 97.8%);
   --ring: hsl(20, 14.3%, 4.1%);
   --radius: 0.5rem;
+}
+
+/* Remove gap between navigation and content */
+.app-nav {
+  margin-bottom: 0;
+}
+
+.main-container {
+  margin-top: 0;
+  padding-top: 0;
+}
 
   /* Custom Strengths Manager Variables */
   --bg-primary: hsl(44, 60%, 94%);
