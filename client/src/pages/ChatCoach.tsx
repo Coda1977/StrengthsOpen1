@@ -9,6 +9,25 @@ import { ErrorState, ChatErrorState, NetworkErrorState } from "@/components/Erro
 import { useChatRetry } from "@/hooks/useRetry";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+// Simple markdown formatter
+function formatMarkdown(text: string): string {
+  return text
+    // Headers
+    .replace(/^### (.*$)/gm, '<h3 style="font-size: 1.1em; font-weight: 600; margin: 12px 0 6px 0; color: #1a1a1a;">$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2 style="font-size: 1.2em; font-weight: 600; margin: 16px 0 8px 0; color: #1a1a1a;">$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1 style="font-size: 1.3em; font-weight: 600; margin: 20px 0 10px 0; color: #1a1a1a;">$1</h1>')
+    // Bold text
+    .replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight: 600;">$1</strong>')
+    // Italic text
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Numbered lists
+    .replace(/^(\d+)\.\s+(.*$)/gm, '<div style="margin: 4px 0; padding-left: 20px;"><strong>$1.</strong> $2</div>')
+    // Bullet points
+    .replace(/^- (.*$)/gm, '<div style="margin: 4px 0; padding-left: 20px;">• $1</div>')
+    // Line breaks
+    .replace(/\n/g, '<br>');
+}
+
 interface Message {
   id: string;
   content: string;
@@ -746,11 +765,7 @@ const ChatCoach = () => {
                         {msg.type === 'user' ? 'You' : 'AI'}
                       </div>
                       <div className="message-content">
-                        {msg.content.split('\n').map((line, index) => (
-                          <div key={index} dangerouslySetInnerHTML={{ 
-                            __html: formatMessageText(line) 
-                          }} />
-                        ))}
+                        <div dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }} />
                         <button 
                           className="copy-button"
                           onClick={() => copyToClipboard(msg.content)}

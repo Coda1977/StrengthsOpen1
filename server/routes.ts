@@ -6,7 +6,15 @@ import { storage } from './storage';
 import { parseTeamMembersFile } from './fileParser';
 import { generateTeamInsight, generateCollaborationInsight, generateCoachResponse } from './openai';
 import { errors, createSuccessResponse, createErrorResponse, AppError, ERROR_CODES } from './errorHandler';
-import { insertTeamMemberSchema, updateTeamMemberSchema, updateUserOnboardingSchema } from '../shared/schema';
+import { 
+  insertTeamMemberSchema, 
+  updateTeamMemberSchema, 
+  updateUserOnboardingSchema,
+  insertConversationSchema,
+  insertMessageSchema,
+  updateConversationSchema,
+  insertConversationBackupSchema
+} from '../shared/schema';
 
 interface AuthenticatedRequest extends Request {
   user: {
