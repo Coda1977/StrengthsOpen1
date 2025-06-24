@@ -284,11 +284,11 @@ const Dashboard = () => {
           <p>Manage your team's strengths and generate insights</p>
         </div>
 
-        <div className="dashboard-content" style={{ display: 'grid', gap: '2rem' }}>
+        <div className="dashboard-content">
           {/* Team Overview Section */}
           <div className="card" style={{ background: 'var(--white)', borderRadius: 'var(--card-radius)', padding: 'var(--card-padding)', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)' }}>
-            <div className="overview-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-              <h2 className="card-title" style={{ fontSize: '28px', fontWeight: 700, marginBottom: 0, letterSpacing: '-1px' }}>Team Synergy</h2>
+            <div className="overview-header">
+              <h2 className="card-title">Team Synergy</h2>
               <div className="overview-actions">
                 <input
                   type="file"
@@ -327,19 +327,19 @@ const Dashboard = () => {
               </div>
             ) : (
               <>
-                <div className="team-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="team-grid">
                   {teamMembers.map((member: TeamMember) => (
-                    <div key={member.id} className="team-member-card" style={{ background: 'var(--bg-primary)', borderRadius: 'var(--input-radius)', padding: '1rem', position: 'relative', transition: 'all 0.3s ease' }}>
+                    <div key={member.id} className="team-member-card">
                       <button className="delete-btn" onClick={() => handleDeleteMember(member.id)}>×</button>
-                      <div className="member-header" onClick={() => openEditModal(member)} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem', cursor: 'pointer' }}>
-                        <div className="member-initials" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--accent-blue)', color: 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
+                      <div className="member-header" onClick={() => openEditModal(member)}>
+                        <div className="member-initials">
                           {member.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                         </div>
-                        <div className="member-name" style={{ fontWeight: 600, fontSize: '16px' }}>{member.name}</div>
+                        <div className="member-name">{member.name}</div>
                       </div>
-                      <div className="member-strengths" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div className="member-strengths">
                         {(member.strengths || []).map((strength: string, index: number) => (
-                          <span key={index} className="small-strength" style={{ background: 'var(--white)', color: 'var(--text-secondary)', padding: '0.25rem 0.5rem', borderRadius: '12px', fontSize: '12px', fontWeight: 500 }}>
+                          <span key={index} className="small-strength">
                             {strength}
                           </span>
                         ))}
