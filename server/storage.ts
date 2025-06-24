@@ -243,7 +243,7 @@ export class DatabaseStorage implements IStorage {
       return teamMember;
     } catch (error) {
       console.error('Failed to create team member:', error);
-      if (error.message.includes('already exists')) {
+      if ((error as Error).message.includes('already exists')) {
         throw error;
       }
       throw new Error('Failed to create team member');
@@ -425,6 +425,331 @@ export class DatabaseStorage implements IStorage {
     setInterval(() => {
       this.clearExpiredCache();
     }, 10 * 60 * 1000); // Clean up every 10 minutes
+  }
+
+  // Conversation operations
+  async getConversations(userId: string): Promise<Conversation[]> {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    const cacheKey = `conversations:${userId}`;
+    const cached = this.getCachedItem(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const result = await db.select()
+        .from(conversations)
+        .where(and(
+          eq(conversations.userId, userId),
+          eq(conversations.isArchived, false)
+        ))
+        .orderBy(desc(conversations.lastActivity));
+
+      this.setCachedItem(cacheKey, result);
+      return result;
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      throw new Error('Failed to fetch conversations');
+    }
+  }
+
+  async getConversation(id: string, userId: string): Promise<Conversation | undefined> {
+    if (!id || !userId) {
+      throw new Error('Conversation ID and User ID are required');
+    }
+
+    try {
+      const [conversation] = await db.select()
+        .from(conversations)
+        .where(and(
+          eq(conversations.id, id),
+          eq(conversations.userId, userId)
+        ));
+      return conversation;
+    } catch (error) {
+      console.error('Error fetching conversation:', error);
+      throw new Error('Failed to fetch conversation');
+    }
+  }
+
+  async createConversation(userId: string, data: InsertConversation): Promise<Conversation> {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    try {
+      const id = this.generateSecureId();
+      const [conversation] = await db.insert(conversations)
+        .values({
+          id,
+          userId,
+          ...data,
+        })
+        .returning();
+
+      this.invalidateCache(`conversations:${userId}`);
+      return conversation;
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      throw new Error('Failed to create conversation');
+    }
+  }
+
+  async updateConversation(id: string, userId: string, data: UpdateConversation): Promise<Conversation | undefined> {
+    if (!id || !userId) {
+      throw new Error('Conversation ID and User ID are required');
+    }
+
+    try {
+      const [conversation] = await db.update(conversations)
+        .set({
+          ...data,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(conversations.id, id),
+          eq(conversations.userId, userId)
+        ))
+        .returning();
+
+      this.invalidateCache(`conversations:${userId}`);
+      return conversation;
+    } catch (error) {
+      console.error('Error updating conversation:', error);
+      throw new Error('Failed to update conversation');
+    }
+  }
+
+  async deleteConversation(id: string, userId: string): Promise<void> {
+    if (!id || !userId) {
+      throw new Error('Conversation ID and User ID are required');
+    }
+
+    try {
+      await db.delete(conversations)
+        .where(and(
+          eq(conversations.id, id),
+          eq(conversations.userId, userId)
+        ));
+
+      this.invalidateCache(`conversations:${userId}`);
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      throw new Error('Failed to delete conversation');
+    }
+  }
+
+  async archiveConversation(id: string, userId: string): Promise<void> {
+    if (!id || !userId) {
+      throw new Error('Conversation ID and User ID are required');
+    }
+
+    try {
+      await db.update(conversations)
+        .set({
+          isArchived: true,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(conversations.id, id),
+          eq(conversations.userId, userId)
+        ));
+
+      this.invalidateCache(`conversations:${userId}`);
+    } catch (error) {
+      console.error('Error archiving conversation:', error);
+      throw new Error('Failed to archive conversation');
+    }
+  }
+
+  async getMessages(conversationId: string, userId: string): Promise<Message[]> {
+    if (!conversationId || !userId) {
+      throw new Error('Conversation ID and User ID are required');
+    }
+
+    try {
+      const conversation = await this.getConversation(conversationId, userId);
+      if (!conversation) {
+        throw new Error('Conversation not found or access denied');
+      }
+
+      const result = await db.select()
+        .from(messages)
+        .where(eq(messages.conversationId, conversationId))
+        .orderBy(asc(messages.timestamp));
+
+      return result;
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      throw new Error('Failed to fetch messages');
+    }
+  }
+
+  async createMessage(data: InsertMessage): Promise<Message> {
+    if (!data.conversationId || !data.content || !data.type) {
+      throw new Error('Conversation ID, content, and type are required');
+    }
+
+    try {
+      const id = this.generateSecureId();
+      const [message] = await db.insert(messages)
+        .values({
+          id,
+          ...data,
+        })
+        .returning();
+
+      await db.update(conversations)
+        .set({
+          lastActivity: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(conversations.id, data.conversationId));
+
+      return message;
+    } catch (error) {
+      console.error('Error creating message:', error);
+      throw new Error('Failed to create message');
+    }
+  }
+
+  async deleteMessage(id: string, userId: string): Promise<void> {
+    if (!id || !userId) {
+      throw new Error('Message ID and User ID are required');
+    }
+
+    try {
+      const [message] = await db.select()
+        .from(messages)
+        .innerJoin(conversations, eq(messages.conversationId, conversations.id))
+        .where(and(
+          eq(messages.id, id),
+          eq(conversations.userId, userId)
+        ));
+
+      if (!message) {
+        throw new Error('Message not found or access denied');
+      }
+
+      await db.delete(messages).where(eq(messages.id, id));
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      throw new Error('Failed to delete message');
+    }
+  }
+
+  async createConversationBackup(userId: string, data: InsertConversationBackup): Promise<ConversationBackup> {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    try {
+      const id = this.generateSecureId();
+      const [backup] = await db.insert(conversationBackups)
+        .values({
+          id,
+          userId,
+          ...data,
+        })
+        .returning();
+
+      return backup;
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      throw new Error('Failed to create backup');
+    }
+  }
+
+  async getConversationBackups(userId: string): Promise<ConversationBackup[]> {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    try {
+      const result = await db.select()
+        .from(conversationBackups)
+        .where(eq(conversationBackups.userId, userId))
+        .orderBy(desc(conversationBackups.createdAt));
+
+      return result;
+    } catch (error) {
+      console.error('Error fetching backups:', error);
+      throw new Error('Failed to fetch backups');
+    }
+  }
+
+  async restoreConversationBackup(backupId: string, userId: string): Promise<Conversation[]> {
+    if (!backupId || !userId) {
+      throw new Error('Backup ID and User ID are required');
+    }
+
+    try {
+      const [backup] = await db.select()
+        .from(conversationBackups)
+        .where(and(
+          eq(conversationBackups.id, backupId),
+          eq(conversationBackups.userId, userId)
+        ));
+
+      if (!backup) {
+        throw new Error('Backup not found or access denied');
+      }
+
+      const backupData = backup.backupData as any[];
+      const restoredConversations: Conversation[] = [];
+
+      for (const conversationData of backupData) {
+        const conversation = await this.createConversation(userId, {
+          title: conversationData.title + ' (Restored)',
+          mode: conversationData.mode || 'personal',
+          metadata: { restoredFrom: backupId, originalId: conversationData.id }
+        });
+
+        if (conversationData.messages && Array.isArray(conversationData.messages)) {
+          for (const messageData of conversationData.messages) {
+            await this.createMessage({
+              conversationId: conversation.id,
+              content: messageData.content,
+              type: messageData.type,
+              metadata: { originalTimestamp: messageData.timestamp }
+            });
+          }
+        }
+
+        restoredConversations.push(conversation);
+      }
+
+      await db.update(conversationBackups)
+        .set({ restoredAt: new Date() })
+        .where(eq(conversationBackups.id, backupId));
+
+      this.invalidateCache(`conversations:${userId}`);
+      return restoredConversations;
+    } catch (error) {
+      console.error('Error restoring backup:', error);
+      throw new Error('Failed to restore backup');
+    }
+  }
+
+  private getCachedItem(key: string): any {
+    const cached = this.teamMembersCache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      return cached.data;
+    }
+    return null;
+  }
+
+  private setCachedItem(key: string, data: any): void {
+    if (this.teamMembersCache.size >= this.MAX_CACHE_SIZE) {
+      const oldestKey = this.teamMembersCache.keys().next().value;
+      this.teamMembersCache.delete(oldestKey);
+    }
+    this.teamMembersCache.set(key, { data, timestamp: Date.now() });
+  }
+
+  private invalidateCache(key: string): void {
+    this.teamMembersCache.delete(key);
   }
 }
 
