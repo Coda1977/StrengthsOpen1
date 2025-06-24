@@ -1809,6 +1809,7 @@ footer {
   scroll-behavior: smooth;
   background: #F9FAFB;
   min-height: 0;
+  height: 100%;
 }
 
 .welcome-message {
