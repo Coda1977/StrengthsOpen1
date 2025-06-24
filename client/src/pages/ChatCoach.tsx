@@ -715,6 +715,7 @@ const ChatCoach = () => {
           </div>
         </div>
       </div>
+      </div>
     </ErrorBoundary>
   );
 };

@@ -62,6 +62,7 @@ export class DatabaseStorage implements IStorage {
   private readonly MAX_CACHE_SIZE = 1000; // Prevent memory leaks
 
   private getCachedUser(id: string): User | null {
+    if (!id) return null;
     const cached = this.userCache.get(id);
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
       // Move to end (LRU behavior)
@@ -74,15 +75,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   private setCachedUser(id: string, user: User): void {
+    if (!id) return;
     // Implement LRU eviction
     if (this.userCache.size >= this.MAX_CACHE_SIZE) {
       const firstKey = this.userCache.keys().next().value;
-      this.userCache.delete(firstKey);
+      if (firstKey) this.userCache.delete(firstKey);
     }
     this.userCache.set(id, { user, timestamp: Date.now() });
   }
 
   private getCachedTeamMembers(managerId: string): TeamMember[] | null {
+    if (!managerId) return null;
     const cached = this.teamMembersCache.get(managerId);
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
       // Move to end (LRU behavior)
@@ -104,7 +107,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   private invalidateTeamMembersCache(managerId: string): void {
-    this.teamMembersCache.delete(managerId);
+    if (managerId) {
+      this.teamMembersCache.delete(managerId);
+    }
   }
 
   private clearExpiredCache(): void {
@@ -735,17 +740,18 @@ export class DatabaseStorage implements IStorage {
   private getCachedItem(key: string): any {
     const cached = this.teamMembersCache.get(key);
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-      return cached.data;
+      return cached.members;
     }
     return null;
   }
 
   private setCachedItem(key: string, data: any): void {
+    if (!key) return;
     if (this.teamMembersCache.size >= this.MAX_CACHE_SIZE) {
       const oldestKey = this.teamMembersCache.keys().next().value;
-      this.teamMembersCache.delete(oldestKey);
+      if (oldestKey) this.teamMembersCache.delete(oldestKey);
     }
-    this.teamMembersCache.set(key, { data, timestamp: Date.now() });
+    this.teamMembersCache.set(key, { members: data, timestamp: Date.now() });
   }
 
   private invalidateCache(key: string): void {
