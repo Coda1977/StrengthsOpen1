@@ -1935,6 +1935,9 @@ footer {
 
 .message.user {
   flex-direction: row-reverse;
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .message-avatar {
@@ -1967,6 +1970,9 @@ footer {
 .message.user .message-content {
   background: var(--accent-blue);
   color: var(--white);
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .copy-button {

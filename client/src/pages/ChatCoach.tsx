@@ -404,12 +404,18 @@ const ChatCoach = () => {
       
       if (data && data.conversation && data.messages) {
         console.log('Successfully loaded conversation with', data.messages.length, 'messages');
-        setMessages(data.messages.map(msg => ({
+        console.log('Messages:', data.messages.map(m => ({ type: m.type, content: m.content.substring(0, 50) + '...' })));
+        
+        const loadedMessages = data.messages.map(msg => ({
           id: msg.id,
           content: msg.content,
           type: msg.type as 'user' | 'ai',
           timestamp: new Date(msg.timestamp || Date.now())
-        })));
+        }));
+        
+        console.log('Mapped messages:', loadedMessages.map(m => ({ type: m.type, content: m.content.substring(0, 50) + '...' })));
+        
+        setMessages(loadedMessages);
         setCurrentMode(data.conversation.mode);
         setCurrentChatId(conversationId);
         
@@ -782,12 +788,28 @@ const ChatCoach = () => {
                 </div>
               ) : (
                 <>
-                  {messages.map((msg) => (
-                    <div key={msg.id} className={`message ${msg.type}`}>
+                  {messages.map((msg, index) => (
+                    <div 
+                      key={msg.id} 
+                      className={`message ${msg.type}`}
+                      style={{ 
+                        display: 'flex !important', 
+                        opacity: '1 !important', 
+                        visibility: 'visible !important',
+                        flexDirection: msg.type === 'user' ? 'row-reverse' : 'row'
+                      }}
+                    >
                       <div className="message-avatar">
                         {msg.type === 'user' ? 'You' : 'AI'}
                       </div>
-                      <div className="message-content">
+                      <div 
+                        className="message-content"
+                        style={{ 
+                          display: 'block !important', 
+                          opacity: '1 !important', 
+                          visibility: 'visible !important' 
+                        }}
+                      >
                         <div dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }} />
                         <button 
                           className="copy-button"
