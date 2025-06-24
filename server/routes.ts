@@ -336,15 +336,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const userId = req.user.claims.sub;
       
-      const conversation = await storage.getConversation(id, userId);
-      if (!conversation) {
+      console.log(`Loading conversation ${id} for user ${userId}`);
+      
+      const result = await storage.getConversationWithMessages(id, userId);
+      if (!result) {
         return res.status(404).json(createErrorResponse(req, new AppError(ERROR_CODES.NOT_FOUND, 'Conversation not found', 404)));
       }
       
-      const messages = await storage.getMessages(id, userId);
-      
-      res.json(createSuccessResponse({ conversation, messages }));
+      res.json(createSuccessResponse(result));
     } catch (error) {
+      console.error('Error loading conversation:', error);
       next(error);
     }
   });

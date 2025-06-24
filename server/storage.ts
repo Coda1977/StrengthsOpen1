@@ -38,6 +38,7 @@ export interface IStorage {
   // Conversation operations
   getConversations(userId: string): Promise<Conversation[]>;
   getConversation(id: string, userId: string): Promise<Conversation | undefined>;
+  getConversationWithMessages(id: string, userId: string): Promise<{ conversation: Conversation; messages: Message[] } | null>;
   createConversation(userId: string, data: InsertConversation): Promise<Conversation>;
   updateConversation(id: string, userId: string, data: UpdateConversation): Promise<Conversation | undefined>;
   deleteConversation(id: string, userId: string): Promise<void>;
@@ -566,6 +567,22 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error archiving conversation:', error);
       throw new Error('Failed to archive conversation');
+    }
+  }
+
+  async getConversationWithMessages(id: string, userId: string): Promise<{ conversation: Conversation; messages: Message[] } | null> {
+    try {
+      const conversation = await this.getConversation(id, userId);
+      if (!conversation) {
+        return null;
+      }
+
+      const messages = await this.getMessages(id, userId);
+      
+      return { conversation, messages };
+    } catch (error) {
+      console.error('Failed to get conversation with messages:', error);
+      return null;
     }
   }
 
