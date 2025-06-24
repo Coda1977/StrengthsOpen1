@@ -286,7 +286,7 @@ const Dashboard = () => {
 
         <div className="dashboard-content">
           {/* Team Overview Section */}
-          <div className="card" style={{ background: 'var(--white)', borderRadius: 'var(--card-radius)', padding: 'var(--card-padding)', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)' }}>
+          <div className="card">
             <div className="overview-header">
               <h2 className="card-title">Team Synergy</h2>
               <div className="overview-actions">
@@ -373,7 +373,7 @@ const Dashboard = () => {
           </div>
 
           {/* Insights Section */}
-          <div className="card" style={{ background: 'var(--white)', borderRadius: 'var(--card-radius)', padding: 'var(--card-padding)', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)' }}>
+          <div className="card">
             <h2 className="card-title">Insights</h2>
             
             <div className="insight-section">

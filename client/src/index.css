@@ -391,6 +391,11 @@
   min-height: calc(100vh - 80px);
 }
 
+.dashboard-content {
+  display: grid;
+  gap: 2rem;
+}
+
 .dashboard-header {
   text-align: center;
   margin-bottom: 3rem;
@@ -427,6 +432,17 @@
   font-weight: 700;
   margin-bottom: 1.5rem;
   letter-spacing: -1px;
+}
+
+.overview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.overview-header .card-title {
+  margin-bottom: 0;
 }
 
 .strengths-list {
@@ -488,6 +504,7 @@
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
+  cursor: pointer;
 }
 
 .member-initials {
@@ -598,6 +615,46 @@
 .bar-fill.strategic { background: var(--strategic); }
 .bar-fill.strategic-thinking { background: var(--strategic); }
 .bar-fill.relationship-building { background: var(--relationship); }
+
+/* Insights Styles */
+.insight-section {
+  margin-bottom: var(--content-padding);
+}
+
+.insight-box {
+  background: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: 15px;
+  margin-bottom: 1rem;
+}
+
+.insight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.insight-title {
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.insight-text {
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.collaboration-section {
+  margin-top: var(--content-padding);
+}
+
+.member-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
 
 /* Encyclopedia Styles */
 .encyclopedia-container {
