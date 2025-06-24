@@ -105,17 +105,13 @@ const Dashboard = () => {
 
   const generateInsightMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/generate-team-insight', {
-        managerStrengths: user?.topStrengths || [],
-        teamMembers: teamMembers.map(member => ({
-          name: member.name,
-          strengths: member.strengths || []
-        }))
-      });
+      const response = await apiRequest('POST', '/api/generate-team-insight', {});
       return await response.json();
     },
     onSuccess: (data: any) => {
-      setTeamInsight(data?.insight || 'No insight generated');
+      console.log('Team insight response:', data);
+      const insight = data?.data?.insight || data?.insight || 'No insight generated';
+      setTeamInsight(insight);
       setRefreshCount(prev => Math.max(0, prev - 1));
     },
     onError: (error: Error) => {
@@ -130,7 +126,8 @@ const Dashboard = () => {
       return await response.json();
     },
     onSuccess: (data: any) => {
-      let insight = data?.insight || 'No insight generated';
+      console.log('Collaboration insight response:', data);
+      let insight = data?.data?.insight || data?.insight || 'No insight generated';
       if (insight.length > 800) {
         insight = insight.substring(0, 800) + '... [truncated for readability]';
       }
