@@ -102,7 +102,7 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - June 24, 2025: Fixed inefficient message rendering by implementing proper memoization with MessageBubble and MessageList components, removed debug logs from render loop
 - June 24, 2025: Simplified textarea resizing from manual height calculations to CSS field-sizing: content, replaced complex scroll management with scrollIntoViewIfNeeded
 - June 24, 2025: Simplified sidebar toggle conflicts by replacing multiple state variables with single sidebarOpen state and clean CSS classes
-- June 24, 2025: Simplified complex viewport/keyboard handling by replacing 150+ lines of JavaScript with modern CSS dvh units for automatic keyboard handling
+- June 24, 2025: Completed viewport simplification by replacing all remaining 100vh and --vh CSS with modern dvh units, ensuring proper mobile keyboard handling without JavaScript
 - June 24, 2025: Fixed message text wrapping with proper word-wrap, overflow-wrap, and word-break properties for chat bubbles, added URL and long string handling, enhanced mobile text wrapping behavior
 - June 24, 2025: Improved copy message button with proper SVG icon from lucide-react, enhanced styling with backdrop blur and smooth animations, better positioning and accessibility with ARIA labels and focus states
 - June 24, 2025: Fixed "New Chat" button focus issue by adding proper setTimeout delay to ensure focus happens after React state updates complete

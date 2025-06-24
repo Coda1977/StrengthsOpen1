@@ -266,7 +266,7 @@
 
 .hero {
   padding: 120px var(--content-padding) 80px;
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
 }
@@ -1574,7 +1574,7 @@ footer {
   position: absolute;
   top: 0;
   left: 0;
-  height: 100vh;
+  height: 100dvh;
   z-index: 50;
   flex-shrink: 0;
   padding-top: 80px;
@@ -2229,7 +2229,7 @@ footer {
   /* Mobile Message Display */
   .messages-container {
     padding: 1rem;
-    height: calc(100vh - 180px); /* Account for header and input */
+    height: calc(100dvh - 180px); /* Account for header and input */
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -2527,8 +2527,7 @@ footer {
   }
 
   .messages-container {
-    height: calc(100vh - 180px);
-    height: calc(var(--vh, 1vh) * 100 - 180px);
+    height: calc(100dvh - 180px);
   }
 }
 
