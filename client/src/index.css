@@ -1306,14 +1306,17 @@ footer {
   display: flex;
   flex-direction: column;
   transition: margin-left 0.3s ease, transform 0.3s ease;
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100vh;
   z-index: 50;
   flex-shrink: 0;
-  height: 100%;
+  padding-top: 80px;
 }
 
 .sidebar.hidden {
-  margin-left: -320px;
+  left: -320px;
 }
 
 .sidebar-header {
