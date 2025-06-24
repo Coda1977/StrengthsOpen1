@@ -588,6 +588,16 @@ const ChatCoach = () => {
         <Navigation />
         
         <div className={`main-container ${sidebarHidden ? 'sidebar-hidden' : ''}`} style={{ flex: 1 }}>
+          {/* Desktop Sidebar Toggle - Shows when sidebar is hidden */}
+          {sidebarHidden && (
+            <button 
+              className="desktop-sidebar-toggle"
+              onClick={() => setSidebarHidden(false)}
+              aria-label="Open chat history"
+            >
+              ☰
+            </button>
+          )}
 
           {/* Swipe Overlay */}
           <div 

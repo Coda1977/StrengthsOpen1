@@ -1751,6 +1751,34 @@ footer {
   background-color: var(--bg-primary);
 }
 
+/* Desktop Sidebar Toggle */
+.desktop-sidebar-toggle {
+  position: fixed;
+  top: 100px;
+  left: 20px;
+  z-index: 1000;
+  background: var(--white);
+  border: 2px solid var(--border-light);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  color: var(--text-primary);
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.desktop-sidebar-toggle:hover {
+  background: var(--bg-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
 .chat-title {
   font-size: 22px;
   font-weight: 700;
@@ -2096,6 +2124,11 @@ footer {
 
   .mobile-sidebar-toggle:hover {
     background: var(--border-light);
+  }
+
+  /* Hide desktop toggle on mobile */
+  .desktop-sidebar-toggle {
+    display: none;
   }
 
   .sidebar {
