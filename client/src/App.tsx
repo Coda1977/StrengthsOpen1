@@ -30,33 +30,6 @@ function Router() {
 
   return (
     <Switch>
-      {/* Public landing page route */}
-      <Route path="/" nest>
-        {() => {
-          // If authenticated, check onboarding status and redirect accordingly
-          if (isAuthenticated) {
-            if (!hasCompletedOnboarding) {
-              return (
-                <ProtectedRoute routeName="Onboarding">
-                  <Onboarding />
-                </ProtectedRoute>
-              );
-            }
-            return (
-              <ProtectedRoute routeName="Dashboard" requireOnboarding>
-                <Dashboard />
-              </ProtectedRoute>
-            );
-          }
-          // Show public landing page for unauthenticated users
-          return (
-            <PublicRoute routeName="Landing Page">
-              <LandingPage />
-            </PublicRoute>
-          );
-        }}
-      </Route>
-
       {/* Protected routes - require authentication */}
       <Route path="/dashboard">
         <ProtectedRoute routeName="Dashboard" requireOnboarding>
@@ -81,6 +54,33 @@ function Router() {
         <ProtectedRoute routeName="Onboarding">
           <Onboarding />
         </ProtectedRoute>
+      </Route>
+
+      {/* Public landing page route - must come after specific routes */}
+      <Route path="/">
+        {() => {
+          // If authenticated, check onboarding status and redirect accordingly
+          if (isAuthenticated) {
+            if (!hasCompletedOnboarding) {
+              return (
+                <ProtectedRoute routeName="Onboarding">
+                  <Onboarding />
+                </ProtectedRoute>
+              );
+            }
+            return (
+              <ProtectedRoute routeName="Dashboard" requireOnboarding>
+                <Dashboard />
+              </ProtectedRoute>
+            );
+          }
+          // Show public landing page for unauthenticated users
+          return (
+            <PublicRoute routeName="Landing Page">
+              <LandingPage />
+            </PublicRoute>
+          );
+        }}
       </Route>
 
       {/* 404 route - public */}

@@ -50,17 +50,7 @@ const Navigation = ({ simplified = false }: NavigationProps) => {
               key={item.path}
               href={item.path}
               className={`nav-item ${location === item.path ? 'active' : ''}`}
-              onClick={(e) => {
-                console.log('Navigation clicked:', item.path);
-                console.log('Current location:', location);
-                setMobileMenuOpen(false);
-                // Force navigation by updating window location as fallback
-                if (item.path !== location) {
-                  setTimeout(() => {
-                    window.location.href = item.path;
-                  }, 100);
-                }
-              }}
+              onClick={() => setMobileMenuOpen(false)}
             >
               {item.label}
             </Link>
