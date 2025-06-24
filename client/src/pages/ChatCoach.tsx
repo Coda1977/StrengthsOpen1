@@ -532,30 +532,30 @@ const ChatCoach = () => {
         <div className={`main-container ${sidebarHidden ? 'sidebar-hidden' : ''}`} style={{ flex: 1 }}>
           {/* Floating Hamburger Menu */}
           <button 
-          className={`floating-hamburger ${sidebarHidden ? 'visible' : 'hidden'}`}
-          onClick={() => setSidebarHidden(false)}
-          aria-label="Open chat history"
-        >
-          <div className="hamburger-line"></div>
-          <div className="hamburger-line"></div>
-          <div className="hamburger-line"></div>
-        </button>
+            className={`floating-hamburger ${sidebarHidden ? 'visible' : 'hidden'}`}
+            onClick={() => setSidebarHidden(false)}
+            aria-label="Open chat history"
+          >
+            <div className="hamburger-line"></div>
+            <div className="hamburger-line"></div>
+            <div className="hamburger-line"></div>
+          </button>
 
-        {/* Edge Swipe Handle */}
-        <div 
-          className="edge-swipe-handle"
-          onClick={() => setSidebarHidden(false)}
-        ></div>
+          {/* Edge Swipe Handle */}
+          <div 
+            className="edge-swipe-handle"
+            onClick={() => setSidebarHidden(false)}
+          ></div>
 
-        {/* Swipe Overlay */}
-        <div 
-          className="swipe-overlay"
-          onClick={() => setSidebarHidden(true)}
-        ></div>
+          {/* Swipe Overlay */}
+          <div 
+            className="swipe-overlay"
+            onClick={() => setSidebarHidden(true)}
+          ></div>
 
-        {/* Sidebar */}
-        <div className={`sidebar ${sidebarHidden ? 'hidden' : ''}`}>
-          <div className="sidebar-header">
+          {/* Sidebar */}
+          <div className={`sidebar ${sidebarHidden ? 'hidden' : ''}`}>
+            <div className="sidebar-header">
             <div className="mode-toggle">
               {modes.map((mode) => (
                 <button
@@ -610,12 +610,12 @@ const ChatCoach = () => {
                 ))}
               </div>
             )}
+            </div>
           </div>
-        </div>
 
-        {/* Chat Container */}
-        <div className="chat-container">
-          <div className="chat-header">
+          {/* Chat Container */}
+          <div className="chat-container">
+            <div className="chat-header">
             <button 
               className="mobile-sidebar-toggle"
               onClick={() => setSidebarHidden(!sidebarHidden)}
@@ -685,10 +685,10 @@ const ChatCoach = () => {
                 <div ref={messagesEndRef} />
               </>
             )}
-          </div>
+            </div>
 
-          {/* Input Area */}
-          <div className="input-container">
+            {/* Input Area */}
+            <div className="input-container">
             <div className="chat-input-wrapper">
               <textarea
                 ref={textareaRef}
@@ -712,6 +712,7 @@ const ChatCoach = () => {
                   </svg>
                 )}
               </button>
+            </div>
             </div>
           </div>
         </div>
