@@ -669,13 +669,19 @@ const ChatCoach = () => {
   };
 
   // Handle conversation deletion
-  const handleDeleteConversation = async (conversationId: string) => {
-    if (!confirm('Are you sure you want to delete this conversation? This cannot be undone.')) {
-      return;
-    }
+  const handleDeleteConversation = async (conversationId: string, conversationTitle: string) => {
+    setDeleteConfirm({
+      show: true,
+      conversationId,
+      conversationTitle
+    });
+  };
 
+  const confirmDelete = async () => {
+    if (!deleteConfirm.conversationId) return;
+    
     try {
-      const response = await fetch(`/api/conversations/${conversationId}`, {
+      const response = await fetch(`/api/conversations/${deleteConfirm.conversationId}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -684,14 +690,13 @@ const ChatCoach = () => {
         throw new Error('Failed to delete conversation');
       }
 
-      // Clear current chat if it's the one being deleted
-      if (currentChatId === conversationId) {
+      if (currentChatId === deleteConfirm.conversationId) {
         setCurrentChatId(null);
         setMessages([]);
       }
 
-      // Refresh conversations list by calling the refetch function
-      window.location.reload(); // Simple refresh for now
+      setDeleteConfirm({ show: false, conversationId: null, conversationTitle: '' });
+      window.location.reload();
       
       toast({
         title: "Conversation Deleted",
@@ -1016,6 +1021,46 @@ const ChatCoach = () => {
             </div>
           </div>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm.show && (
+          <div className="modal active" onClick={() => setDeleteConfirm({ show: false, conversationId: null, conversationTitle: '' })}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <h3>Delete Conversation</h3>
+              <p>Are you sure you want to delete "{deleteConfirm.conversationTitle}"?</p>
+              <p style={{ color: '#dc2626', fontSize: '14px' }}>This action cannot be undone.</p>
+              
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
+                <button
+                  onClick={() => setDeleteConfirm({ show: false, conversationId: null, conversationTitle: '' })}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    border: '1px solid #D1D5DB',
+                    borderRadius: '8px',
+                    backgroundColor: '#FFFFFF',
+                    color: '#4A4A4A',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    border: 'none',
+                    borderRadius: '8px',
+                    backgroundColor: '#dc2626',
+                    color: '#FFFFFF',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </ErrorBoundary>
   );
