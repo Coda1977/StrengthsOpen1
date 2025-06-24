@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
 import { useCleanup } from "@/hooks/useCleanup";
+import { useConversations, useMigration } from "@/hooks/useConversations";
+import { LocalStorageManager } from "@/utils/localStorage";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
@@ -23,13 +26,32 @@ const ChatCoach = () => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [migrationNeeded, setMigrationNeeded] = useState(false);
+  const [migrationInProgress, setMigrationInProgress] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   // Use cleanup hook for better resource management
   const { createTimeout, addCleanup } = useCleanup();
+  
+  // Use database-backed conversation management
+  const { 
+    conversations, 
+    isLoading: conversationsLoading,
+    createConversation,
+    getConversation,
+    addMessage,
+    updateConversation
+  } = useConversations();
+  
+  const { 
+    migrate, 
+    isMigrating, 
+    recover 
+  } = useMigration();
+  
+  const { toast } = useToast();
 
   const formatMessageText = (text: string): string => {
     return text
@@ -58,32 +80,139 @@ const ChatCoach = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Load chat history from localStorage on component mount
+  // Check for migration needs on component mount
   useEffect(() => {
-    const savedHistory = localStorage.getItem('chat-history');
-    if (savedHistory) {
-      try {
-        const parsedHistory = JSON.parse(savedHistory).map((chat: any) => ({
-          ...chat,
-          lastActivity: new Date(chat.lastActivity),
-          messages: chat.messages.map((msg: any) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp)
-          }))
-        }));
-        setChatHistory(parsedHistory);
-      } catch (error) {
-        console.error('Failed to parse chat history:', error);
-      }
-    }
+    checkMigrationNeeds();
   }, []);
 
-  // Save chat history to localStorage whenever it changes
-  useEffect(() => {
-    if (chatHistory.length > 0) {
-      localStorage.setItem('chat-history', JSON.stringify(chatHistory));
+  const checkMigrationNeeds = async () => {
+    // Check migration status
+    const migrationStatus = LocalStorageManager.getMigrationStatus();
+    if (migrationStatus.success && migrationStatus.data?.completed) {
+      return; // Already migrated
     }
-  }, [chatHistory]);
+
+    // Check if there's localStorage data to migrate
+    const localData = LocalStorageManager.getChatHistory();
+    if (localData.success && localData.data && localData.data.length > 0) {
+      setMigrationNeeded(true);
+      showMigrationPrompt();
+    } else if (localData.corrupted) {
+      // Handle corrupted data
+      handleCorruptedData();
+    }
+  };
+
+  const showMigrationPrompt = () => {
+    toast({
+      title: "Chat History Migration",
+      description: "We found existing chat history. Would you like to migrate it to the new secure database?",
+      duration: 0, // Keep open until dismissed
+      action: (
+        <div className="flex gap-2">
+          <button 
+            onClick={performMigration}
+            className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
+          >
+            Migrate
+          </button>
+          <button 
+            onClick={() => {
+              LocalStorageManager.setMigrationCompleted();
+              setMigrationNeeded(false);
+            }}
+            className="bg-gray-600 text-white px-3 py-1 rounded text-sm"
+          >
+            Skip
+          </button>
+        </div>
+      )
+    });
+  };
+
+  const performMigration = async () => {
+    setMigrationInProgress(true);
+    
+    try {
+      const localData = LocalStorageManager.getChatHistory();
+      if (!localData.success || !localData.data) {
+        throw new Error('No data to migrate');
+      }
+
+      const result = await migrate(JSON.stringify(localData.data));
+      
+      toast({
+        title: "Migration Successful",
+        description: `Migrated ${result.conversationsCreated} conversations and ${result.messagesCreated} messages.`,
+      });
+
+      // Clear localStorage and mark migration complete
+      LocalStorageManager.clearChatHistory();
+      LocalStorageManager.setMigrationCompleted();
+      setMigrationNeeded(false);
+      
+    } catch (error) {
+      console.error('Migration failed:', error);
+      toast({
+        title: "Migration Failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setMigrationInProgress(false);
+    }
+  };
+
+  const handleCorruptedData = async () => {
+    try {
+      const recovered = LocalStorageManager.attemptDataRecovery();
+      if (recovered.success && recovered.data && recovered.data.length > 0) {
+        // Show recovery option
+        toast({
+          title: "Corrupted Data Recovery",
+          description: `Found ${recovered.data.length} recoverable conversations. Attempt recovery?`,
+          action: (
+            <button 
+              onClick={() => performRecovery(recovered.data)}
+              className="bg-orange-600 text-white px-3 py-1 rounded text-sm"
+            >
+              Recover
+            </button>
+          )
+        });
+      } else {
+        // Report corruption
+        await recover();
+        toast({
+          title: "Data Corruption Detected",
+          description: "Previous chat data was corrupted and could not be recovered. A report has been saved.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Recovery failed:', error);
+    }
+  };
+
+  const performRecovery = async (recoveredData: any[]) => {
+    try {
+      const result = await migrate(JSON.stringify(recoveredData));
+      toast({
+        title: "Recovery Successful",
+        description: `Recovered ${result.conversationsCreated} conversations.`,
+      });
+      
+      LocalStorageManager.clearChatHistory();
+      LocalStorageManager.setMigrationCompleted();
+    } catch (error) {
+      console.error('Recovery failed:', error);
+      toast({
+        title: "Recovery Failed",
+        description: "Could not recover the corrupted data.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -96,41 +225,77 @@ const ChatCoach = () => {
       : words.join(' ');
   };
 
-  const saveCurrentChat = () => {
+  const saveCurrentChat = async () => {
     if (messages.length === 0) return;
 
-    const chatToSave: ChatHistory = {
-      id: currentChatId || Date.now().toString(),
-      title: generateChatTitle(messages.find(m => m.type === 'user')?.content || 'New Chat'),
-      messages: [...messages],
-      lastActivity: new Date(),
-      mode: currentMode
-    };
-
-    setChatHistory(prev => {
-      const existingIndex = prev.findIndex(chat => chat.id === chatToSave.id);
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = chatToSave;
-        return updated.sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
+    try {
+      if (currentChatId) {
+        // Update existing conversation
+        await updateConversation({
+          id: currentChatId,
+          data: {
+            title: generateChatTitle(messages.find(m => m.type === 'user')?.content || 'New Chat'),
+            mode: currentMode,
+            lastActivity: new Date()
+          }
+        });
       } else {
-        return [chatToSave, ...prev].sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
-      }
-    });
-  };
+        // Create new conversation
+        const conversation = await createConversation({
+          title: generateChatTitle(messages.find(m => m.type === 'user')?.content || 'New Chat'),
+          mode: currentMode
+        });
+        setCurrentChatId(conversation.id);
 
-  const loadChat = (chatId: string) => {
-    const chat = chatHistory.find(c => c.id === chatId);
-    if (chat) {
-      setMessages(chat.messages);
-      setCurrentMode(chat.mode);
-      setCurrentChatId(chatId);
+        // Add all messages to the new conversation
+        for (const msg of messages) {
+          await addMessage({
+            conversationId: conversation.id,
+            data: {
+              content: msg.content,
+              type: msg.type
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to save conversation:', error);
+      toast({
+        title: "Save Failed",
+        description: "Could not save the conversation",
+        variant: "destructive"
+      });
     }
   };
 
-  const startNewChat = () => {
-    if (messages.length > 0) {
-      saveCurrentChat();
+  const loadChat = async (conversationId: string) => {
+    try {
+      const conversationQuery = getConversation(conversationId);
+      const { data } = await conversationQuery.refetch();
+      
+      if (data) {
+        setMessages(data.messages.map(msg => ({
+          id: msg.id,
+          content: msg.content,
+          type: msg.type as 'user' | 'ai',
+          timestamp: msg.timestamp || new Date()
+        })));
+        setCurrentMode(data.conversation.mode);
+        setCurrentChatId(conversationId);
+      }
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
+      toast({
+        title: "Load Failed",
+        description: "Could not load the conversation",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const startNewChat = async () => {
+    if (messages.length > 0 && currentChatId) {
+      await saveCurrentChat();
     }
     setMessages([]);
     setMessage('');
@@ -188,10 +353,48 @@ const ChatCoach = () => {
       
       setMessages(prev => {
         const updatedMessages = [...prev, aiMessage];
-        // Auto-save chat after AI response - using cleanup hook
-        createTimeout(() => {
+        // Auto-save new conversation after AI response
+        createTimeout(async () => {
           if (!currentChatId) {
-            setCurrentChatId(Date.now().toString());
+            try {
+              const conversation = await createConversation({
+                title: generateChatTitle(userMessage.content),
+                mode: currentMode
+              });
+              setCurrentChatId(conversation.id);
+              
+              // Add both user and AI messages to new conversation
+              await addMessage({
+                conversationId: conversation.id,
+                data: {
+                  content: userMessage.content,
+                  type: 'user'
+                }
+              });
+              
+              await addMessage({
+                conversationId: conversation.id,
+                data: {
+                  content: aiMessage.content,
+                  type: 'ai'
+                }
+              });
+            } catch (error) {
+              console.error('Failed to create conversation:', error);
+            }
+          } else {
+            // Add AI message to existing conversation
+            try {
+              await addMessage({
+                conversationId: currentChatId,
+                data: {
+                  content: aiMessage.content,
+                  type: 'ai'
+                }
+              });
+            } catch (error) {
+              console.error('Failed to add message:', error);
+            }
           }
         }, 100);
         return updatedMessages;
@@ -312,24 +515,33 @@ const ChatCoach = () => {
           </div>
 
           <div className="chat-history">
-            {chatHistory.length === 0 ? (
+            {conversationsLoading ? (
+              <div className="empty-history">
+                <h3>Loading conversations...</h3>
+              </div>
+            ) : conversations.length === 0 ? (
               <div className="empty-history">
                 <h3>No conversations yet</h3>
                 <p>Start a new chat to begin exploring your strengths with AI guidance.</p>
+                {migrationNeeded && (
+                  <div className="migration-notice">
+                    <p className="text-sm text-blue-600">Found chat history to migrate</p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="history-list">
-                {chatHistory.map((chat) => (
+                {conversations.map((conversation) => (
                   <div 
-                    key={chat.id}
-                    className={`history-item ${currentChatId === chat.id ? 'active' : ''}`}
-                    onClick={() => loadChat(chat.id)}
+                    key={conversation.id}
+                    className={`history-item ${currentChatId === conversation.id ? 'active' : ''}`}
+                    onClick={() => loadChat(conversation.id)}
                   >
-                    <div className="history-title">{chat.title}</div>
+                    <div className="history-title">{conversation.title}</div>
                     <div className="history-meta">
-                      <span className="history-mode">{chat.mode === 'personal' ? 'My Strengths' : 'Team'}</span>
+                      <span className="history-mode">{conversation.mode === 'personal' ? 'My Strengths' : 'Team'}</span>
                       <span className="history-date">
-                        {chat.lastActivity.toLocaleDateString()}
+                        {conversation.lastActivity ? new Date(conversation.lastActivity).toLocaleDateString() : 'Unknown'}
                       </span>
                     </div>
                   </div>
