@@ -95,14 +95,14 @@ function Router() {
 
 function App() {
   return (
-    <EnhancedErrorBoundary>
+    <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
           <Router />
         </TooltipProvider>
       </QueryClientProvider>
-    </EnhancedErrorBoundary>
+    </ErrorBoundary>
   );
 }
 
