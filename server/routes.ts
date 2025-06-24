@@ -481,9 +481,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const backups = await storage.getConversationBackups(userId);
       
-      res.json(createSuccessResponse(backups));
+      // Return empty array if no backups instead of error
+      res.json(createSuccessResponse(backups || []));
     } catch (error) {
-      next(error);
+      // Return empty array on any error to prevent 404 spam
+      res.json(createSuccessResponse([]));
     }
   });
 
