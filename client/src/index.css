@@ -2056,13 +2056,20 @@ footer {
     grid-template-columns: 1fr;
   }
 
+  /* Mobile Chat Improvements */
+  .main-container {
+    margin-top: 60px; /* Reduced for mobile */
+  }
+
   .chat-sidebar {
     position: fixed;
     left: -320px;
-    top: 80px;
-    height: calc(100vh - 80px);
+    top: 60px;
+    height: calc(100vh - 60px);
     z-index: 200;
     transition: left 0.3s ease;
+    width: 90vw; /* Make sidebar wider on mobile */
+    max-width: 320px;
   }
 
   .chat-sidebar.open {
@@ -2070,7 +2077,205 @@ footer {
   }
 
   .mobile-sidebar-toggle {
-    display: block !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    margin-right: 8px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    font-size: 18px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: -100%;
+    top: 60px;
+    height: calc(100vh - 60px);
+    z-index: 200;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 90vw;
+    max-width: 320px;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .sidebar:not(.hidden) {
+    left: 0;
+  }
+
+  .swipe-overlay {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .main-container:not(.sidebar-hidden) .swipe-overlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Chat Container Mobile Optimizations */
+  .chat-container {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .chat-header {
+    padding: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--white);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .chat-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  /* Mobile Message Display */
+  .messages-container {
+    padding: 1rem;
+    height: calc(100vh - 180px); /* Account for header and input */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .message-content {
+    max-width: 85%;
+    padding: 12px 16px;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .message-avatar {
+    min-width: 40px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  /* Mobile Input Improvements */
+  .input-container {
+    padding: 1rem;
+    background: var(--white);
+    border-top: 1px solid var(--border-light);
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+  }
+
+  .chat-input-wrapper {
+    gap: 8px;
+  }
+
+  .chat-input {
+    min-height: 44px;
+    max-height: 120px;
+    padding: 12px 16px;
+    font-size: 16px; /* Prevent zoom on iOS */
+    border-radius: 22px;
+    line-height: 1.4;
+    resize: none;
+    touch-action: manipulation;
+  }
+
+  .send-button {
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+    border-radius: 22px;
+    flex-shrink: 0;
+  }
+
+  /* Welcome Message Mobile */
+  .welcome-message {
+    padding: 2rem 1rem;
+    text-align: center;
+  }
+
+  .welcome-content h2 {
+    font-size: 24px;
+    margin-bottom: 1rem;
+  }
+
+  .welcome-content p {
+    font-size: 16px;
+    margin-bottom: 2rem;
+  }
+
+  .starter-questions {
+    gap: 8px;
+  }
+
+  .starter-question {
+    padding: 12px 16px;
+    font-size: 14px;
+    text-align: left;
+    border-radius: 12px;
+  }
+
+  /* Sidebar Mobile Optimizations */
+  .sidebar-header {
+    padding: 16px;
+  }
+
+  .mode-toggle {
+    margin-bottom: 16px;
+    padding: 2px;
+    border-radius: 20px;
+  }
+
+  .mode-button {
+    padding: 8px 12px;
+    font-size: 13px;
+    border-radius: 18px;
+  }
+
+  .new-chat-button {
+    padding: 12px;
+    font-size: 14px;
+    border-radius: 20px;
+  }
+
+  .chat-history {
+    padding: 12px;
+  }
+
+  .history-item {
+    padding: 10px 12px;
+    border-radius: 8px;
+  }
+
+  .history-title {
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+
+  .history-meta {
+    font-size: 11px;
+  }
+
+  .history-mode {
+    padding: 1px 4px;
+    font-size: 9px;
+  }
+
+  /* Copy button mobile */
+  .copy-button {
+    top: 6px;
+    right: 6px;
+    font-size: 14px;
+    padding: 2px;
+  }
+
+  /* Error states mobile */
+  .error-container {
+    padding: 1rem;
+    margin: 1rem;
+    border-radius: 12px;
   }
 
   .floating-hamburger {
@@ -2081,20 +2286,6 @@ footer {
 
   .hamburger-line {
     width: 16px;
-  }
-
-  .sidebar {
-    position: fixed;
-    left: -320px;
-    top: 0;
-    height: 100vh;
-    z-index: 200;
-    transition: left 0.3s ease;
-    padding-top: 80px;
-  }
-
-  .sidebar:not(.hidden) {
-    left: 0;
   }
 
   .dashboard-container,

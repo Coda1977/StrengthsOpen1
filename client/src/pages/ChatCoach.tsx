@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ErrorBoundary, ChatErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorState, ChatErrorState, NetworkErrorState } from "@/components/ErrorState";
 import { useChatRetry } from "@/hooks/useRetry";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Message {
   id: string;
@@ -24,7 +25,8 @@ interface ChatHistory {
 }
 
 const ChatCoach = () => {
-  const [sidebarHidden, setSidebarHidden] = useState(false);
+  const isMobile = useIsMobile();
+  const [sidebarHidden, setSidebarHidden] = useState(isMobile);
   const [currentMode, setCurrentMode] = useState<'personal' | 'team'>('personal');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -35,6 +37,7 @@ const ChatCoach = () => {
   const [chatError, setChatError] = useState<Error | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [inputHeight, setInputHeight] = useState(44);
   
   // Use cleanup hook for better resource management
   const { createTimeout, addCleanup } = useCleanup();
@@ -145,6 +148,31 @@ const ChatCoach = () => {
   useEffect(() => {
     checkMigrationNeeds();
   }, []);
+
+  // Handle mobile sidebar behavior
+  useEffect(() => {
+    setSidebarHidden(isMobile);
+  }, [isMobile]);
+
+  // Handle mobile viewport height changes (keyboard)
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const handleResize = () => {
+      // Adjust for mobile keyboard
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, [isMobile]);
 
   const checkMigrationNeeds = async () => {
     // Check migration status
@@ -276,7 +304,12 @@ const ChatCoach = () => {
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: isMobile ? "auto" : "smooth",
+        block: "end"
+      });
+    }
   };
 
   const generateChatTitle = (firstMessage: string): string => {
@@ -343,6 +376,11 @@ const ChatCoach = () => {
         })));
         setCurrentMode(data.conversation.mode);
         setCurrentChatId(conversationId);
+        
+        // Hide sidebar on mobile after loading chat
+        if (isMobile) {
+          setSidebarHidden(true);
+        }
       }
     } catch (error) {
       console.error('Failed to load conversation:', error);
@@ -361,8 +399,13 @@ const ChatCoach = () => {
     setMessages([]);
     setMessage('');
     setCurrentChatId(null);
+    setInputHeight(44);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
+    }
+    // Hide sidebar on mobile after starting new chat
+    if (isMobile) {
+      setSidebarHidden(true);
     }
   };
 
@@ -384,6 +427,7 @@ const ChatCoach = () => {
     // Auto-resize textarea
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
+      setInputHeight(44);
     }
 
     try {
