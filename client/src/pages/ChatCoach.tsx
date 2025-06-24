@@ -21,10 +21,10 @@ const ChatCoach = () => {
     return text
       // Bold text **text** -> <strong>text</strong>
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      // Italic text *text* -> <em>text</em>
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      // Bullet points • -> styled bullets
-      .replace(/^• (.+)/, '<div class="bullet-point">• $1</div>')
+      // Bullet points • -> styled bullets (remove original bullet)
+      .replace(/^• (.+)/, '<div class="bullet-point">$1</div>')
+      // Italic text *text* -> <em>text</em> (but not if it's already processed as bold)
+      .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
       // Handle line breaks
       .replace(/\n/g, '<br/>');
   };
