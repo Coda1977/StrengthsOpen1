@@ -718,8 +718,24 @@ const ChatCoach = () => {
               <button 
                 className="new-chat-button"
                 onClick={startNewChat}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: 'var(--accent-blue)',
+                  color: 'var(--white)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s ease'
+                }}
               >
-                <span style={{fontSize: '20px', marginRight: '4px'}}>+</span>
+                <span style={{fontSize: '20px'}}>+</span>
                 New Chat
               </button>
             </div>
