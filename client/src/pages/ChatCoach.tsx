@@ -179,56 +179,17 @@ const ChatCoach = () => {
     setSidebarHidden(isMobile);
   }, [isMobile]);
 
-  // Handle mobile viewport height changes (keyboard)
+  // Simple keyboard handling
   useEffect(() => {
-    if (!isMobile) return;
-
-    const updateViewportHeight = () => {
-      // Use Visual Viewport API if available, fallback to window.innerHeight
-      const height = window.visualViewport?.height || window.innerHeight;
-      const vh = height * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-      
-      // Adjust chat container height for keyboard
-      const chatContainer = document.querySelector('.chat-container');
-      if (chatContainer) {
-        chatContainer.style.height = `${height - 120}px`; // Account for header and input
+    const handleResize = () => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
       }
     };
 
-    const handleVisualViewportChange = () => {
-      updateViewportHeight();
-      
-      // Scroll to bottom when keyboard opens/closes
-      setTimeout(() => {
-        if (messagesEndRef.current) {
-          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
-    };
-
-    // Initial setup
-    updateViewportHeight();
-
-    // Visual Viewport API support
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleVisualViewportChange);
-      window.visualViewport.addEventListener('scroll', handleVisualViewportChange);
-    }
-
-    // Fallback for older browsers
-    window.addEventListener('resize', updateViewportHeight);
-    window.addEventListener('orientationchange', updateViewportHeight);
-
-    return () => {
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleVisualViewportChange);
-        window.visualViewport.removeEventListener('scroll', handleVisualViewportChange);
-      }
-      window.removeEventListener('resize', updateViewportHeight);
-      window.removeEventListener('orientationchange', updateViewportHeight);
-    };
-  }, [isMobile]);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Handle focus when new chat starts
   useEffect(() => {
@@ -654,16 +615,6 @@ const ChatCoach = () => {
       const newHeight = Math.min(textareaRef.current.scrollHeight, 120);
       textareaRef.current.style.height = `${newHeight}px`;
       setInputHeight(newHeight);
-      
-      // Ensure input stays visible on mobile
-      if (isMobile) {
-        setTimeout(() => {
-          textareaRef.current?.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'nearest' 
-          });
-        }, 100);
-      }
     }
   };
 
@@ -674,20 +625,7 @@ const ChatCoach = () => {
     }
   };
 
-  // Handle focus events for mobile keyboard
-  const handleInputFocus = () => {
-    if (isMobile) {
-      // Delay to allow keyboard to open
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center' 
-          });
-        }
-      }, 300);
-    }
-  };
+
 
   const handleStarterQuestion = (question: string) => {
     setMessage(question);

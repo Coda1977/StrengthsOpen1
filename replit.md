@@ -93,8 +93,8 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Sessions Table**: Handles session persistence for authentication
 
 ## Recent Changes
+- June 24, 2025: Simplified complex viewport/keyboard handling by replacing 150+ lines of JavaScript with modern CSS dvh units for automatic keyboard handling
 - June 24, 2025: Fixed message text wrapping with proper word-wrap, overflow-wrap, and word-break properties for chat bubbles, added URL and long string handling, enhanced mobile text wrapping behavior
-- June 24, 2025: Fixed mobile keyboard handling with Visual Viewport API support, proper viewport height adjustment, sticky input positioning, and improved touch scrolling behavior
 - June 24, 2025: Improved copy message button with proper SVG icon from lucide-react, enhanced styling with backdrop blur and smooth animations, better positioning and accessibility with ARIA labels and focus states
 - June 24, 2025: Fixed "New Chat" button focus issue by adding proper setTimeout delay to ensure focus happens after React state updates complete
 - June 24, 2025: Fixed user message display by using hardcoded colors instead of CSS variables, added proper message rendering with unique keys, fixed delete button positioning to stay within sidebar bounds, and ensured all conversation messages display correctly
@@ -131,3 +131,4 @@ The Strengths Manager is a full-stack web application designed to help managers 
 
 Preferred communication style: Simple, everyday language.
 User expects efficient solutions completed in fewer iterations, not incremental debugging.
+User prefers simple, direct solutions over complex over-engineered implementations.
