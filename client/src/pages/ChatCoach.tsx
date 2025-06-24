@@ -813,7 +813,7 @@ const ChatCoach = () => {
                         className="delete-conversation-button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteConversation(conversation.id);
+                          handleDeleteConversation(conversation.id, conversation.title);
                         }}
                         title="Delete conversation"
                       >
