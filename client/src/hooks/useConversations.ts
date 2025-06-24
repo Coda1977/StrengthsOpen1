@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Conversation, Message, ConversationBackup } from '@shared/schema';
+import { useApiRetry } from './useRetry';
 
 interface ConversationWithMessages {
   conversation: Conversation;
@@ -29,7 +30,7 @@ interface MigrationResult {
 export function useConversations() {
   const queryClient = useQueryClient();
 
-  // Get all conversations
+  // Get all conversations with retry logic
   const conversationsQuery = useQuery({
     queryKey: ['/api/conversations'],
     queryFn: async (): Promise<Conversation[]> => {
@@ -37,11 +38,20 @@ export function useConversations() {
         credentials: 'include'
       });
       if (!response.ok) {
-        throw new Error('Failed to fetch conversations');
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`Failed to fetch conversations: ${response.status} ${errorText}`);
       }
       const data = await response.json();
       return data.data;
-    }
+    },
+    retry: (failureCount, error) => {
+      // Don't retry auth errors
+      if (error.message.includes('401') || error.message.includes('403')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)
   });
 
   // Get specific conversation with messages
@@ -49,22 +59,38 @@ export function useConversations() {
     return useQuery({
       queryKey: ['/api/conversations', conversationId],
       queryFn: async (): Promise<ConversationWithMessages> => {
+        if (!conversationId) {
+          throw new Error('Conversation ID is required');
+        }
+        
         const response = await fetch(`/api/conversations/${conversationId}`, {
           credentials: 'include'
         });
         if (!response.ok) {
-          throw new Error('Failed to fetch conversation');
+          const errorText = await response.text().catch(() => 'Unknown error');
+          throw new Error(`Failed to fetch conversation: ${response.status} ${errorText}`);
         }
         const data = await response.json();
         return data.data;
       },
-      enabled: !!conversationId
+      enabled: !!conversationId,
+      retry: (failureCount, error) => {
+        if (error.message.includes('401') || error.message.includes('403') || error.message.includes('404')) {
+          return false;
+        }
+        return failureCount < 2;
+      },
+      retryDelay: 1000
     });
   };
 
-  // Create conversation
+  // Create conversation with retry
   const createConversationMutation = useMutation({
     mutationFn: async (data: CreateConversationData): Promise<Conversation> => {
+      if (!data.title || !data.mode) {
+        throw new Error('Title and mode are required');
+      }
+      
       const response = await fetch('/api/conversations', {
         method: 'POST',
         headers: {
@@ -74,7 +100,8 @@ export function useConversations() {
         body: JSON.stringify(data),
       });
       if (!response.ok) {
-        throw new Error('Failed to create conversation');
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`Failed to create conversation: ${response.status} ${errorText}`);
       }
       const result = await response.json();
       return result.data;
@@ -82,6 +109,13 @@ export function useConversations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
     },
+    retry: (failureCount, error) => {
+      if (error.message.includes('401') || error.message.includes('403') || error.message.includes('400')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: 1000
   });
 
   // Update conversation

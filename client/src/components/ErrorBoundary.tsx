@@ -1,194 +1,133 @@
-
-import React from 'react';
-import { QueryErrorResetBoundary } from '@tanstack/react-query';
+import React, { Component, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, RefreshCw, Home, Wifi, Shield } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
-interface ErrorBoundaryState {
+interface Props {
+  children: ReactNode;
+  fallback?: ReactNode;
+  onReset?: () => void;
+}
+
+interface State {
   hasError: boolean;
-  error?: Error;
-  errorInfo?: React.ErrorInfo;
+  error: Error | null;
+  errorInfo: any;
 }
 
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
-  fallback?: React.ComponentType<{ error: Error; retry: () => void }>;
-}
-
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
+export class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null
+    };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
+  static getDerivedStateFromError(error: Error): State {
+    return {
+      hasError: true,
+      error,
+      errorInfo: null
+    };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
-    this.setState({ errorInfo });
-
-    // Report to error tracking service in production
-    if (process.env.NODE_ENV === 'production') {
-      // Could integrate with error tracking service here
-      console.error('Production error:', {
-        error: error.message,
-        stack: error.stack,
-        componentStack: errorInfo.componentStack
-      });
-    }
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    this.setState({
+      error,
+      errorInfo
+    });
   }
 
-  private getErrorType(error: Error): 'network' | 'auth' | 'query' | 'component' {
-    const message = error.message.toLowerCase();
+  handleReset = () => {
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null
+    });
     
-    if (message.includes('401') || message.includes('unauthorized')) {
-      return 'auth';
+    if (this.props.onReset) {
+      this.props.onReset();
     }
-    if (message.includes('fetch') || message.includes('network') || message.includes('connection')) {
-      return 'network';
-    }
-    if (message.includes('query') || message.includes('500') || message.includes('400')) {
-      return 'query';
-    }
-    return 'component';
-  }
-
-  private getErrorIcon(type: string) {
-    switch (type) {
-      case 'network': return <Wifi className="h-8 w-8 text-orange-500" />;
-      case 'auth': return <Shield className="h-8 w-8 text-red-500" />;
-      case 'query': return <AlertTriangle className="h-8 w-8 text-yellow-500" />;
-      default: return <AlertTriangle className="h-8 w-8 text-red-500" />;
-    }
-  }
-
-  private getErrorMessage(type: string, error: Error) {
-    switch (type) {
-      case 'network':
-        return {
-          title: 'Connection Problem',
-          message: 'Unable to connect to the server. Please check your internet connection.',
-          suggestions: ['Check your internet connection', 'Try refreshing the page', 'Contact support if the problem persists']
-        };
-      case 'auth':
-        return {
-          title: 'Authentication Error',
-          message: 'Your session has expired or you lack permission for this action.',
-          suggestions: ['Try logging in again', 'Contact your administrator if you believe this is an error']
-        };
-      case 'query':
-        return {
-          title: 'Data Loading Error',
-          message: 'There was a problem loading the requested data.',
-          suggestions: ['Try refreshing the page', 'Check if the service is available', 'Contact support if the error persists']
-        };
-      default:
-        return {
-          title: 'Application Error',
-          message: 'Something unexpected happened in the application.',
-          suggestions: ['Try refreshing the page', 'Clear your browser cache', 'Contact support with details about what you were doing']
-        };
-    }
-  }
-
-  private handleRetry = () => {
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
 
-  private handleGoHome = () => {
-    window.location.href = '/';
-  };
-
-  private handleReload = () => {
+  handleReload = () => {
     window.location.reload();
   };
 
-  render() {
-    if (this.state.hasError && this.state.error) {
-      const errorType = this.getErrorType(this.state.error);
-      const errorDetails = this.getErrorMessage(errorType, this.state.error);
+  handleGoHome = () => {
+    window.location.href = '/';
+  };
 
+  render() {
+    if (this.state.hasError) {
       if (this.props.fallback) {
-        return <this.props.fallback error={this.state.error} retry={this.handleRetry} />;
+        return this.props.fallback;
       }
 
       return (
-        <div className="min-h-screen bg-primary-bg flex items-center justify-center p-4">
-          <Card className="w-full max-w-lg">
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
-                {this.getErrorIcon(errorType)}
-              </div>
-              <CardTitle className="text-xl text-text-primary">
-                {errorDetails.title}
-              </CardTitle>
-            </CardHeader>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 text-center">
+            <div className="mb-4">
+              <AlertTriangle className="mx-auto h-12 w-12 text-red-500" />
+            </div>
             
-            <CardContent className="space-y-4">
-              <p className="text-text-secondary text-center">
-                {errorDetails.message}
-              </p>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Something went wrong
+            </h1>
+            
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              The chat interface encountered an unexpected error. This has been logged and we're working to fix it.
+            </p>
 
-              <div className="bg-gray-50 p-3 rounded-md">
-                <h4 className="font-medium text-sm text-gray-700 mb-2">What you can try:</h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  {errorDetails.suggestions.map((suggestion, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="text-gray-400 mr-2">•</span>
-                      {suggestion}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {process.env.NODE_ENV === 'development' && (
-                <details className="bg-red-50 p-3 rounded-md">
-                  <summary className="cursor-pointer text-sm font-medium text-red-700">
-                    Development Details
-                  </summary>
-                  <div className="mt-2 text-xs text-red-600">
-                    <p><strong>Error:</strong> {this.state.error.message}</p>
-                    <p><strong>Stack:</strong></p>
-                    <pre className="text-xs bg-red-100 p-2 rounded mt-1 overflow-auto">
-                      {this.state.error.stack}
-                    </pre>
-                  </div>
-                </details>
-              )}
-
-              <div className="flex flex-col sm:flex-row gap-2 pt-4">
-                <Button 
-                  onClick={this.handleRetry}
-                  className="flex items-center gap-2"
-                  variant="default"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Try Again
-                </Button>
-                
-                <Button 
-                  onClick={this.handleReload}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Reload Page
-                </Button>
-                
-                <Button 
-                  onClick={this.handleGoHome}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Home className="h-4 w-4" />
-                  Go Home
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            {this.state.error && (
+              <details className="mb-6 text-left">
+                <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                  Technical Details
+                </summary>
+                <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-800 dark:text-gray-200 overflow-auto max-h-32">
+                  <div className="font-semibold mb-1">Error:</div>
+                  <div>{this.state.error.message}</div>
+                  {this.state.error.stack && (
+                    <>
+                      <div className="font-semibold mt-2 mb-1">Stack:</div>
+                      <div className="whitespace-pre-wrap">{this.state.error.stack}</div>
+                    </>
+                  )}
+                </div>
+              </details>
+            )}
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                onClick={this.handleReset} 
+                className="flex-1"
+                variant="default"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Try Again
+              </Button>
+              
+              <Button 
+                onClick={this.handleReload} 
+                className="flex-1"
+                variant="outline"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reload Page
+              </Button>
+              
+              <Button 
+                onClick={this.handleGoHome} 
+                className="flex-1"
+                variant="ghost"
+              >
+                <Home className="mr-2 h-4 w-4" />
+                Go Home
+              </Button>
+            </div>
+          </div>
         </div>
       );
     }
@@ -197,52 +136,55 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
-// Enhanced wrapper that integrates with React Query
-export function EnhancedErrorBoundary({ children }: { children: React.ReactNode }) {
-  return (
-    <QueryErrorResetBoundary>
-      {({ reset }) => (
-        <ErrorBoundary fallback={({ error, retry }) => (
-          <div className="min-h-screen bg-primary-bg flex items-center justify-center p-4">
-            <Card className="w-full max-w-lg">
-              <CardHeader className="text-center">
-                <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <CardTitle className="text-xl font-bold text-text-primary">
-                  Application Error
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-center space-y-4">
-                <p className="text-text-secondary">
-                  {error?.message?.includes('fetch') || error?.message?.includes('network') 
-                    ? 'Unable to connect to the server. Please check your internet connection.'
-                    : 'An unexpected error occurred. Please try again.'}
-                </p>
-                
-                {error && process.env.NODE_ENV === 'development' && (
-                  <details className="text-left text-sm bg-gray-100 dark:bg-gray-800 p-3 rounded">
-                    <summary className="cursor-pointer font-medium">Error Details</summary>
-                    <pre className="mt-2 whitespace-pre-wrap text-xs">{error.message}</pre>
-                  </details>
-                )}
-                
-                <div className="flex gap-2 justify-center flex-wrap">
-                  <Button onClick={() => { reset(); retry(); }} className="flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4" />
-                    Try Again
-                  </Button>
-                  <Button variant="outline" onClick={() => window.location.reload()}>
-                    Reload Page
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}>
-          {children}
-        </ErrorBoundary>
-      )}
-    </QueryErrorResetBoundary>
-  );
+// Chat-specific error boundary with recovery options
+interface ChatErrorBoundaryProps {
+  children: ReactNode;
+  onRetry?: () => void;
+  onClearConversation?: () => void;
 }
 
-export default ErrorBoundary;
+export function ChatErrorBoundary({ children, onRetry, onClearConversation }: ChatErrorBoundaryProps) {
+  const handleReset = () => {
+    if (onRetry) {
+      onRetry();
+    }
+  };
+
+  const handleClearConversation = () => {
+    if (onClearConversation) {
+      onClearConversation();
+    }
+  };
+
+  return (
+    <ErrorBoundary 
+      onReset={handleReset}
+      fallback={
+        <div className="flex items-center justify-center h-64 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="text-center p-6">
+            <AlertTriangle className="mx-auto h-8 w-8 text-red-500 mb-3" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              Chat Error
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              The chat interface encountered an error. You can try to recover or start fresh.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button onClick={handleReset} size="sm">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Retry
+              </Button>
+              {onClearConversation && (
+                <Button onClick={handleClearConversation} variant="outline" size="sm">
+                  Clear Chat
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      }
+    >
+      {children}
+    </ErrorBoundary>
+  );
+}

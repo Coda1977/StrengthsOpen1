@@ -4,6 +4,9 @@ import { useCleanup } from "@/hooks/useCleanup";
 import { useConversations, useMigration } from "@/hooks/useConversations";
 import { LocalStorageManager } from "@/utils/localStorage";
 import { useToast } from "@/hooks/use-toast";
+import { ErrorBoundary, ChatErrorBoundary } from "@/components/ErrorBoundary";
+import { ErrorState, ChatErrorState, NetworkErrorState } from "@/components/ErrorState";
+import { useChatRetry } from "@/hooks/useRetry";
 
 interface Message {
   id: string;
@@ -29,6 +32,7 @@ const ChatCoach = () => {
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [migrationNeeded, setMigrationNeeded] = useState(false);
   const [migrationInProgress, setMigrationInProgress] = useState(false);
+  const [chatError, setChatError] = useState<Error | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
@@ -52,6 +56,63 @@ const ChatCoach = () => {
   } = useMigration();
   
   const { toast } = useToast();
+  
+  // Retry logic for chat operations
+  const sendMessageRetry = useChatRetry(async () => {
+    if (!message.trim()) return;
+    
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: message.trim(),
+      type: 'user',
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setMessage('');
+    setIsTyping(true);
+    setChatError(null);
+
+    try {
+      const response = await fetch('/api/chat-with-coach', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          message: userMessage.content,
+          mode: currentMode,
+          conversationHistory: messages.map(msg => ({
+            role: msg.type === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          }))
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `Request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: data.data.response,
+        type: 'ai',
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => {
+        const updatedMessages = [...prev, aiMessage];
+        // Auto-save logic here...
+        return updatedMessages;
+      });
+    } finally {
+      setIsTyping(false);
+    }
+  });
 
   const formatMessageText = (text: string): string => {
     return text
@@ -654,7 +715,7 @@ const ChatCoach = () => {
           </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 };
 
