@@ -52,7 +52,14 @@ const Navigation = ({ simplified = false }: NavigationProps) => {
               className={`nav-item ${location === item.path ? 'active' : ''}`}
               onClick={(e) => {
                 console.log('Navigation clicked:', item.path);
+                console.log('Current location:', location);
                 setMobileMenuOpen(false);
+                // Force navigation by updating window location as fallback
+                if (item.path !== location) {
+                  setTimeout(() => {
+                    window.location.href = item.path;
+                  }, 100);
+                }
               }}
             >
               {item.label}
