@@ -1,6 +1,25 @@
 import { db } from './db';
-import { users, teamMembers, type User, type UpsertUser, type UpdateUserOnboarding, type TeamMember, type InsertTeamMember, type UpdateTeamMember } from '../shared/schema';
-import { eq, and, inArray, sql, count } from 'drizzle-orm';
+import { 
+  users, 
+  teamMembers,
+  conversations,
+  messages,
+  conversationBackups,
+  type User, 
+  type UpsertUser, 
+  type UpdateUserOnboarding, 
+  type TeamMember, 
+  type InsertTeamMember, 
+  type UpdateTeamMember,
+  type Conversation,
+  type InsertConversation,
+  type UpdateConversation,
+  type Message,
+  type InsertMessage,
+  type ConversationBackup,
+  type InsertConversationBackup
+} from '../shared/schema';
+import { eq, and, inArray, sql, count, desc, asc } from 'drizzle-orm';
 import crypto from 'crypto';
 
 // Interface for storage operations
@@ -15,6 +34,24 @@ export interface IStorage {
   createTeamMember(data: InsertTeamMember): Promise<TeamMember>;
   updateTeamMember(id: string, data: UpdateTeamMember): Promise<TeamMember | undefined>;
   deleteTeamMember(id: string): Promise<void>;
+
+  // Conversation operations
+  getConversations(userId: string): Promise<Conversation[]>;
+  getConversation(id: string, userId: string): Promise<Conversation | undefined>;
+  createConversation(userId: string, data: InsertConversation): Promise<Conversation>;
+  updateConversation(id: string, userId: string, data: UpdateConversation): Promise<Conversation | undefined>;
+  deleteConversation(id: string, userId: string): Promise<void>;
+  archiveConversation(id: string, userId: string): Promise<void>;
+
+  // Message operations
+  getMessages(conversationId: string, userId: string): Promise<Message[]>;
+  createMessage(data: InsertMessage): Promise<Message>;
+  deleteMessage(id: string, userId: string): Promise<void>;
+
+  // Backup operations
+  createConversationBackup(userId: string, data: InsertConversationBackup): Promise<ConversationBackup>;
+  getConversationBackups(userId: string): Promise<ConversationBackup[]>;
+  restoreConversationBackup(backupId: string, userId: string): Promise<Conversation[]>;
 }
 
 export class DatabaseStorage implements IStorage {

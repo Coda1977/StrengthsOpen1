@@ -311,6 +311,187 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // File upload endpoint for team members
+  // Chat conversation management routes
+  app.get('/api/conversations', isAuthenticated, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user.claims.sub;
+      const conversations = await storage.getConversations(userId);
+      
+      res.json(createSuccessResponse(conversations));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get('/api/conversations/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      const conversation = await storage.getConversation(id, userId);
+      if (!conversation) {
+        return res.status(404).json(createErrorResponse(req, new AppError(ERROR_CODES.NOT_FOUND, 'Conversation not found', 404)));
+      }
+      
+      const messages = await storage.getMessages(id, userId);
+      
+      res.json(createSuccessResponse({ conversation, messages }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post('/api/conversations', isAuthenticated, requireOnboarding, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validatedData = insertConversationSchema.parse(req.body);
+      
+      const conversation = await storage.createConversation(userId, validatedData);
+      
+      res.json(createSuccessResponse(conversation));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put('/api/conversations/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      const validatedData = updateConversationSchema.parse(req.body);
+      
+      const conversation = await storage.updateConversation(id, userId, validatedData);
+      if (!conversation) {
+        return res.status(404).json(createErrorResponse(req, new AppError(ERROR_CODES.NOT_FOUND, 'Conversation not found', 404)));
+      }
+      
+      res.json(createSuccessResponse(conversation));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete('/api/conversations/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      await storage.deleteConversation(id, userId);
+      
+      res.json(createSuccessResponse({ deleted: true }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post('/api/conversations/:id/archive', isAuthenticated, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      await storage.archiveConversation(id, userId);
+      
+      res.json(createSuccessResponse({ archived: true }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Message management routes
+  app.post('/api/conversations/:id/messages', isAuthenticated, requireOnboarding, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      // Verify conversation ownership
+      const conversation = await storage.getConversation(id, userId);
+      if (!conversation) {
+        return res.status(404).json(createErrorResponse(req, new AppError(ERROR_CODES.NOT_FOUND, 'Conversation not found', 404)));
+      }
+      
+      const validatedData = insertMessageSchema.parse({
+        ...req.body,
+        conversationId: id
+      });
+      
+      const message = await storage.createMessage(validatedData);
+      
+      res.json(createSuccessResponse(message));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Migration and backup routes
+  app.post('/api/conversations/migrate', isAuthenticated, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { localStorageData } = req.body;
+      
+      if (!localStorageData) {
+        return res.status(400).json(createErrorResponse(req, new AppError(ERROR_CODES.VALIDATION_ERROR, 'localStorage data is required', 400)));
+      }
+      
+      const result = await chatService.migrateFromLocalStorage(userId, localStorageData);
+      
+      if (result.success) {
+        res.json(createSuccessResponse(result));
+      } else {
+        res.status(400).json(createErrorResponse(req, new AppError(ERROR_CODES.MIGRATION_FAILED, result.error || 'Migration failed', 400)));
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get('/api/conversations/export', isAuthenticated, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user.claims.sub;
+      const exportData = await chatService.exportConversations(userId);
+      
+      res.json(createSuccessResponse(exportData));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get('/api/conversations/backups', isAuthenticated, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user.claims.sub;
+      const backups = await storage.getConversationBackups(userId);
+      
+      res.json(createSuccessResponse(backups));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post('/api/conversations/restore/:backupId', isAuthenticated, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const { backupId } = req.params;
+      const userId = req.user.claims.sub;
+      
+      const restoredConversations = await storage.restoreConversationBackup(backupId, userId);
+      
+      res.json(createSuccessResponse({ restored: restoredConversations.length, conversations: restoredConversations }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post('/api/conversations/recover', isAuthenticated, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { partialData } = req.body;
+      
+      const result = await chatService.handleCorruptedLocalStorage(userId, partialData);
+      
+      res.json(createSuccessResponse(result));
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.post('/api/chat-with-coach', isAuthenticated, requireOnboarding, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
       const { message, mode, conversationHistory } = req.body;

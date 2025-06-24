@@ -103,6 +103,32 @@ export const updateTeamMemberSchema = createInsertSchema(teamMembers).pick({
   strengths: true,
 });
 
+export const insertConversationSchema = createInsertSchema(conversations).pick({
+  title: true,
+  mode: true,
+  metadata: true,
+});
+
+export const updateConversationSchema = createInsertSchema(conversations).pick({
+  title: true,
+  mode: true,
+  lastActivity: true,
+  isArchived: true,
+  metadata: true,
+});
+
+export const insertMessageSchema = createInsertSchema(messages).pick({
+  conversationId: true,
+  content: true,
+  type: true,
+  metadata: true,
+});
+
+export const insertConversationBackupSchema = createInsertSchema(conversationBackups).pick({
+  backupData: true,
+  source: true,
+});
+
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -110,3 +136,10 @@ export type UpdateUserOnboarding = z.infer<typeof updateUserOnboardingSchema>;
 export type TeamMember = typeof teamMembers.$inferSelect;
 export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
 export type UpdateTeamMember = z.infer<typeof updateTeamMemberSchema>;
+export type Conversation = typeof conversations.$inferSelect;
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+export type UpdateConversation = z.infer<typeof updateConversationSchema>;
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type ConversationBackup = typeof conversationBackups.$inferSelect;
+export type InsertConversationBackup = z.infer<typeof insertConversationBackupSchema>;
