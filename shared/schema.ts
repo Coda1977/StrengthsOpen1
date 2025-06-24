@@ -69,6 +69,66 @@ export const teamMembers = pgTable("team_members", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const conversations = pgTable("conversations", {
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => {
+    try {
+      const crypto = require('crypto');
+      return crypto.randomUUID();
+    } catch (e) {
+      const crypto = require('crypto');
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+  }),
+  userId: varchar("user_id").notNull(),
+  title: text("title").notNull(),
+  mode: text("mode", { enum: ["personal", "team"] }).notNull().default("personal"),
+  lastActivity: timestamp("last_activity").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  isArchived: boolean("is_archived").default(false),
+  metadata: jsonb("metadata"),
+});
+
+export const messages = pgTable("messages", {
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => {
+    try {
+      const crypto = require('crypto');
+      return crypto.randomUUID();
+    } catch (e) {
+      const crypto = require('crypto');
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+  }),
+  conversationId: varchar("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  type: text("type", { enum: ["user", "ai"] }).notNull(),
+  timestamp: timestamp("timestamp").defaultNow(),
+  metadata: jsonb("metadata"),
+});
+
+export const conversationBackups = pgTable("conversation_backups", {
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => {
+    try {
+      const crypto = require('crypto');
+      return crypto.randomUUID();
+    } catch (e) {
+      const crypto = require('crypto');
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+  }),
+  userId: varchar("user_id").notNull(),
+  backupData: jsonb("backup_data").notNull(),
+  source: text("source", { enum: ["localStorage", "manual", "automatic"] }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  restoredAt: timestamp("restored_at"),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   firstName: true,
