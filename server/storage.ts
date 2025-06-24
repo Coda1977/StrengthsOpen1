@@ -117,14 +117,14 @@ export class DatabaseStorage implements IStorage {
     const now = Date.now();
     
     // Clear expired user cache entries
-    for (const [key, value] of this.userCache.entries()) {
+    for (const [key, value] of Array.from(this.userCache.entries())) {
       if (now - value.timestamp >= this.CACHE_TTL) {
         this.userCache.delete(key);
       }
     }
     
     // Clear expired team members cache entries
-    for (const [key, value] of this.teamMembersCache.entries()) {
+    for (const [key, value] of Array.from(this.teamMembersCache.entries())) {
       if (now - value.timestamp >= this.CACHE_TTL) {
         this.teamMembersCache.delete(key);
       }
@@ -300,7 +300,7 @@ export class DatabaseStorage implements IStorage {
       return updatedMember;
     } catch (error) {
       console.error('Failed to update team member:', error);
-      if (error.message.includes('already exists')) {
+      if (error instanceof Error && error.message.includes('already exists')) {
         throw error;
       }
       throw new Error('Failed to update team member');
@@ -326,7 +326,7 @@ export class DatabaseStorage implements IStorage {
       this.invalidateTeamMembersCache(memberToDelete[0].managerId);
     } catch (error) {
       console.error('Failed to delete team member:', error);
-      if (error.message.includes('not found')) {
+      if (error instanceof Error && error.message.includes('not found')) {
         throw error;
       }
       throw new Error('Failed to delete team member');
@@ -372,7 +372,7 @@ export class DatabaseStorage implements IStorage {
       return createdMembers;
     } catch (error) {
       console.error('Failed to create multiple team members:', error);
-      if (error.message.includes('already exist')) {
+      if (error instanceof Error && error.message.includes('already exist')) {
         throw error;
       }
       throw new Error('Failed to create team members');
