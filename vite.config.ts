@@ -33,8 +33,6 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
-    allowedHosts: [
-      "48ecf393-3357-4a81-8b39-2123b1216f30-00-5q1bem9l0t6o.sisko.replit.dev"
-    ]
+    allowedHosts: 'all'
   },
 });
