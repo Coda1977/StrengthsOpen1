@@ -67,6 +67,13 @@ const ChatCoach = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [inputHeight, setInputHeight] = useState(44);
   const [starterClicked, setStarterClicked] = useState<number | null>(null);
+
+  // Default starter questions as fallback
+  const starterQuestions = [
+    "How can I better leverage my top strengths as a leader?",
+    "What are some ways to develop my team's potential?",
+    "How do I handle conflicts based on different strength combinations?"
+  ];
   
   // Use cleanup hook for better resource management
   const { createTimeout, addCleanup } = useCleanup();
@@ -163,11 +170,7 @@ const ChatCoach = () => {
     { id: 'team', label: 'Team' }
   ];
 
-  const starterQuestions = [
-    "How can I better leverage my top strengths as a manager?",
-    "What should I know about managing different strength types?",
-    "How do I identify and develop my team's strengths?"
-  ];
+
 
   // Auto-resize textarea
   const autoResizeTextarea = useCallback(() => {
@@ -759,6 +762,13 @@ const ChatCoach = () => {
       fetchContextStarters();
     }
   }, [chatStarted, messages.length]);
+
+  // Also fetch starters when the component first loads with no chat
+  useEffect(() => {
+    if (!chatStarted && messages.length === 0 && !currentChatId) {
+      fetchContextStarters();
+    }
+  }, []);
 
   // After each AI message, fetch follow-ups
   useEffect(() => {
