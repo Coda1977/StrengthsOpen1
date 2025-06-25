@@ -112,7 +112,7 @@ export function createErrorResponse(
     success: false,
     error: {
       code: isAppError ? error.code : ERROR_CODES.INTERNAL_ERROR,
-      message: error.message,
+      message: isAppError ? error.message : String(error) || 'Internal server error',
       timestamp: new Date().toISOString(),
       requestId,
       path: req.path,
@@ -128,7 +128,7 @@ export function createErrorResponse(
   // Add meta information in development
   if (isDevelopment) {
     response.meta = {
-      stack: error.stack,
+      stack: error instanceof Error ? error.stack : undefined,
       context: isAppError ? error.context : undefined
     };
   }
@@ -170,9 +170,11 @@ export function parseZodError(zodError: ZodError): ValidationError[] {
         break;
     }
 
-    return createValidationError(message, field, err.input, err.code);
+    return createValidationError(message, field, (err as any).received ?? (err as any).value, err.code);
   });
 }
+
+const isDev = process.env.NODE_ENV === 'development';
 
 // Main error handling middleware
 export function errorHandler(
@@ -205,7 +207,7 @@ export function errorHandler(
     errorResponse.meta = { validation: validationErrors };
   } else if (err.name === 'MulterError') {
     statusCode = 400;
-    let code = ERROR_CODES.BAD_REQUEST;
+    let code: string = ERROR_CODES.BAD_REQUEST;
     let message = 'File upload error';
     
     if (err.message.includes('File too large')) {
@@ -220,25 +222,27 @@ export function errorHandler(
     errorResponse = createErrorResponse(req, appError, requestId);
   } else {
     // Generic error handling
-    console.error(`Unhandled error [${requestId}]:`, err);
+    if (isDev) console.error(`Unhandled error [${requestId}]:`, err);
     const appError = new AppError(
       ERROR_CODES.INTERNAL_ERROR,
-      process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
+      isDev ? err.message : 'Internal server error',
       500
     );
     errorResponse = createErrorResponse(req, appError, requestId);
   }
 
   // Log error for monitoring
-  console.error(`API Error [${requestId}]:`, {
-    code: errorResponse.error.code,
-    message: errorResponse.error.message,
-    path: req.path,
-    method: req.method,
-    statusCode,
-    userId: (req as any).user?.claims?.sub,
-    timestamp: errorResponse.error.timestamp
-  });
+  if (isDev) {
+    console.error(`API Error [${requestId}]:`, {
+      code: errorResponse.error.code,
+      message: errorResponse.error.message,
+      path: req.path,
+      method: req.method,
+      statusCode,
+      userId: (req as any).user?.claims?.sub,
+      timestamp: errorResponse.error.timestamp
+    });
+  }
 
   res.status(statusCode).json(errorResponse);
 }

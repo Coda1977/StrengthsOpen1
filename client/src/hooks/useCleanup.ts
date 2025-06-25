@@ -1,10 +1,12 @@
 import { useEffect, useRef, useCallback } from 'react';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Custom hook for managing component cleanup
 export function useCleanup() {
   const cleanupFunctions = useRef<(() => void)[]>([]);
   const timeouts = useRef<Set<NodeJS.Timeout>>(new Set());
-  const intervals = useRef<Set<NodeJS.Interval>>(new Set());
+  const intervals = useRef<Set<NodeJS.Timeout>>(new Set());
   const abortControllers = useRef<Set<AbortController>>(new Set());
 
   // Add a cleanup function
@@ -24,7 +26,7 @@ export function useCleanup() {
   }, []);
 
   // Create an interval that will be automatically cleaned up
-  const createInterval = useCallback((callback: () => void, delay: number): NodeJS.Interval => {
+  const createInterval = useCallback((callback: () => void, delay: number): NodeJS.Timeout => {
     const interval = setInterval(callback, delay);
     intervals.current.add(interval);
     return interval;
@@ -44,7 +46,7 @@ export function useCleanup() {
       try {
         fn();
       } catch (error) {
-        console.error('Error during cleanup:', error);
+        if (isDev) console.error('Error during cleanup:', error);
       }
     });
     cleanupFunctions.current = [];
@@ -54,7 +56,7 @@ export function useCleanup() {
       try {
         clearTimeout(timeout);
       } catch (error) {
-        console.error('Error clearing timeout:', error);
+        if (isDev) console.error('Error clearing timeout:', error);
       }
     });
     timeouts.current.clear();
@@ -62,9 +64,9 @@ export function useCleanup() {
     // Clear all intervals
     intervals.current.forEach(interval => {
       try {
-        clearInterval(interval);
+        clearTimeout(interval);
       } catch (error) {
-        console.error('Error clearing interval:', error);
+        if (isDev) console.error('Error clearing interval:', error);
       }
     });
     intervals.current.clear();
@@ -76,7 +78,7 @@ export function useCleanup() {
           controller.abort();
         }
       } catch (error) {
-        console.error('Error aborting controller:', error);
+        if (isDev) console.error('Error aborting controller:', error);
       }
     });
     abortControllers.current.clear();
@@ -90,7 +92,7 @@ export function useCleanup() {
         try {
           fn();
         } catch (error) {
-          console.error('Error during cleanup:', error);
+          if (isDev) console.error('Error during cleanup:', error);
         }
       });
       cleanupFunctions.current = [];
@@ -100,7 +102,7 @@ export function useCleanup() {
         try {
           clearTimeout(timeout);
         } catch (error) {
-          console.error('Error clearing timeout:', error);
+          if (isDev) console.error('Error clearing timeout:', error);
         }
       });
       timeouts.current.clear();
@@ -108,9 +110,9 @@ export function useCleanup() {
       // Clear all intervals
       intervals.current.forEach(interval => {
         try {
-          clearInterval(interval);
+          clearTimeout(interval);
         } catch (error) {
-          console.error('Error clearing interval:', error);
+          if (isDev) console.error('Error clearing interval:', error);
         }
       });
       intervals.current.clear();
@@ -122,7 +124,7 @@ export function useCleanup() {
             controller.abort();
           }
         } catch (error) {
-          console.error('Error aborting controller:', error);
+          if (isDev) console.error('Error aborting controller:', error);
         }
       });
       abortControllers.current.clear();

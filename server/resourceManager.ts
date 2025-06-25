@@ -1,10 +1,12 @@
 import { createWorker, Worker } from 'tesseract.js';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 interface ResourceTracker {
   workers: Set<Worker>;
   buffers: Set<Buffer>;
   timeouts: Set<NodeJS.Timeout>;
-  intervals: Set<NodeJS.Interval>;
+  intervals: Set<ReturnType<typeof setInterval>>;
 }
 
 class ResourceManager {
@@ -26,11 +28,7 @@ class ResourceManager {
 
   async createOCRWorker(): Promise<Worker> {
     try {
-      const worker = await createWorker('eng', {
-        // Optimize for memory usage
-        cacheMethod: 'none',
-        gzip: false,
-      });
+      const worker = await createWorker('eng');
 
       // Track the worker
       this.resources.workers.add(worker);
@@ -44,7 +42,11 @@ class ResourceManager {
 
       return worker;
     } catch (error) {
-      console.error('Failed to create OCR worker:', error);
+      if (error instanceof Error) {
+        if (isDev) console.error('Failed to create OCR worker:', error.message);
+      } else {
+        if (isDev) console.error('Failed to create OCR worker:', error);
+      }
       throw new Error('OCR worker creation failed');
     }
   }
@@ -56,7 +58,11 @@ class ResourceManager {
         this.resources.workers.delete(worker);
       }
     } catch (error) {
-      console.error('Error terminating OCR worker:', error);
+      if (error instanceof Error) {
+        if (isDev) console.error('Error terminating OCR worker:', error.message);
+      } else {
+        if (isDev) console.error('Error terminating OCR worker:', error);
+      }
       // Force remove from tracking even if termination failed
       this.resources.workers.delete(worker);
     }
@@ -92,11 +98,11 @@ class ResourceManager {
     this.resources.timeouts.delete(timeout);
   }
 
-  trackInterval(interval: NodeJS.Interval): void {
+  trackInterval(interval: ReturnType<typeof setInterval>): void {
     this.resources.intervals.add(interval);
   }
 
-  clearInterval(interval: NodeJS.Interval): void {
+  clearInterval(interval: ReturnType<typeof setInterval>): void {
     clearInterval(interval);
     this.resources.intervals.delete(interval);
   }
@@ -121,13 +127,13 @@ class ResourceManager {
       return;
     }
 
-    console.log('Performing resource cleanup...');
+    if (isDev) console.log('Performing resource cleanup...');
 
     // Clean up only expired or orphaned workers
     const now = Date.now();
     const workersToTerminate: Worker[] = [];
     
-    for (const worker of this.resources.workers) {
+    for (const worker of Array.from(this.resources.workers)) {
       // Only terminate workers that have been idle or are actually orphaned
       try {
         // Check if worker is still responsive
@@ -163,20 +169,22 @@ class ResourceManager {
       try {
         await this.terminateWorker(worker);
       } catch (error) {
-        console.error('Error during worker cleanup:', error);
+        if (error instanceof Error) {
+          if (isDev) console.error('Error during worker cleanup:', error.message);
+        } else {
+          if (isDev) console.error('Error during worker cleanup:', error);
+        }
       }
     }
 
     // Clean up only expired timeouts (keep active ones)
     const expiredTimeouts: NodeJS.Timeout[] = [];
-    for (const timeout of this.resources.timeouts) {
+    for (const timeout of Array.from(this.resources.timeouts)) {
       try {
-        // Check if timeout is still valid by attempting to clear it
-        // If it throws or is already cleared, it's expired
-        const timeoutValid = timeout && timeout._idleTimeout !== -1;
-        if (!timeoutValid) {
-          expiredTimeouts.push(timeout);
-        }
+        // Just clear the timeout and remove from set
+        clearTimeout(timeout);
+        this.resources.timeouts.delete(timeout);
+        expiredTimeouts.push(timeout);
       } catch (error) {
         expiredTimeouts.push(timeout);
       }
@@ -184,22 +192,24 @@ class ResourceManager {
 
     expiredTimeouts.forEach(timeout => {
       try {
-        clearTimeout(timeout);
-        this.resources.timeouts.delete(timeout);
+        if (isDev) console.log(`Cleared expired timeout: ${timeout}`);
       } catch (error) {
-        console.error('Error clearing expired timeout:', error);
+        if (error instanceof Error) {
+          if (isDev) console.error('Error logging cleared expired timeout:', error.message);
+        } else {
+          if (isDev) console.error('Error logging cleared expired timeout:', error);
+        }
       }
     });
 
     // Don't clear ALL intervals - only clean up expired ones
-    const expiredIntervals: NodeJS.Interval[] = [];
-    for (const interval of this.resources.intervals) {
+    const expiredIntervals: ReturnType<typeof setInterval>[] = [];
+    for (const interval of Array.from(this.resources.intervals)) {
       try {
-        // Check if interval is still valid
-        const intervalValid = interval && interval._idleTimeout !== -1;
-        if (!intervalValid) {
-          expiredIntervals.push(interval);
-        }
+        // Just clear the interval and remove from set
+        clearInterval(interval);
+        this.resources.intervals.delete(interval);
+        expiredIntervals.push(interval);
       } catch (error) {
         expiredIntervals.push(interval);
       }
@@ -207,17 +217,20 @@ class ResourceManager {
 
     expiredIntervals.forEach(interval => {
       try {
-        clearInterval(interval);
-        this.resources.intervals.delete(interval);
+        if (isDev) console.log(`Cleared expired interval: ${interval}`);
       } catch (error) {
-        console.error('Error clearing expired interval:', error);
+        if (error instanceof Error) {
+          if (isDev) console.error('Error logging cleared expired interval:', error.message);
+        } else {
+          if (isDev) console.error('Error logging cleared expired interval:', error);
+        }
       }
     });
 
     // Only release buffers that are actually unused (this is tricky, so be conservative)
     // For now, just log buffer count without clearing them aggressively
     if (this.resources.buffers.size > 100) {
-      console.log(`Warning: ${this.resources.buffers.size} buffers tracked - potential memory leak`);
+      if (isDev) console.log(`Warning: ${this.resources.buffers.size} buffers tracked - potential memory leak`);
     }
 
     // Only run GC if we actually cleaned something significant
@@ -229,13 +242,13 @@ class ResourceManager {
 
     const cleanedCount = workersToTerminate.length + expiredTimeouts.length + expiredIntervals.length;
     if (cleanedCount > 0) {
-      console.log(`Cleanup completed. Cleaned ${cleanedCount} resources. Remaining workers: ${this.resources.workers.size}`);
+      if (isDev) console.log(`Cleanup completed. Cleaned ${cleanedCount} resources. Remaining workers: ${this.resources.workers.size}`);
     }
   }
 
   private setupProcessCleanup(): void {
     const cleanup = async () => {
-      console.log('Process cleanup initiated...');
+      if (isDev) console.log('Process cleanup initiated...');
       await this.performCleanup();
       
       if (this.cleanupTimeout) {
@@ -247,11 +260,19 @@ class ResourceManager {
     process.on('SIGTERM', cleanup);
     process.on('beforeExit', cleanup);
     process.on('uncaughtException', (error) => {
-      console.error('Uncaught exception, cleaning up resources:', error);
+      if (error instanceof Error) {
+        if (isDev) console.error('Uncaught exception, cleaning up resources:', error.message);
+      } else {
+        if (isDev) console.error('Uncaught exception, cleaning up resources:', error);
+      }
       cleanup();
     });
     process.on('unhandledRejection', (reason) => {
-      console.error('Unhandled rejection, cleaning up resources:', reason);
+      if (reason instanceof Error) {
+        if (isDev) console.error('Unhandled rejection, cleaning up resources:', reason.message);
+      } else {
+        if (isDev) console.error('Unhandled rejection, cleaning up resources:', reason);
+      }
       cleanup();
     });
   }
@@ -269,7 +290,7 @@ class ResourceManager {
 
   // Emergency cleanup method
   async emergencyCleanup(): Promise<void> {
-    console.log('Emergency cleanup initiated...');
+    if (isDev) console.log('Emergency cleanup initiated...');
     
     // Force cleanup all resources without checks
     const allWorkers = Array.from(this.resources.workers);
@@ -277,7 +298,11 @@ class ResourceManager {
       try {
         await this.terminateWorker(worker);
       } catch (error) {
-        console.error('Error during emergency worker cleanup:', error);
+        if (error instanceof Error) {
+          if (isDev) console.error('Error during emergency worker cleanup:', error.message);
+        } else {
+          if (isDev) console.error('Error during emergency worker cleanup:', error);
+        }
       }
     }
 
@@ -286,7 +311,11 @@ class ResourceManager {
       try {
         clearTimeout(timeout);
       } catch (error) {
-        console.error('Error clearing timeout during emergency:', error);
+        if (error instanceof Error) {
+          if (isDev) console.error('Error clearing timeout during emergency:', error.message);
+        } else {
+          if (isDev) console.error('Error clearing timeout during emergency:', error);
+        }
       }
     });
     this.resources.timeouts.clear();
@@ -295,7 +324,11 @@ class ResourceManager {
       try {
         clearInterval(interval);
       } catch (error) {
-        console.error('Error clearing interval during emergency:', error);
+        if (error instanceof Error) {
+          if (isDev) console.error('Error clearing interval during emergency:', error.message);
+        } else {
+          if (isDev) console.error('Error clearing interval during emergency:', error);
+        }
       }
     });
     this.resources.intervals.clear();
@@ -309,7 +342,7 @@ class ResourceManager {
       this.cleanupTimeout = null;
     }
 
-    console.log('Emergency cleanup completed');
+    if (isDev) console.log('Emergency cleanup completed');
   }
 }
 

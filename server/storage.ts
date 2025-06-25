@@ -22,6 +22,8 @@ import {
 import { eq, and, inArray, sql, count, desc, asc } from 'drizzle-orm';
 import crypto from 'crypto';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Interface for storage operations
 export interface IStorage {
   // User operations
@@ -149,7 +151,7 @@ export class DatabaseStorage implements IStorage {
       
       return user;
     } catch (error) {
-      console.error('Failed to get user:', error);
+      if (isDev) console.error('Failed to get user:', error);
       throw new Error('Failed to fetch user');
     }
   }
@@ -170,7 +172,7 @@ export class DatabaseStorage implements IStorage {
       
       return user;
     } catch (error) {
-      console.error('Failed to upsert user:', error);
+      if (isDev) console.error('Failed to upsert user:', error);
       throw new Error('Failed to save user');
     }
   }
@@ -189,7 +191,7 @@ export class DatabaseStorage implements IStorage {
       
       return updatedUser;
     } catch (error) {
-      console.error('Failed to update user onboarding:', error);
+      if (isDev) console.error('Failed to update user onboarding:', error);
       throw new Error('Failed to update user onboarding');
     }
   }
@@ -215,7 +217,7 @@ export class DatabaseStorage implements IStorage {
       
       return members;
     } catch (error) {
-      console.error('Failed to get team members:', error);
+      if (isDev) console.error('Failed to get team members:', error);
       throw new Error('Failed to fetch team members');
     }
   }
@@ -249,8 +251,8 @@ export class DatabaseStorage implements IStorage {
       
       return teamMember;
     } catch (error) {
-      console.error('Failed to create team member:', error);
-      if ((error as Error).message.includes('already exists')) {
+      if (isDev) console.error('Failed to create team member:', error);
+      if (error instanceof Error && error.message.includes('already exists')) {
         throw error;
       }
       throw new Error('Failed to create team member');
@@ -300,7 +302,7 @@ export class DatabaseStorage implements IStorage {
       
       return updatedMember;
     } catch (error) {
-      console.error('Failed to update team member:', error);
+      if (isDev) console.error('Failed to update team member:', error);
       if (error instanceof Error && error.message.includes('already exists')) {
         throw error;
       }
@@ -326,7 +328,7 @@ export class DatabaseStorage implements IStorage {
       // Invalidate cache for this manager
       this.invalidateTeamMembersCache(memberToDelete[0].managerId);
     } catch (error) {
-      console.error('Failed to delete team member:', error);
+      if (isDev) console.error('Failed to delete team member:', error);
       if (error instanceof Error && error.message.includes('not found')) {
         throw error;
       }
@@ -372,7 +374,7 @@ export class DatabaseStorage implements IStorage {
       
       return createdMembers;
     } catch (error) {
-      console.error('Failed to create multiple team members:', error);
+      if (isDev) console.error('Failed to create multiple team members:', error);
       if (error instanceof Error && error.message.includes('already exist')) {
         throw error;
       }
@@ -417,7 +419,7 @@ export class DatabaseStorage implements IStorage {
         averageStrengthsPerMember
       };
     } catch (error) {
-      console.error('Failed to get team analytics:', error);
+      if (isDev) console.error('Failed to get team analytics:', error);
       throw new Error('Failed to fetch team analytics');
     }
   }
@@ -456,7 +458,7 @@ export class DatabaseStorage implements IStorage {
       this.setCachedItem(cacheKey, result);
       return result;
     } catch (error) {
-      console.error('Error fetching conversations:', error);
+      if (isDev) console.error('Error fetching conversations:', error);
       throw new Error('Failed to fetch conversations');
     }
   }
@@ -475,7 +477,7 @@ export class DatabaseStorage implements IStorage {
         ));
       return conversation;
     } catch (error) {
-      console.error('Error fetching conversation:', error);
+      if (isDev) console.error('Error fetching conversation:', error);
       throw new Error('Failed to fetch conversation');
     }
   }
@@ -498,7 +500,7 @@ export class DatabaseStorage implements IStorage {
       this.invalidateCache(`conversations:${userId}`);
       return conversation;
     } catch (error) {
-      console.error('Error creating conversation:', error);
+      if (isDev) console.error('Error creating conversation:', error);
       throw new Error('Failed to create conversation');
     }
   }
@@ -523,7 +525,7 @@ export class DatabaseStorage implements IStorage {
       this.invalidateCache(`conversations:${userId}`);
       return conversation;
     } catch (error) {
-      console.error('Error updating conversation:', error);
+      if (isDev) console.error('Error updating conversation:', error);
       throw new Error('Failed to update conversation');
     }
   }
@@ -542,7 +544,7 @@ export class DatabaseStorage implements IStorage {
 
       this.invalidateCache(`conversations:${userId}`);
     } catch (error) {
-      console.error('Error deleting conversation:', error);
+      if (isDev) console.error('Error deleting conversation:', error);
       throw new Error('Failed to delete conversation');
     }
   }
@@ -565,28 +567,28 @@ export class DatabaseStorage implements IStorage {
 
       this.invalidateCache(`conversations:${userId}`);
     } catch (error) {
-      console.error('Error archiving conversation:', error);
+      if (isDev) console.error('Error archiving conversation:', error);
       throw new Error('Failed to archive conversation');
     }
   }
 
   async getConversationWithMessages(id: string, userId: string): Promise<{ conversation: Conversation; messages: Message[] } | null> {
     try {
-      console.log(`Getting conversation ${id} for user ${userId}`);
+      if (isDev) console.log(`Getting conversation ${id} for user ${userId}`);
       
       const conversation = await this.getConversation(id, userId);
       if (!conversation) {
-        console.log('Conversation not found');
+        if (isDev) console.log('Conversation not found');
         return null;
       }
 
-      console.log('Found conversation, getting messages...');
+      if (isDev) console.log('Found conversation, getting messages...');
       const messages = await this.getMessages(id, userId);
-      console.log(`Found ${messages.length} messages`);
+      if (isDev) console.log(`Found ${messages.length} messages`);
       
       return { conversation, messages };
     } catch (error) {
-      console.error('Failed to get conversation with messages:', error);
+      if (isDev) console.error('Failed to get conversation with messages:', error);
       return null;
     }
   }
@@ -603,10 +605,10 @@ export class DatabaseStorage implements IStorage {
         .where(eq(messages.conversationId, conversationId))
         .orderBy(asc(messages.timestamp));
 
-      console.log(`Retrieved ${result.length} messages for conversation ${conversationId}`);
+      if (isDev) console.log(`Retrieved ${result.length} messages for conversation ${conversationId}`);
       return result;
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      if (isDev) console.error('Error fetching messages:', error);
       throw new Error('Failed to fetch messages');
     }
   }
@@ -634,7 +636,7 @@ export class DatabaseStorage implements IStorage {
 
       return message;
     } catch (error) {
-      console.error('Error creating message:', error);
+      if (isDev) console.error('Error creating message:', error);
       throw new Error('Failed to create message');
     }
   }
@@ -659,7 +661,7 @@ export class DatabaseStorage implements IStorage {
 
       await db.delete(messages).where(eq(messages.id, id));
     } catch (error) {
-      console.error('Error deleting message:', error);
+      if (isDev) console.error('Error deleting message:', error);
       throw new Error('Failed to delete message');
     }
   }
@@ -681,7 +683,7 @@ export class DatabaseStorage implements IStorage {
 
       return backup;
     } catch (error) {
-      console.error('Error creating backup:', error);
+      if (isDev) console.error('Error creating backup:', error);
       throw new Error('Failed to create backup');
     }
   }
@@ -752,7 +754,7 @@ export class DatabaseStorage implements IStorage {
       this.invalidateCache(`conversations:${userId}`);
       return restoredConversations;
     } catch (error) {
-      console.error('Error restoring backup:', error);
+      if (isDev) console.error('Error restoring backup:', error);
       throw new Error('Failed to restore backup');
     }
   }

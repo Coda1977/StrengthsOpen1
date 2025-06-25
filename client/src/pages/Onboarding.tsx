@@ -39,7 +39,7 @@ const Onboarding = () => {
 
   // Redirect to dashboard if already completed onboarding
   useEffect(() => {
-    if (user && (user as any).hasCompletedOnboarding) {
+    if (user && user.hasCompletedOnboarding) {
       setLocation('/dashboard');
     }
   }, [user, setLocation]);
@@ -164,8 +164,8 @@ const Onboarding = () => {
                 transition: 'border-color 0.2s ease',
                 outline: 'none'
               }}
-              onFocus={(e) => e.target.style.borderColor = '#003566'}
-              onBlur={(e) => e.target.style.borderColor = '#E5E7EB'}
+              onFocus={(e) => (e.target as HTMLInputElement).style.borderColor = '#003566'}
+              onBlur={(e) => (e.target as HTMLInputElement).style.borderColor = '#E5E7EB'}
             />
           </div>
 
@@ -211,8 +211,8 @@ const Onboarding = () => {
                 marginBottom: '1rem',
                 outline: 'none'
               }}
-              onFocus={(e) => e.target.style.borderColor = '#003566'}
-              onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
+              onFocus={(e) => (e.target as HTMLInputElement).style.borderColor = '#003566'}
+              onBlur={(e) => (e.target as HTMLInputElement).style.borderColor = '#D1D5DB'}
             />
 
             {/* Selected Strengths Display */}
@@ -310,14 +310,14 @@ const Onboarding = () => {
                     }}
                     onMouseEnter={(e) => {
                       if (!isDisabled && !isSelected) {
-                        e.target.style.borderColor = '#003566';
-                        e.target.style.backgroundColor = '#F0F9FF';
+                        (e.target as HTMLButtonElement).style.borderColor = '#003566';
+                        (e.target as HTMLButtonElement).style.backgroundColor = '#F0F9FF';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!isSelected) {
-                        e.target.style.borderColor = '#E5E7EB';
-                        e.target.style.backgroundColor = '#FFFFFF';
+                        (e.target as HTMLButtonElement).style.borderColor = '#E5E7EB';
+                        (e.target as HTMLButtonElement).style.backgroundColor = '#FFFFFF';
                       }
                     }}
                   >
@@ -364,14 +364,14 @@ const Onboarding = () => {
             }}
             onMouseEnter={(e) => {
               if (canContinue && !onboardingMutation.isPending) {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.2)';
+                (e.target as HTMLButtonElement).style.transform = 'translateY(-2px)';
+                (e.target as HTMLButtonElement).style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.2)';
               }
             }}
             onMouseLeave={(e) => {
               if (canContinue && !onboardingMutation.isPending) {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                (e.target as HTMLButtonElement).style.transform = 'translateY(0)';
+                (e.target as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
               }
             }}
           >

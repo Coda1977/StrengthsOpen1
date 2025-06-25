@@ -14,6 +14,8 @@ interface State {
   errorInfo: any;
 }
 
+const isDev = process.env.NODE_ENV === 'development';
+
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
@@ -33,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    if (isDev) console.error('ErrorBoundary caught an error:', error, errorInfo);
     this.setState({
       error,
       errorInfo
@@ -81,7 +83,7 @@ export class ErrorBoundary extends Component<Props, State> {
               The chat interface encountered an unexpected error. This has been logged and we're working to fix it.
             </p>
 
-            {this.state.error && (
+            {this.state.error && isDev && (
               <details className="mb-6 text-left">
                 <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                   Technical Details

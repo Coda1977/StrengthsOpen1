@@ -230,7 +230,7 @@ const Dashboard = () => {
   // Domain distribution calculation
   const calculateDomainDistribution = () => {
     const allTeamStrengths = [
-      ...(user?.topStrengths || []),
+      ...(user?.topStrengths ?? []),
       ...teamMembers.flatMap((member: TeamMember) => member.strengths || [])
     ];
 
@@ -242,7 +242,7 @@ const Dashboard = () => {
     };
 
     allTeamStrengths.forEach((strength: string) => {
-      const domain = STRENGTHS_DOMAIN_MAP[strength];
+      const domain = STRENGTHS_DOMAIN_MAP[strength as keyof typeof STRENGTHS_DOMAIN_MAP];
       if (domain) {
         domainCounts[domain as keyof typeof domainCounts]++;
       }

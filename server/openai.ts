@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+export const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 interface TeamStrengthsData {
   managerStrengths: string[];
@@ -11,10 +11,12 @@ interface TeamStrengthsData {
   }>;
 }
 
+const isDev = process.env.NODE_ENV === 'development';
+
 export async function generateTeamInsight(data: TeamStrengthsData): Promise<string> {
   // Check if OpenAI API key is available
   if (!process.env.OPENAI_API_KEY) {
-    console.error('OpenAI API key not found');
+    if (isDev) console.error('OpenAI API key not found');
     return "AI insights are not available. Please configure the OpenAI API key to enable team insights.";
   }
 
@@ -92,13 +94,13 @@ Keep the response to 2-3 sentences maximum. No fluff. Be nuanced - acknowledge b
 
     return response.choices[0].message.content || "Unable to generate insight at this time.";
   } catch (error) {
-    console.error("Failed to generate team insight:", error);
-    if (error.message?.includes('API key')) {
+    if (error instanceof Error && error.message?.includes('API key')) {
       return "OpenAI API key is invalid or expired. Please check your API key configuration.";
     }
-    if (error.message?.includes('rate limit') || error.message?.includes('quota')) {
+    if (error instanceof Error && (error.message?.includes('rate limit') || error.message?.includes('quota'))) {
       return "AI service is temporarily unavailable due to rate limits. Please try again in a few minutes.";
     }
+    if (isDev) console.error("Failed to generate team insight:", error);
     return "Unable to generate team insight at this time. Please try again later.";
   }
 }
@@ -188,7 +190,13 @@ Team Members: ${teamMembers.map(m => `${m.name} (${m.strengths.join(', ')})`).jo
 
     return completion.choices[0]?.message?.content || 'I apologize, but I encountered an issue generating a response. Please try again.';
   } catch (error) {
-    console.error('OpenAI API error:', error);
+    if (error instanceof Error && error.message?.includes('API key')) {
+      return "OpenAI API key is invalid or expired. Please check your API key configuration.";
+    }
+    if (error instanceof Error && (error.message?.includes('rate limit') || error.message?.includes('quota'))) {
+      return "AI service is temporarily unavailable due to rate limits. Please try again in a few minutes.";
+    }
+    if (isDev) console.error('OpenAI API error:', error);
     throw new Error('Failed to generate coaching response');
   }
 }
@@ -196,7 +204,7 @@ Team Members: ${teamMembers.map(m => `${m.name} (${m.strengths.join(', ')})`).jo
 export async function generateCollaborationInsight(member1: string, member2: string, member1Strengths: string[], member2Strengths: string[]): Promise<string> {
   // Check if OpenAI API key is available
   if (!process.env.OPENAI_API_KEY) {
-    console.error('OpenAI API key not found');
+    if (isDev) console.error('OpenAI API key not found');
     return "AI insights are not available. Please configure the OpenAI API key to enable collaboration insights.";
   }
 
@@ -271,13 +279,13 @@ Keep each point to one sentence maximum. No markdown. Total response under 150 w
     
     return content;
   } catch (error) {
-    console.error("Failed to generate collaboration insight:", error);
-    if (error.message?.includes('API key')) {
+    if (error instanceof Error && error.message?.includes('API key')) {
       return "OpenAI API key is invalid or expired. Please check your API key configuration.";
     }
-    if (error.message?.includes('rate limit') || error.message?.includes('quota')) {
+    if (error instanceof Error && (error.message?.includes('rate limit') || error.message?.includes('quota'))) {
       return "AI service is temporarily unavailable due to rate limits. Please try again in a few minutes.";
     }
+    if (isDev) console.error("Failed to generate collaboration insight:", error);
     return "Unable to generate collaboration insight at this time. Please try again later.";
   }
 }
@@ -312,7 +320,7 @@ Return only a JSON array of questions, no other text.`;
   });
   const content = response.choices[0].message.content;
   try {
-    const arr = JSON.parse(content);
+    const arr = JSON.parse(content || '');
     return Array.isArray(arr) ? arr : arr.questions || [];
   } catch {
     return [];
@@ -347,7 +355,7 @@ Return only a JSON array of questions, no other text.`;
   });
   const content = response.choices[0].message.content;
   try {
-    const arr = JSON.parse(content);
+    const arr = JSON.parse(content || '');
     return Array.isArray(arr) ? arr : arr.questions || [];
   } catch {
     return [];

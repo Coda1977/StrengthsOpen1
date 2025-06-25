@@ -10,6 +10,8 @@ import { useChatRetry } from "@/hooks/useRetry";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Simple markdown formatter
 function formatMarkdown(text: string): string {
   return text
@@ -207,7 +209,6 @@ const ChatCoach = () => {
   // Auto-scroll to bottom when displayed messages change
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoViewIfNeeded?.() || 
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [displayedMessages]);
@@ -284,7 +285,6 @@ const ChatCoach = () => {
       setMigrationNeeded(false);
       
     } catch (error) {
-
       toast({
         title: "Migration Failed",
         description: error instanceof Error ? error.message : "Unknown error occurred",
@@ -312,7 +312,7 @@ const ChatCoach = () => {
         });
       } else {
         // Report corruption
-        await recover();
+        await recover("");
         toast({
           title: "Data Corruption Detected",
           description: "Previous chat data was corrupted and could not be recovered. A report has been saved.",
@@ -320,7 +320,7 @@ const ChatCoach = () => {
         });
       }
     } catch (error) {
-      console.error('Recovery failed:', error);
+      if (isDev) console.error('Recovery failed:', error);
     }
   };
 
@@ -335,7 +335,7 @@ const ChatCoach = () => {
       LocalStorageManager.clearChatHistory();
       LocalStorageManager.setMigrationCompleted();
     } catch (error) {
-      console.error('Recovery failed:', error);
+      if (isDev) console.error('Recovery failed:', error);
       toast({
         title: "Recovery Failed",
         description: "Could not recover the corrupted data.",
@@ -384,7 +384,6 @@ const ChatCoach = () => {
         }
       }
     } catch (error) {
-
       toast({
         title: "Save Failed",
         description: "Could not save the conversation",
@@ -433,13 +432,13 @@ const ChatCoach = () => {
 
         
         setMessages((prev: Message[]) => [...prev, ...loadedMessages]);
-        setCurrentMode(data.conversation.mode);
+        setCurrentMode(data.conversation.mode as 'personal' | 'team');
         setCurrentChatId(conversationId);
         setChatStarted(true); // Mark that chat is active when loading conversation
         
         // Hide sidebar on mobile after loading chat
         if (isMobile) {
-          setSidebarHidden(true);
+          setSidebarOpen(false);
         }
         
         toast({
@@ -449,7 +448,6 @@ const ChatCoach = () => {
         });
       }
     } catch (error) {
-
       toast({
         title: "Load Failed",
         description: "Could not load the conversation. Please try refreshing the page.",
@@ -585,22 +583,11 @@ const ChatCoach = () => {
         return updatedMessages;
       });
     } catch (error) {
-
-      
-      // Determine error type for better UX
-      const errorType = error instanceof Error && error.message.includes('fetch') 
-        ? 'connection' 
-        : error instanceof Error && error.message.includes('500')
-        ? 'server'
-        : 'ai_service';
-
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: `ERROR:${errorType}`,
-        type: 'ai',
-        timestamp: new Date()
-      };
-      setMessages((prev: Message[]) => [...prev, errorMessage]);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive"
+      });
     } finally {
       setIsTyping(false);
     }
@@ -656,7 +643,6 @@ const ChatCoach = () => {
         description: "Message content copied successfully",
       });
     } catch (error) {
-
       toast({
         title: "Copy failed",
         description: "Could not copy to clipboard",
@@ -705,7 +691,6 @@ const ChatCoach = () => {
         duration: 2000
       });
     } catch (error) {
-
       toast({
         title: "Delete Failed",
         description: "Could not delete the conversation. Please try again.",
@@ -827,7 +812,7 @@ const ChatCoach = () => {
                   <button
                     key={mode.id}
                     className={`mode-button ${currentMode === mode.id ? 'active' : ''}`}
-                    onClick={() => setCurrentMode(mode.id)}
+                    onClick={() => setCurrentMode(mode.id as 'personal' | 'team')}
                     aria-label={`Switch to ${mode.label} mode`}
                     tabIndex={0}
                   >
@@ -998,9 +983,10 @@ const ChatCoach = () => {
                           {msg.type === 'user' ? (
                             <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
                           ) : msg.content.startsWith('ERROR:') ? (
-                            <ErrorMessage 
-                              type={msg.content.split(':')[1] as 'connection' | 'server' | 'ai_service' | 'validation' | 'unknown'}
-                              retry={() => {
+                            <ErrorState
+                              type={msg.content.split(':')[1] as any}
+                              error={msg.content}
+                              onRetry={() => {
                                 const lastUserMessage = messages.filter((m: Message) => m.type === 'user').pop();
                                 if (lastUserMessage) {
                                   setMessage(lastUserMessage.content);

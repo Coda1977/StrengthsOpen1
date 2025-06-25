@@ -12,22 +12,17 @@ export class LocalStorageManager {
   private static readonly MIGRATION_STATUS_KEY = 'migration-status';
 
   // Safe getter for localStorage data
-  static safeGet<T>(key: string): LocalStorageOperationResult<T> {
+  static safeGet<T>(key: string): LocalStorageOperationResult<T | undefined> {
     try {
-      const data = localStorage.getItem(key);
-      if (data === null) {
-        return { success: true, data: undefined };
-      }
-
-      const parsed = JSON.parse(data);
-      return { success: true, data: parsed };
+      const item = localStorage.getItem(key);
+      if (item === null) return { success: true, data: undefined };
+      return { success: true, data: JSON.parse(item) };
     } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        corrupted: true 
-      };
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error(`Error reading localStorage key "${key}":`, error);
+      }
+      return { success: false, error: error instanceof Error ? error.message : String(error), corrupted: true };
     }
   }
 
@@ -37,10 +32,13 @@ export class LocalStorageManager {
       localStorage.setItem(key, JSON.stringify(value));
       return { success: true };
     } catch (error) {
-      console.error(`Error writing to localStorage key "${key}":`, error);
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error(`Error writing to localStorage key "${key}":`, error);
+      }
       return { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+        error: error instanceof Error ? error.message : String(error) 
       };
     }
   }
@@ -51,10 +49,13 @@ export class LocalStorageManager {
       localStorage.removeItem(key);
       return { success: true };
     } catch (error) {
-      console.error(`Error removing localStorage key "${key}":`, error);
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error(`Error removing localStorage key "${key}":`, error);
+      }
       return { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+        error: error instanceof Error ? error.message : String(error) 
       };
     }
   }
@@ -62,11 +63,9 @@ export class LocalStorageManager {
   // Get chat history with corruption handling
   static getChatHistory(): LocalStorageOperationResult<any[]> {
     const result = this.safeGet<any[]>(this.CHAT_HISTORY_KEY);
-    
     if (!result.success) {
-      return result;
+      return result as LocalStorageOperationResult<any[]>;
     }
-
     // Validate data structure
     if (result.data && !Array.isArray(result.data)) {
       return {
@@ -75,10 +74,9 @@ export class LocalStorageManager {
         corrupted: true
       };
     }
-
     return {
       success: true,
-      data: result.data || []
+      data: Array.isArray(result.data) ? result.data : []
     };
   }
 
@@ -169,7 +167,7 @@ export class LocalStorageManager {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown recovery error',
+        error: error instanceof Error ? error.message : String(error),
         corrupted: true
       };
     }
@@ -215,7 +213,7 @@ export class LocalStorageManager {
 
     } catch (error) {
       available = false;
-      errors.push(error instanceof Error ? error.message : 'Unknown storage error');
+      errors.push(error instanceof Error ? error.message : String(error));
     }
 
     return {

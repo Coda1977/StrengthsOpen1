@@ -3,6 +3,7 @@ import * as mammoth from 'mammoth';
 import OpenAI from 'openai';
 import { scanFileBuffer, validateFileIntegrity, sanitizeFilename, generateFileHash } from './fileSecurityScanner';
 import { resourceManager, ocrWorkerPool } from './resourceManager';
+import type { PSM } from 'tesseract.js';
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -79,7 +80,7 @@ Rules:
     return result.members || [];
   } catch (error) {
     console.error('AI extraction error:', error);
-    if (error.message?.includes('API key')) {
+    if (error instanceof Error && error.message?.includes('API key')) {
       throw new Error('OpenAI API key is invalid or expired. Please check your API key configuration.');
     }
     throw new Error('Failed to process file with AI. Please try a different file format or check the file content.');
@@ -204,7 +205,7 @@ async function processFileWithCleanup(buffer: Buffer, mimetype: string, sanitize
 
   } catch (error) {
     console.error('File parsing error:', error);
-    throw new Error(`Failed to parse file: ${error.message}`);
+    throw new Error(`Failed to parse file: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -242,7 +243,7 @@ async function processImageWithOCR(buffer: Buffer): Promise<string> {
     
     await worker.setParameters({
       tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,;:!?()-[]{}"\'/\\|@#$%^&*+=_~`',
-      tessedit_pageseg_mode: '6', // Assume uniform block of text
+      tessedit_pageseg_mode: 6 as unknown as PSM,
     });
     
     clearTimeout(optionsTimeout);

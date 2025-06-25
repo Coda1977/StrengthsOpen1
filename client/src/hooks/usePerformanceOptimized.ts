@@ -53,7 +53,7 @@ export function useTeamAnalytics(teamMembers: TeamMember[]) {
     // Calculate domain distribution
     const domainDistribution = teamMembers.reduce((acc, member) => {
       member.strengths.forEach(strength => {
-        const domain = STRENGTHS_DOMAIN_MAP[strength];
+        const domain = STRENGTHS_DOMAIN_MAP[strength as keyof typeof STRENGTHS_DOMAIN_MAP];
         if (domain) {
           acc[domain] = (acc[domain] || 0) + 1;
         }

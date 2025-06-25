@@ -103,7 +103,7 @@ export function scanFileBuffer(buffer: Buffer, filename: string): SecurityScanRe
   // Additional checks for specific file types
   const extension = filename.toLowerCase().split('.').pop();
   
-  if (['jpg', 'jpeg', 'png'].includes(extension)) {
+  if (['jpg', 'jpeg', 'png'].includes(extension || '')) {
     // Check for embedded scripts in images
     if (contentToScan.includes('<script') || contentToScan.includes('javascript:')) {
       result.isSecure = false;
@@ -111,7 +111,7 @@ export function scanFileBuffer(buffer: Buffer, filename: string): SecurityScanRe
     }
   }
   
-  if (['csv', 'xlsx', 'xls'].includes(extension)) {
+  if (['csv', 'xlsx', 'xls'].includes(extension || '')) {
     // Check for formula injection
     if (/^[=@+\-]/.test(contentToScan.trim())) {
       result.warnings.push('Potential formula injection detected');
@@ -119,7 +119,7 @@ export function scanFileBuffer(buffer: Buffer, filename: string): SecurityScanRe
   }
   
   // Check for null bytes (potential file smuggling)
-  if (buffer.indexOf(0x00) !== -1 && !['xlsx', 'xls', 'docx', 'png', 'jpg', 'jpeg'].includes(extension)) {
+  if (buffer.indexOf(0x00) !== -1 && !['xlsx', 'xls', 'docx', 'png', 'jpg', 'jpeg'].includes(extension || '')) {
     result.warnings.push('Null bytes detected in text file');
   }
   
@@ -132,7 +132,7 @@ export function generateFileHash(buffer: Buffer): string {
 
 export function validateFileIntegrity(buffer: Buffer, expectedMimeType: string): boolean {
   // Validate file headers match expected MIME types
-  const fileSignatures = {
+  const fileSignatures: { [key: string]: (buf: Buffer) => boolean } = {
     'text/csv': (buf: Buffer) => {
       // CSV files should contain only printable ASCII characters and common separators
       const sample = buf.slice(0, 1024).toString('utf8');

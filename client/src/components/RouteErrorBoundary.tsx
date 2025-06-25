@@ -28,10 +28,10 @@ class RouteErrorBoundary extends React.Component<RouteErrorBoundaryProps, RouteE
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     this.setState({ errorInfo });
-    console.error(`Error in ${this.props.routeName} route:`, error, errorInfo);
-    
+    const isDev = process.env.NODE_ENV === 'development';
+    if (isDev) console.error(`Error in ${this.props.routeName} route:`, error, errorInfo);
     // Log route-specific error details
-    console.error('Route Error Details:', {
+    if (isDev) console.error('Route Error Details:', {
       route: this.props.routeName,
       message: error.message,
       stack: error.stack,
@@ -70,6 +70,7 @@ function RouteErrorFallback({
   fallbackRoute?: string;
 }) {
   const [, setLocation] = useLocation();
+  const isDev = process.env.NODE_ENV === 'development';
 
   const handleGoHome = () => {
     setLocation(fallbackRoute);
@@ -96,7 +97,7 @@ function RouteErrorFallback({
              'Something went wrong loading this page.'}
           </p>
           
-          {error && process.env.NODE_ENV === 'development' && (
+          {error && isDev && (
             <details className="text-left text-sm bg-gray-100 dark:bg-gray-800 p-3 rounded">
               <summary className="cursor-pointer font-medium">Error Details</summary>
               <pre className="mt-2 whitespace-pre-wrap text-xs">{error.message}</pre>
