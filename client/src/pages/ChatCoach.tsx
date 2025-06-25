@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Navigation from "@/components/Navigation";
 import { useCleanup } from "@/hooks/useCleanup";
 import { useConversations, useMigration } from "@/hooks/useConversations";
@@ -8,6 +8,7 @@ import { ErrorBoundary, ChatErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorState, ChatErrorState, NetworkErrorState } from "@/components/ErrorState";
 import { useChatRetry } from "@/hooks/useRetry";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Simple markdown formatter
 function formatMarkdown(text: string): string {
@@ -65,6 +66,7 @@ const ChatCoach = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [inputHeight, setInputHeight] = useState(44);
+  const [starterClicked, setStarterClicked] = useState<number | null>(null);
   
   // Use cleanup hook for better resource management
   const { createTimeout, addCleanup } = useCleanup();
@@ -98,7 +100,7 @@ const ChatCoach = () => {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev: Message[]) => [...prev, userMessage]);
     setMessage('');
     setIsTyping(true);
     setChatError(null);
@@ -113,7 +115,7 @@ const ChatCoach = () => {
         body: JSON.stringify({
           message: userMessage.content,
           mode: currentMode,
-          conversationHistory: messages.map(msg => ({
+          conversationHistory: messages.map((msg: Message) => ({
             role: msg.type === 'user' ? 'user' : 'assistant',
             content: msg.content
           }))
@@ -134,7 +136,7 @@ const ChatCoach = () => {
         timestamp: new Date()
       };
       
-      setMessages(prev => {
+      setMessages((prev: Message[]) => {
         const updatedMessages = [...prev, aiMessage];
         // Auto-save logic here...
         return updatedMessages;
@@ -167,7 +169,17 @@ const ChatCoach = () => {
     "How do I identify and develop my team's strengths?"
   ];
 
+  // Auto-resize textarea
+  const autoResizeTextarea = useCallback(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, []);
 
+  useEffect(() => {
+    autoResizeTextarea();
+  }, [message, autoResizeTextarea]);
 
   // Check for migration needs on component mount
   useEffect(() => {
@@ -250,8 +262,6 @@ const ChatCoach = () => {
   };
 
   const performMigration = async () => {
-    setUiState('migrating');
-    
     try {
       const localData = LocalStorageManager.getChatHistory();
       if (!localData.success || !localData.data) {
@@ -277,8 +287,6 @@ const ChatCoach = () => {
         description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive"
       });
-    } finally {
-      setUiState('idle');
     }
   };
 
@@ -292,7 +300,7 @@ const ChatCoach = () => {
           description: `Found ${recovered.data.length} recoverable conversations. Attempt recovery?`,
           action: (
             <button 
-              onClick={() => performRecovery(recovered.data)}
+              onClick={() => performRecovery(recovered.data ?? [])}
               className="bg-orange-600 text-white px-3 py-1 rounded text-sm"
             >
               Recover
@@ -332,8 +340,6 @@ const ChatCoach = () => {
       });
     }
   };
-
-
 
   const generateChatTitle = (firstMessage: string): string => {
     const words = firstMessage.split(' ').slice(0, 6);
@@ -410,11 +416,11 @@ const ChatCoach = () => {
 
         
         // Sort messages by timestamp to ensure proper order
-        const sortedMessages = data.messages.sort((a, b) => 
+        const sortedMessages = data.messages.sort((a: Message, b: Message) => 
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
         
-        const loadedMessages = sortedMessages.map(msg => ({
+        const loadedMessages = sortedMessages.map((msg: Message) => ({
           id: msg.id,
           content: msg.content,
           type: msg.type as 'user' | 'ai',
@@ -423,7 +429,7 @@ const ChatCoach = () => {
         
 
         
-        setMessages(loadedMessages);
+        setMessages((prev: Message[]) => [...prev, ...loadedMessages]);
         setCurrentMode(data.conversation.mode);
         setCurrentChatId(conversationId);
         setChatStarted(true); // Mark that chat is active when loading conversation
@@ -492,7 +498,7 @@ const ChatCoach = () => {
     };
 
     const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    setMessages((prev: Message[]) => [...prev, ...newMessages]);
     setMessage('');
     setIsTyping(true);
 
@@ -527,8 +533,8 @@ const ChatCoach = () => {
         timestamp: new Date()
       };
       
-      setMessages(prev => {
-        const updatedMessages = [...prev, aiMessage];
+      setMessages((prev: Message[]) => {
+        const updatedMessages = [...prev, ...[aiMessage]];
         // Auto-save new conversation after AI response
         createTimeout(async () => {
           if (!currentChatId) {
@@ -591,7 +597,7 @@ const ChatCoach = () => {
         type: 'ai',
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev: Message[]) => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
     }
@@ -620,6 +626,7 @@ const ChatCoach = () => {
   // Mobile input handling functions
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
+    autoResizeTextarea();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -629,14 +636,13 @@ const ChatCoach = () => {
     }
   };
 
-
-
-  const handleStarterQuestion = (question: string) => {
+  const handleStarterQuestion = (question: string, idx: number) => {
+    setStarterClicked(idx);
     setMessage(question);
-    // Small delay to ensure message is set before sending
     setTimeout(() => {
       handleSendMessage();
-    }, 100);
+      setStarterClicked(null);
+    }, 200);
   };
 
   const copyToClipboard = async (text: string) => {
@@ -717,6 +723,7 @@ const ChatCoach = () => {
               className="sidebar-toggle"
               onClick={toggleSidebar}
               aria-label="Open chat history"
+              tabIndex={0}
             >
               ☰
             </button>
@@ -727,6 +734,9 @@ const ChatCoach = () => {
             <div 
               className="sidebar-overlay"
               onClick={() => setSidebarOpen(false)}
+              tabIndex={0}
+              aria-label="Close sidebar"
+              role="button"
             />
           )}
 
@@ -739,6 +749,8 @@ const ChatCoach = () => {
                     key={mode.id}
                     className={`mode-button ${currentMode === mode.id ? 'active' : ''}`}
                     onClick={() => setCurrentMode(mode.id)}
+                    aria-label={`Switch to ${mode.label} mode`}
+                    tabIndex={0}
                   >
                     {mode.label}
                   </button>
@@ -747,22 +759,8 @@ const ChatCoach = () => {
               <button 
                 className="new-chat-button"
                 onClick={startNewChat}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  background: 'var(--accent-blue)',
-                  color: 'var(--white)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s ease'
-                }}
+                aria-label="Start new chat"
+                tabIndex={0}
               >
                 <span style={{fontSize: '20px'}}>+</span>
                 New Chat
@@ -771,9 +769,11 @@ const ChatCoach = () => {
 
             <div className="chat-history">
               {conversationsLoading ? (
-                <div className="empty-history">
-                  <h3>Loading conversations...</h3>
-                </div>
+                <>
+                  <Skeleton className="skeleton-history" />
+                  <Skeleton className="skeleton-history" />
+                  <Skeleton className="skeleton-history" />
+                </>
               ) : conversations.length === 0 ? (
                 <div className="empty-history">
                   <h3>No conversations yet</h3>
@@ -794,6 +794,8 @@ const ChatCoach = () => {
                       <div 
                         className="history-content"
                         onClick={() => loadChat(conversation.id)}
+                        tabIndex={0}
+                        aria-label={`Load conversation: ${conversation.title}`}
                       >
                         <div className="history-title">{conversation.title}</div>
                         <div className="history-meta">
@@ -810,6 +812,8 @@ const ChatCoach = () => {
                           handleDeleteConversation(conversation.id, conversation.title);
                         }}
                         title="Delete conversation"
+                        aria-label={`Delete conversation: ${conversation.title}`}
+                        tabIndex={0}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c0 1 1 2 2 2v2"/>
@@ -830,6 +834,7 @@ const ChatCoach = () => {
                 className="mobile-sidebar-toggle"
                 onClick={toggleSidebar}
                 aria-label="Toggle sidebar"
+                tabIndex={0}
               >
                 ☰
               </button>
@@ -838,7 +843,7 @@ const ChatCoach = () => {
               </h1>
             </div>
 
-            <div className="messages-container">
+            <div className="messages-container" role="log" aria-live="polite">
               {messages.length === 0 && !chatStarted ? (
                 <div className="welcome-message">
                   <div className="welcome-content">
@@ -848,8 +853,11 @@ const ChatCoach = () => {
                       {starterQuestions.map((question, index) => (
                         <button 
                           key={index}
-                          className="starter-question"
-                          onClick={() => handleStarterQuestion(question)}
+                          className={`starter-question${starterClicked === index ? ' clicked' : ''}`}
+                          onClick={() => handleStarterQuestion(question, index)}
+                          aria-label={`Ask: ${question}`}
+                          tabIndex={0}
+                          disabled={isTyping}
                         >
                           {question}
                         </button>
@@ -859,24 +867,40 @@ const ChatCoach = () => {
                 </div>
               ) : (
                 <>
-                  {messages.map((msg, index) => {
+                  {isTyping && messages.length === 0 && (
+                    <>
+                      <Skeleton className="skeleton-message" />
+                      <Skeleton className="skeleton-message" />
+                    </>
+                  )}
+                  {messages.map((msg: Message, index: number) => {
 
                     return (
                       <div 
                         key={`${msg.id}-${index}`}
                         className={`message ${msg.type}`}
+                        tabIndex={0}
+                        aria-label={`${msg.type === 'user' ? 'You' : 'AI'} message: ${msg.content}`}
                       >
-                        <div className={`message-avatar ${msg.type}`}>
-                          {msg.type === 'user' ? 'You' : 'AI'}
+                        <div className={`message-avatar ${msg.type}`}
+                          aria-label={msg.type === 'user' ? 'User avatar' : 'AI avatar'}
+                        >
+                          {msg.type === 'user' ? (
+                            <span role="img" aria-label="User">🧑</span>
+                          ) : (
+                            <span role="img" aria-label="AI">🤖</span>
+                          )}
                         </div>
-                        <div className={`message-content ${msg.type}`}>
+                        <div className={`message-content ${msg.type}`}
+                          tabIndex={0}
+                        >
                           {msg.type === 'user' ? (
                             <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
                           ) : msg.content.startsWith('ERROR:') ? (
                             <ErrorMessage 
                               type={msg.content.split(':')[1] as 'connection' | 'server' | 'ai_service' | 'validation' | 'unknown'}
                               retry={() => {
-                                const lastUserMessage = messages.filter(m => m.type === 'user').pop();
+                                const lastUserMessage = messages.filter((m: Message) => m.type === 'user').pop();
                                 if (lastUserMessage) {
                                   setMessage(lastUserMessage.content);
                                   setTimeout(() => handleSendMessage(), 100);
@@ -887,10 +911,11 @@ const ChatCoach = () => {
                             <div dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }} />
                           )}
                           <button 
-                            className="copy-message-button"
+                            className="copy-message-button copy-button"
                             onClick={() => copyToClipboard(msg.content)}
                             title="Copy message"
                             aria-label="Copy message to clipboard"
+                            tabIndex={0}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
@@ -903,8 +928,8 @@ const ChatCoach = () => {
                   })}
                   
                   {isTyping && (
-                    <div className="typing-indicator">
-                      <div className="message-avatar">AI</div>
+                    <div className="typing-indicator" role="status" aria-live="polite">
+                      <div className="message-avatar ai" aria-label="AI avatar">🤖</div>
                       <div className="typing-content">
                         <span className="typing-text">AI is thinking</span>
                         <div className="typing-dots">
@@ -922,7 +947,7 @@ const ChatCoach = () => {
             </div>
 
             {/* Input Area */}
-            <div className="input-container">
+            <div className="input-container" style={{ position: 'relative' }}>
               <div className="chat-input-wrapper">
                 <textarea
                   ref={textareaRef}
@@ -931,22 +956,43 @@ const ChatCoach = () => {
                   value={message}
                   onChange={handleTextareaChange}
                   onKeyDown={handleKeyPress}
-
                   rows={1}
+                  aria-label="Type your message"
+                  disabled={isTyping}
+                  tabIndex={0}
+                  style={{ resize: 'none', overflow: 'hidden' }}
                 />
                 <button 
                   className="send-button"
                   onClick={handleSendMessage}
-                  disabled={!message.trim() || uiState === 'typing'}
+                  disabled={!message.trim() || isTyping}
+                  aria-label="Send message"
+                  tabIndex={0}
                 >
                   {isTyping ? (
-                    <div className="send-spinner"></div>
+                    <div className="send-spinner" aria-label="Sending..." />
                   ) : (
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
                     </svg>
                   )}
                 </button>
+                {isTyping && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(255,255,255,0.6)',
+                    borderRadius: 12,
+                    zIndex: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    pointerEvents: 'none',
+                  }} aria-label="AI is responding" />
+                )}
               </div>
             </div>
           </div>
@@ -971,6 +1017,8 @@ const ChatCoach = () => {
                     color: '#4A4A4A',
                     cursor: 'pointer'
                   }}
+                  aria-label="Cancel delete"
+                  tabIndex={0}
                 >
                   Cancel
                 </button>
@@ -984,6 +1032,8 @@ const ChatCoach = () => {
                     color: '#FFFFFF',
                     cursor: 'pointer'
                   }}
+                  aria-label="Confirm delete"
+                  tabIndex={0}
                 >
                   Delete
                 </button>
