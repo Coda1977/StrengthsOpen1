@@ -4,7 +4,7 @@ import multer from 'multer';
 import { isAuthenticated, setupAuth } from './replitAuth';
 import { storage } from './storage';
 import { parseTeamMembersFile } from './fileParser';
-import { generateTeamInsight, generateCollaborationInsight, generateCoachResponse } from './openai';
+import { generateTeamInsight, generateCollaborationInsight, generateCoachResponse, generateContextAwareStarterQuestions, generateFollowUpQuestions } from './openai';
 import { errors, createSuccessResponse, createErrorResponse, AppError, ERROR_CODES } from './errorHandler';
 import { 
   insertTeamMemberSchema, 
@@ -648,6 +648,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error.context = { ...error.context, processing_time_ms: processingTime };
       }
       
+      next(error);
+    }
+  });
+
+  // Context-aware starter questions endpoint
+  app.post('/api/context-starter-questions', isAuthenticated, requireOnboarding, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      const teamMembers = await storage.getTeamMembers(userId);
+      const recentTopics = req.body.recentTopics || [];
+      const questions = await generateContextAwareStarterQuestions(user, teamMembers, recentTopics);
+      res.json(createSuccessResponse({ questions }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Follow-up questions endpoint
+  app.post('/api/followup-questions', isAuthenticated, requireOnboarding, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const { aiAnswer, conversationHistory } = req.body;
+      if (!aiAnswer) {
+        throw errors.validation('AI answer is required');
+      }
+      const questions = await generateFollowUpQuestions(aiAnswer, conversationHistory || []);
+      res.json(createSuccessResponse({ questions }));
+    } catch (error) {
       next(error);
     }
   });

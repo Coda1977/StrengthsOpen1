@@ -281,3 +281,75 @@ Keep each point to one sentence maximum. No markdown. Total response under 150 w
     return "Unable to generate collaboration insight at this time. Please try again later.";
   }
 }
+
+// Generate context-aware starter questions
+export async function generateContextAwareStarterQuestions(user: any, teamMembers: any[], recentTopics: string[] = []): Promise<string[]> {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const prompt = `You are an expert CliftonStrengths coach. Suggest 3 context-aware starter questions for a manager to ask an AI coach, based on the following:
+
+Manager's Top Strengths: ${user.topStrengths?.join(', ') || 'Not specified'}
+Team Members: ${teamMembers.map(m => `${m.name} (${m.strengths.join(', ')})`).join('; ') || 'No team members added yet'}
+Recent Chat Topics: ${recentTopics.length > 0 ? recentTopics.join(', ') : 'None'}
+
+The questions should:
+- Be specific to the manager's strengths, team, or recent topics
+- Be practical and actionable
+- Avoid generic or vague wording
+- Be phrased as questions a real manager would ask
+- Be concise (max 15 words each)
+
+Return only a JSON array of questions, no other text.`;
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: 'You are an expert at generating context-aware coaching questions.' },
+      { role: 'user', content: prompt }
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: 200,
+    temperature: 0.7,
+  });
+  const content = response.choices[0].message.content;
+  try {
+    const arr = JSON.parse(content);
+    return Array.isArray(arr) ? arr : arr.questions || [];
+  } catch {
+    return [];
+  }
+}
+
+// Generate follow-up questions after an AI answer
+export async function generateFollowUpQuestions(aiAnswer: string, conversationHistory: any[] = []): Promise<string[]> {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const prompt = `You are an expert CliftonStrengths coach. Suggest 2-3 follow-up questions a manager might ask after receiving this advice from an AI coach:
+
+AI's Answer: "${aiAnswer}"
+
+Conversation History: ${conversationHistory.map(m => `${m.type === 'user' ? 'User' : 'AI'}: ${m.content}`).join(' | ')}
+
+The follow-up questions should:
+- Be natural next questions a thoughtful manager might ask
+- Be specific to the advice given
+- Be concise (max 15 words each)
+
+Return only a JSON array of questions, no other text.`;
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: 'You are an expert at generating follow-up coaching questions.' },
+      { role: 'user', content: prompt }
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: 150,
+    temperature: 0.7,
+  });
+  const content = response.choices[0].message.content;
+  try {
+    const arr = JSON.parse(content);
+    return Array.isArray(arr) ? arr : arr.questions || [];
+  } catch {
+    return [];
+  }
+}

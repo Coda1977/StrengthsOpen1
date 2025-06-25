@@ -27,12 +27,14 @@
 
 /* Remove gap between navigation and content */
 .app-nav {
-  margin-bottom: 0;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .main-container {
-  margin-top: 0;
-  padding-top: 0;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 :root {
@@ -1270,7 +1272,8 @@ footer {
   overflow: hidden;
   position: relative;
   height: calc(100vh - 80px);
-  margin-top: 80px; /* Add space for fixed navigation */
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 .sidebar {
@@ -1568,8 +1571,6 @@ footer {
   pointer-events: all;
 }
 
-
-
 .sidebar-header {
   padding: 24px;
   border-bottom: 1px solid var(--border-light);
@@ -1703,6 +1704,8 @@ footer {
   height: 100%;
   width: 100%;
   transition: all 0.3s ease;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 .chat-header {
@@ -1775,8 +1778,6 @@ footer {
 .chat-header .mobile-sidebar-toggle + .chat-title {
   margin-left: 0;
 }
-
-
 
 .chat-title {
   font-size: 22px;
@@ -2164,8 +2165,6 @@ footer {
   .desktop-sidebar-toggle {
     display: none;
   }
-
-
 
   .sidebar {
     position: fixed;

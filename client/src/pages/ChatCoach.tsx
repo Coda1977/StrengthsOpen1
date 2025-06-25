@@ -711,6 +711,75 @@ const ChatCoach = () => {
     }
   };
 
+  // Add state for context-aware starter and follow-up questions
+  const [contextStarters, setContextStarters] = useState<string[]>([]);
+  const [startersLoading, setStartersLoading] = useState(false);
+  const [followUps, setFollowUps] = useState<{ [msgId: string]: string[] }>({});
+  const [followUpLoading, setFollowUpLoading] = useState<{ [msgId: string]: boolean }>({});
+
+  // Fetch context-aware starter questions on new chat
+  const fetchContextStarters = async () => {
+    setStartersLoading(true);
+    try {
+      const res = await fetch('/api/context-starter-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ recentTopics: [] }) // Optionally add recent topics
+      });
+      const data = await res.json();
+      setContextStarters(data.data.questions || []);
+    } catch {
+      setContextStarters([]);
+    }
+    setStartersLoading(false);
+  };
+
+  // Fetch follow-up questions after each AI answer
+  const fetchFollowUps = async (aiMsg: Message, history: Message[]) => {
+    setFollowUpLoading(prev => ({ ...prev, [aiMsg.id]: true }));
+    try {
+      const res = await fetch('/api/followup-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ aiAnswer: aiMsg.content, conversationHistory: history })
+      });
+      const data = await res.json();
+      setFollowUps(prev => ({ ...prev, [aiMsg.id]: data.data.questions || [] }));
+    } catch {
+      setFollowUps(prev => ({ ...prev, [aiMsg.id]: [] }));
+    }
+    setFollowUpLoading(prev => ({ ...prev, [aiMsg.id]: false }));
+  };
+
+  // On new chat, fetch context-aware starters
+  useEffect(() => {
+    if (chatStarted && messages.length === 0) {
+      fetchContextStarters();
+    }
+  }, [chatStarted, messages.length]);
+
+  // After each AI message, fetch follow-ups
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.type === 'ai' && lastMsg.content && !followUps[lastMsg.id]) {
+        fetchFollowUps(lastMsg, messages.slice(0, -1));
+      }
+    }
+  }, [messages]);
+
+  // When a starter or follow-up is clicked, send as message
+  const handleContextStarterClick = (q: string) => {
+    setMessage(q);
+    setTimeout(() => handleSendMessage(), 100);
+  };
+  const handleFollowUpClick = (q: string) => {
+    setMessage(q);
+    setTimeout(() => handleSendMessage(), 100);
+  };
+
   return (
     <ErrorBoundary>
       <div className="app-container">
@@ -849,20 +918,42 @@ const ChatCoach = () => {
                   <div className="welcome-content">
                     <h2>Welcome to your AI Strengths Coach!</h2>
                     <p>I'm here to help you understand and leverage your CliftonStrengths for better leadership and team dynamics.</p>
-                    <div className="starter-questions">
-                      {starterQuestions.map((question, index) => (
-                        <button 
-                          key={index}
-                          className={`starter-question${starterClicked === index ? ' clicked' : ''}`}
-                          onClick={() => handleStarterQuestion(question, index)}
-                          aria-label={`Ask: ${question}`}
-                          tabIndex={0}
-                          disabled={isTyping}
-                        >
-                          {question}
-                        </button>
-                      ))}
-                    </div>
+                    {startersLoading ? (
+                      <>
+                        <Skeleton className="skeleton-message" />
+                        <Skeleton className="skeleton-message" />
+                      </>
+                    ) : contextStarters.length > 0 ? (
+                      <div className="starter-questions">
+                        {contextStarters.map((q, idx) => (
+                          <button
+                            key={idx}
+                            className="starter-question"
+                            onClick={() => handleContextStarterClick(q)}
+                            aria-label={`Ask: ${q}`}
+                            tabIndex={0}
+                            disabled={isTyping}
+                          >
+                            {q}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="starter-questions">
+                        {starterQuestions.map((question, index) => (
+                          <button
+                            key={index}
+                            className={`starter-question${starterClicked === index ? ' clicked' : ''}`}
+                            onClick={() => handleStarterQuestion(question, index)}
+                            aria-label={`Ask: ${question}`}
+                            tabIndex={0}
+                            disabled={isTyping}
+                          >
+                            {question}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -923,6 +1014,25 @@ const ChatCoach = () => {
                             </svg>
                           </button>
                         </div>
+                        {msg.type === 'ai' && followUps[msg.id] && followUps[msg.id].length > 0 && (
+                          <div className="starter-questions" style={{ marginTop: 8 }}>
+                            {followUpLoading[msg.id] ? (
+                              <Skeleton className="skeleton-message" />
+                            ) : followUps[msg.id].map((q, idx) => (
+                              <button
+                                key={idx}
+                                className="starter-question"
+                                onClick={() => handleFollowUpClick(q)}
+                                aria-label={`Ask: ${q}`}
+                                tabIndex={0}
+                                disabled={isTyping}
+                                style={{ fontSize: 14, marginBottom: 4 }}
+                              >
+                                {q}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
