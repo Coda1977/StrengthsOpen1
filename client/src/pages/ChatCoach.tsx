@@ -777,10 +777,9 @@ const ChatCoach = () => {
 
   return (
     <ErrorBoundary>
-      <div className="app-container">
+      <div className="dashboard" style={{ background: 'var(--bg-primary)', minHeight: '100vh' }}>
         <Navigation />
-        
-        <div className={`main-container ${sidebarOpen ? 'sidebar-open' : ''}`}>
+        <div className="main-container">
           {/* Sidebar Toggle Button */}
           {!sidebarOpen && (
             <button 
