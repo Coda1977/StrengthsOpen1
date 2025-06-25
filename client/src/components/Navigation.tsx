@@ -26,12 +26,12 @@ const Navigation = ({ simplified = false }: NavigationProps) => {
   const navItems = isAuthenticated && (user as any)?.hasCompletedOnboarding ? [
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/encyclopedia', label: 'Encyclopedia' },
-    { path: '/coach', label: 'AI Coach' }
+    { path: '/ai-coach', label: 'AI Coach' }
   ] : [
     { path: '/', label: 'Home' },
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/encyclopedia', label: 'Encyclopedia' },
-    { path: '/coach', label: 'AI Coach' }
+    { path: '/ai-coach', label: 'AI Coach' }
   ];
 
   return (

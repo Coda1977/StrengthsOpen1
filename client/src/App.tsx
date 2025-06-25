@@ -43,7 +43,7 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
-      <Route path="/coach">
+      <Route path="/ai-coach">
         <ProtectedRoute routeName="AI Coach" requireOnboarding>
           <ChatCoach />
         </ProtectedRoute>
