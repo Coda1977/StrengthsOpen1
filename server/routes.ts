@@ -6,6 +6,7 @@ import { storage } from './storage';
 import { parseTeamMembersFile } from './fileParser';
 import { generateTeamInsight, generateCollaborationInsight, generateCoachResponse, generateContextAwareStarterQuestions, generateFollowUpQuestions } from './openai';
 import { errors, createSuccessResponse, createErrorResponse, AppError, ERROR_CODES } from './errorHandler';
+import { emailScheduler } from './emailScheduler';
 import { 
   insertTeamMemberSchema, 
   updateTeamMemberSchema, 

@@ -135,6 +135,56 @@ export const conversationBackups = pgTable("conversation_backups", {
   restoredAt: timestamp("restored_at"),
 });
 
+// Email tracking tables
+export const emailSubscriptions = pgTable("email_subscriptions", {
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => {
+    try {
+      const crypto = require('crypto');
+      return crypto.randomUUID();
+    } catch (e) {
+      const crypto = require('crypto');
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c: string) => {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+  }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  emailType: text("email_type", { enum: ["welcome", "weekly_coaching"] }).notNull(),
+  isActive: boolean("is_active").default(true),
+  startDate: timestamp("start_date").defaultNow(),
+  timezone: varchar("timezone").default("America/New_York"), // User's timezone for scheduling
+  weeklyEmailCount: text("weekly_email_count").default("0"), // Track how many weekly emails sent (max 12)
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const emailLogs = pgTable("email_logs", {
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => {
+    try {
+      const crypto = require('crypto');
+      return crypto.randomUUID();
+    } catch (e) {
+      const crypto = require('crypto');
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c: string) => {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+  }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  emailType: text("email_type", { enum: ["welcome", "weekly_coaching"] }).notNull(),
+  emailSubject: text("email_subject").notNull(),
+  weekNumber: text("week_number"), // For weekly emails: "1", "2", etc.
+  resendId: varchar("resend_id"), // ID from Resend API
+  status: text("status", { enum: ["sent", "failed", "pending"] }).notNull(),
+  errorMessage: text("error_message"),
+  sentAt: timestamp("sent_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   firstName: true,
@@ -195,6 +245,28 @@ export const insertConversationBackupSchema = createInsertSchema(conversationBac
   source: true,
 });
 
+export const insertEmailSubscriptionSchema = createInsertSchema(emailSubscriptions).pick({
+  userId: true,
+  emailType: true,
+  timezone: true,
+});
+
+export const updateEmailSubscriptionSchema = createInsertSchema(emailSubscriptions).pick({
+  isActive: true,
+  timezone: true,
+  weeklyEmailCount: true,
+}).partial();
+
+export const insertEmailLogSchema = createInsertSchema(emailLogs).pick({
+  userId: true,
+  emailType: true,
+  emailSubject: true,
+  weekNumber: true,
+  resendId: true,
+  status: true,
+  errorMessage: true,
+});
+
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -209,3 +281,8 @@ export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type ConversationBackup = typeof conversationBackups.$inferSelect;
 export type InsertConversationBackup = z.infer<typeof insertConversationBackupSchema>;
+export type EmailSubscription = typeof emailSubscriptions.$inferSelect;
+export type InsertEmailSubscription = z.infer<typeof insertEmailSubscriptionSchema>;
+export type UpdateEmailSubscription = z.infer<typeof updateEmailSubscriptionSchema>;
+export type EmailLog = typeof emailLogs.$inferSelect;
+export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
