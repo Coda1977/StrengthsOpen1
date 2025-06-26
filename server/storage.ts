@@ -5,6 +5,8 @@ import {
   conversations,
   messages,
   conversationBackups,
+  emailSubscriptions,
+  emailLogs,
   type User, 
   type UpsertUser, 
   type UpdateUserOnboarding, 
@@ -17,7 +19,12 @@ import {
   type Message,
   type InsertMessage,
   type ConversationBackup,
-  type InsertConversationBackup
+  type InsertConversationBackup,
+  type EmailSubscription,
+  type InsertEmailSubscription,
+  type UpdateEmailSubscription,
+  type EmailLog,
+  type InsertEmailLog
 } from '../shared/schema';
 import { eq, and, inArray, sql, count, desc, asc } from 'drizzle-orm';
 import crypto from 'crypto';

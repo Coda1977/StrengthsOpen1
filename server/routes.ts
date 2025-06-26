@@ -67,6 +67,9 @@ const requireOnboarding = async (req: Request, res: Response, next: NextFunction
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+  
+  // Initialize email scheduler
+  emailScheduler.init();
 
   // Enhanced file upload middleware with security measures
   const upload = multer({
@@ -136,14 +139,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/onboarding', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
+      const userClaims = (req as AuthenticatedRequest).user.claims;
       console.log('Onboarding request:', { userId, body: req.body });
+      
       // Validate the request body
       const validatedData = updateUserOnboardingSchema.parse(req.body);
       console.log('Validated data:', validatedData);
+      
       const user = await storage.updateUserOnboarding(userId, validatedData);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
+      
+      // Send welcome email after successful onboarding
+      try {
+        const timezone = req.body.timezone || 'America/New_York';
+        await emailScheduler.sendWelcomeEmail(
+          userId,
+          userClaims.email,
+          userClaims.first_name,
+          timezone
+        );
+        console.log('Welcome email sent to:', userClaims.email);
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Don't fail the onboarding if email fails
+      }
+      
       console.log('Updated user:', user);
       res.json(user);
     } catch (error) {
@@ -570,6 +592,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const questions = await generateFollowUpQuestions(aiAnswer, conversationHistory || []);
       res.json(createSuccessResponse({ questions }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Email management routes
+  app.get('/api/email-subscriptions', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = (req as AuthenticatedRequest).user.claims.sub;
+      const subscriptions = await storage.getEmailSubscriptions(userId);
+      
+      res.json(createSuccessResponse(subscriptions));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put('/api/email-subscriptions/:type', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = (req as AuthenticatedRequest).user.claims.sub;
+      const { type } = req.params;
+      const { isActive, timezone } = req.body;
+
+      if (!['welcome', 'weekly_coaching'].includes(type)) {
+        return res.status(400).json(createErrorResponse(req, new AppError(ERROR_CODES.VALIDATION_ERROR, 'Invalid email type', 400)));
+      }
+
+      const subscription = await storage.updateEmailSubscription(userId, type as 'welcome' | 'weekly_coaching', {
+        isActive,
+        timezone
+      });
+
+      res.json(createSuccessResponse(subscription));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get('/api/email-logs', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = (req as AuthenticatedRequest).user.claims.sub;
+      const logs = await storage.getEmailLogs(userId);
+      
+      res.json(createSuccessResponse(logs));
     } catch (error) {
       next(error);
     }
