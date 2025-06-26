@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { eq, and } from 'drizzle-orm';
 import { db } from './db';
+import { storage } from './storage';
 import { emailSubscriptions, emailLogs, users } from '../shared/schema';
 import type { InsertEmailSubscription, InsertEmailLog, User } from '../shared/schema';
 
@@ -38,7 +39,7 @@ export class EmailService {
       });
 
       // Log the email attempt
-      await db.insert(emailLogs).values({
+      await storage.createEmailLog({
         userId: user.id,
         emailType: 'welcome',
         emailSubject: 'Welcome to Strengths Manager! 🎯',
@@ -118,7 +119,7 @@ export class EmailService {
         );
 
       // Log the email attempt
-      await db.insert(emailLogs).values({
+      await storage.createEmailLog({
         userId: user.id,
         emailType: 'weekly_coaching',
         emailSubject: subject,

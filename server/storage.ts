@@ -62,6 +62,15 @@ export interface IStorage {
   createConversationBackup(userId: string, data: InsertConversationBackup): Promise<ConversationBackup>;
   getConversationBackups(userId: string): Promise<ConversationBackup[]>;
   restoreConversationBackup(backupId: string, userId: string): Promise<Conversation[]>;
+
+  // Email operations
+  getEmailSubscriptions(userId: string): Promise<EmailSubscription[]>;
+  updateEmailSubscription(userId: string, emailType: 'welcome' | 'weekly_coaching', data: UpdateEmailSubscription): Promise<EmailSubscription | undefined>;
+  getEmailLogs(userId: string): Promise<EmailLog[]>;
+  createEmailLog(data: InsertEmailLog): Promise<EmailLog>;
+
+  // Team analytics
+  getTeamAnalytics(managerId: string): Promise<{ totalMembers: number; strengthsDistribution: Record<string, number>; averageStrengthsPerMember: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -428,6 +437,83 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       if (isDev) console.error('Failed to get team analytics:', error);
       throw new Error('Failed to fetch team analytics');
+    }
+  }
+
+  // Email operations
+  async getEmailSubscriptions(userId: string): Promise<EmailSubscription[]> {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    try {
+      const subscriptions = await db.select()
+        .from(emailSubscriptions)
+        .where(eq(emailSubscriptions.userId, userId));
+
+      return subscriptions;
+    } catch (error) {
+      if (isDev) console.error('Error fetching email subscriptions:', error);
+      throw new Error('Failed to fetch email subscriptions');
+    }
+  }
+
+  async updateEmailSubscription(userId: string, emailType: 'welcome' | 'weekly_coaching', data: UpdateEmailSubscription): Promise<EmailSubscription | undefined> {
+    if (!userId || !emailType) {
+      throw new Error('User ID and email type are required');
+    }
+
+    try {
+      const [subscription] = await db.update(emailSubscriptions)
+        .set({
+          ...data,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(emailSubscriptions.userId, userId),
+          eq(emailSubscriptions.emailType, emailType)
+        ))
+        .returning();
+
+      return subscription;
+    } catch (error) {
+      if (isDev) console.error('Error updating email subscription:', error);
+      throw new Error('Failed to update email subscription');
+    }
+  }
+
+  async getEmailLogs(userId: string): Promise<EmailLog[]> {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    try {
+      const logs = await db.select()
+        .from(emailLogs)
+        .where(eq(emailLogs.userId, userId))
+        .orderBy(desc(emailLogs.sentAt));
+
+      return logs;
+    } catch (error) {
+      if (isDev) console.error('Error fetching email logs:', error);
+      throw new Error('Failed to fetch email logs');
+    }
+  }
+
+  async createEmailLog(data: InsertEmailLog): Promise<EmailLog> {
+    try {
+      const id = this.generateSecureId();
+      const [log] = await db.insert(emailLogs)
+        .values({
+          id,
+          ...data,
+        })
+        .returning();
+
+      return log;
+    } catch (error) {
+      if (isDev) console.error('Error creating email log:', error);
+      throw new Error('Failed to create email log');
     }
   }
 
