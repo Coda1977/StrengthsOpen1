@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
-import fingerprintImg from '../assets/fingerprint-final.jpg';
+import fingerprintImg from '../assets/rainbow-fingerprint.svg';
 
 const LandingPage = () => {
   useEffect(() => {
@@ -73,7 +73,13 @@ const LandingPage = () => {
                 src={fingerprintImg}
                 alt="Colorful fingerprint"
                 className="fingerprint-image"
-                style={{ borderRadius: '10px', width: '400px', height: '400px', background: '#f5f0e8' }}
+                style={{ 
+                  borderRadius: '10px', 
+                  width: '400px', 
+                  height: '400px',
+                  background: 'transparent',
+                  filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1))'
+                }}
               />
             </div>
           </div>
