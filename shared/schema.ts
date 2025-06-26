@@ -156,6 +156,8 @@ export const emailSubscriptions = pgTable("email_subscriptions", {
   startDate: timestamp("start_date").defaultNow(),
   timezone: varchar("timezone").default("America/New_York"), // User's timezone for scheduling
   weeklyEmailCount: text("weekly_email_count").default("0"), // Track how many weekly emails sent (max 12)
+  nextScheduledTime: timestamp("next_scheduled_time"), // When the next email should be sent
+  lastSentAt: timestamp("last_sent_at"), // When the last email was sent
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -179,9 +181,33 @@ export const emailLogs = pgTable("email_logs", {
   emailSubject: text("email_subject").notNull(),
   weekNumber: text("week_number"), // For weekly emails: "1", "2", etc.
   resendId: varchar("resend_id"), // ID from Resend API
-  status: text("status", { enum: ["sent", "failed", "pending"] }).notNull(),
+  status: text("status", { enum: ["sent", "failed", "pending", "retry"] }).notNull(),
+  retryCount: text("retry_count").default("0"), // Track retry attempts
   errorMessage: text("error_message"),
   sentAt: timestamp("sent_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// New table for email metrics
+export const emailMetrics = pgTable("email_metrics", {
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => {
+    try {
+      const crypto = require('crypto');
+      return crypto.randomUUID();
+    } catch (e) {
+      const crypto = require('crypto');
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c: string) => {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+  }),
+  date: timestamp("date").defaultNow(),
+  totalAttempted: text("total_attempted").default("0"),
+  succeeded: text("succeeded").default("0"),
+  failed: text("failed").default("0"),
+  timezoneBreakdown: jsonb("timezone_breakdown").$type<Record<string, number>>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
