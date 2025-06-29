@@ -21,7 +21,7 @@ import { Resend } from 'resend';
 import { sql, desc, eq, gte } from 'drizzle-orm';
 import { db } from './db';
 import { users, emailLogs } from '../shared/schema';
-import { EmailService } from './emailService';
+import { emailService } from './emailService';
 
 interface AuthenticatedRequest extends Request {
   user: {
