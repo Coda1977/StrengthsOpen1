@@ -46,11 +46,17 @@ export class EmailService {
         nextMondayStr
       );
 
+      // Clean subject line - ensure it's plain text without newlines
+      const cleanSubject = aiContent.subject
+        .replace(/<[^>]*>/g, '') // Remove any HTML tags
+        .replace(/\n/g, ' ') // Replace newlines with spaces
+        .trim();
+
       // Send welcome email
       const { data, error } = await this.resend.emails.send({
         from: this.fromEmail,
         to: [user.email!],
-        subject: aiContent.subject,
+        subject: cleanSubject,
         html: emailHtml,
       });
 
@@ -117,7 +123,11 @@ export class EmailService {
       weeklyContent.quoteAuthor = await marked(weeklyContent.quoteAuthor);
       weeklyContent.header = await marked(weeklyContent.header);
       weeklyContent.preHeader = await marked(weeklyContent.preHeader);
-      weeklyContent.subjectLine = await marked(weeklyContent.subjectLine);
+      // Subject line should be plain text only - strip HTML and newlines
+      weeklyContent.subjectLine = (await marked(weeklyContent.subjectLine))
+        .replace(/<[^>]*>/g, '') // Remove HTML tags
+        .replace(/\n/g, ' ') // Replace newlines with spaces
+        .trim();
 
       // Generate professional HTML using your exact weekly email template
       const emailHtml = this.generateProfessionalWeeklyEmail(
