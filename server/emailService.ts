@@ -567,87 +567,113 @@ export class EmailService {
   }
 
   private generateProfessionalWeeklyEmail(
+    weeklyContent: any,
     managerName: string,
     personalStrength: string,
-    personalTip: string,
     specificAction: string,
     teamMemberName: string,
     teamMemberStrength: string,
     teamTip: string,
     weekNumber: number
   ): string {
-    return `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Week ${weekNumber} Strengths Coaching</title>
-        <style>
-          body, p { margin: 0; }
-          table { border-collapse: collapse; }
-          @media only screen and (max-width: 600px) {
+    // Use your exact weekly email template design
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week ${weekNumber} Strengths Coaching</title>
+    <style>
+        body, p { margin: 0; }
+        table { border-collapse: collapse; }
+        @media only screen and (max-width: 600px) {
             .email-container { width: 100% !important; }
             .content-padding { padding: 20px !important; }
-          }
-        </style>
-      </head>
-      <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc;">
-          <tr>
-            <td align="center" style="padding: 40px 20px;">
-              <table class="email-container" width="100%" style="max-width: 540px; background-color: #ffffff; border-radius: 8px; overflow: hidden;" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 32px; text-align: center;">
-                    <p style="color: #ffffff; font-size: 14px; font-weight: 600; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 1px;">
-                      Week ${weekNumber}: Your ${personalStrength} strength spotlight
-                    </p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 32px;">
-                    <div style="background: #f1f5f9; border-radius: 8px; padding: 24px; margin-bottom: 24px; border-left: 4px solid #3b82f6;">
-                      <div style="background: #3b82f6; color: white; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 12px; display: inline-block; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">
-                        ${personalStrength.toUpperCase()}
-                      </div>
-                      <p style="color: #1f2937; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0; font-weight: 500;">
-                        ${personalTip}
-                      </p>
-                      <div style="border-top: 1px solid #e5e7eb; margin: 16px 0; padding-top: 16px;">
-                        <p style="color: #1f2937; font-size: 15px; margin: 0;">
-                          <span style="color: #059669; font-weight: 600;">This week, try:</span> ${specificAction}
-                        </p>
-                      </div>
-                    </div>
-                    <div style="background: #fef3f2; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-                      <p style="color: #7c2d12; font-size: 13px; font-weight: 600; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;">
-                        Team insight
-                      </p>
-                      <p style="color: #1f2937; font-size: 14px; line-height: 1.5; margin: 0;">
-                        <strong>${teamMemberName}</strong>'s ${teamMemberStrength}: ${teamTip}
-                      </p>
-                    </div>
-                    <div style="text-align: center; margin-bottom: 24px;">
-                      <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/dashboard" style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
-                        View Dashboard →
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
-                    <p style="color: #6b7280; font-size: 14px; margin: 0;">
-                      Tiny Strength Manager
-                    </p>
-                  </td>
-                </tr>
-              </table>
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #F5F0E8; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    
+    <!-- Hidden pre-header -->
+    <span style="display:none; font-size:1px; color:#F5F0E8; line-height:1px; max-height:0px; max-width:0px; opacity:0; overflow:hidden;">
+        ${weeklyContent.preHeader}
+    </span>
+    
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #F5F0E8;">
+        <tr>
+            <td align="center" style="padding: 32px 20px;">
+                <table class="email-container" width="100%" style="max-width: 520px;" cellpadding="0" cellspacing="0">
+                    
+                    <!-- Minimal Header -->
+                    <tr>
+                        <td style="margin-bottom: 24px;">
+                            <p style="color: #003566; font-size: 15px; font-weight: 600; margin: 0; text-align: center;">
+                                ${weeklyContent.header}
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Primary Card - Personal Insight -->
+                    <tr>
+                        <td style="margin-bottom: 20px;">
+                            <div style="background-color: #FFFFFF; border-radius: 16px; padding: 32px 28px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); position: relative; overflow: hidden;">
+                                <div style="background-color: #FFD60A; color: #1A1A1A; font-size: 12px; font-weight: 700; letter-spacing: 1px; padding: 6px 12px; border-radius: 20px; display: inline-block; margin-bottom: 16px;">
+                                    ${personalStrength.toUpperCase()}
+                                </div>
+                                <p style="color: #1A1A1A; font-size: 17px; line-height: 1.6; margin: 0 0 20px 0; font-weight: 400;">
+                                    ${weeklyContent.personalInsight}
+                                </p>
+                                <div style="height: 1px; background-color: #E5E7EB; margin: 20px 0;"></div>
+                                <p style="color: #4A4A4A; font-size: 16px; line-height: 1.5; margin: 0;">
+                                    <span style="color: #003566; font-weight: 600;">This week, try:</span> ${specificAction}
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Secondary - Team Quick Tip -->
+                    <tr>
+                        <td style="margin-bottom: 32px;">
+                            <div style="background-color: #FFFFFF; border-radius: 12px; padding: 16px 20px; border: 1px solid rgba(0, 0, 0, 0.06);">
+                                <p style="color: #003566; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px; text-transform: uppercase;">
+                                    Team insight
+                                </p>
+                                <p style="color: #1A1A1A; font-size: 15px; line-height: 1.5; margin: 0;">
+                                    <strong>${teamMemberName}</strong>'s ${teamMemberStrength}: ${teamTip}
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- CTA Buttons -->
+                    <tr>
+                        <td style="text-align: center; margin-bottom: 40px;">
+                            <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/dashboard" style="background-color: #1A1A1A; border-radius: 24px; color: #F5F0E8; font-size: 16px; font-weight: 600; text-decoration: none; text-align: center; display: inline-block; padding: 14px 32px;">
+                                View Dashboard →
+                            </a>
+                            <p style="margin-top: 16px; text-align: center;">
+                                <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/unsubscribe?token=${managerName}" style="color: #6B7280; font-size: 14px; text-decoration: underline;">
+                                    Unsubscribe
+                                </a>
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Minimal Footer -->
+                    <tr>
+                        <td style="text-align: center; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+                            <p style="color: #9CA3AF; font-size: 13px; margin: 0; font-weight: 500;">
+                                Tiny Strength Manager
+                            </p>
+                        </td>
+                    </tr>
+                    
+                </table>
             </td>
-          </tr>
-        </table>
-      </body>
-      </html>
-    `;
+        </tr>
+    </table>
+</body>
+</html>`;
   }
 
   private generateWelcomeEmailHtml(user: User): string {
