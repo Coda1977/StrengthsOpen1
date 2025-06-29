@@ -184,7 +184,7 @@ Team Members: ${teamMembers.map(m => `${m.name} (${m.strengths.join(', ')})`).jo
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: messages as any,
-      max_tokens: 1200,
+      max_tokens: 600,
       temperature: 0.7,
     });
 
@@ -246,7 +246,7 @@ Remember: Always use their actual names (${member1} and ${member2}) instead of p
           content: prompt
         }
       ],
-      max_tokens: 800,
+      max_tokens: 400,
       temperature: 0.5
     });
 

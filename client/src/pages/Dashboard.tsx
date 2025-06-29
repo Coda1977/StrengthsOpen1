@@ -128,9 +128,6 @@ const Dashboard = () => {
     onSuccess: (data: any) => {
       console.log('Collaboration insight response:', data);
       let insight = data?.data?.insight || data?.insight || 'No insight generated';
-      if (insight.length > 800) {
-        insight = insight.substring(0, 800) + '... [truncated for readability]';
-      }
       setCollaborationInsight(insight);
       setLoadingCollaboration(false);
     },
