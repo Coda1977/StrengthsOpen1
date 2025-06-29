@@ -23,6 +23,11 @@ interface WeeklyNudgeProps {
   weekNumber: number;
   dashboardUrl?: string;
   unsubscribeUrl?: string;
+  techniqueName?: string;
+  techniqueContent?: string;
+  quote?: string;
+  quoteAuthor?: string;
+  header?: string;
 }
 
 export const WeeklyNudgeEmail = ({
@@ -36,8 +41,14 @@ export const WeeklyNudgeEmail = ({
   weekNumber,
   dashboardUrl = 'https://yourapp.replit.app/dashboard',
   unsubscribeUrl = 'https://yourapp.replit.app/settings/unsubscribe',
+  techniqueName,
+  techniqueContent,
+  quote,
+  quoteAuthor,
+  header,
 }: WeeklyNudgeProps) => {
   const previewText = `${managerName}, leverage your ${personalStrength} strength this week`;
+  const displayHeader = header || `Week ${weekNumber}: Your ${personalStrength} strength spotlight`;
 
   return (
     <Html>
@@ -56,9 +67,9 @@ export const WeeklyNudgeEmail = ({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          {/* Minimal Header */}
-          <Section style={header}>
-            <Text style={weekLabel}>Week {weekNumber}: Your {personalStrength} strength spotlight</Text>
+          {/* Header */}
+          <Section style={headerSection}>
+            <Text style={weekLabel}>{displayHeader}</Text>
           </Section>
 
           {/* Primary Card - Personal Insight */}
@@ -67,21 +78,44 @@ export const WeeklyNudgeEmail = ({
               <div style={strengthBadge}>{personalStrength.toUpperCase()}</div>
               <Text style={primaryTip}>{personalTip}</Text>
               <div style={divider}></div>
-              <Text style={actionPrompt}>
-                <span style={tryThis}>This week, try:</span> {specificAction}
-              </Text>
+              {techniqueName && techniqueContent && (
+                <Text style={techniqueSection}>
+                  <span style={techniqueIcon} role="img" aria-label="technique">►</span> <strong>{techniqueName}:</strong> {techniqueContent}
+                </Text>
+              )}
+              {!techniqueName && (
+                <Text style={actionPrompt}>
+                  <span style={tryThis}>This week, try:</span> {specificAction}
+                </Text>
+              )}
             </div>
           </Section>
 
-          {/* Secondary - Team Quick Tip */}
+          {/* Team Section */}
           <Section style={secondarySection}>
             <div style={miniCard}>
-              <Text style={miniCardLabel}>Team insight</Text>
+              <Text style={miniCardLabel}>
+                <span style={teamIcon} role="img" aria-label="team insight">▶</span> Team Insight
+              </Text>
               <Text style={miniCardText}>
                 <strong>{teamMemberName}</strong>'s {teamMemberStrength}: {teamTip}
               </Text>
             </div>
           </Section>
+
+          {/* Quote Section - New from AI directives */}
+          {quote && quoteAuthor && (
+            <Section style={quoteSection}>
+              <div style={quoteCard}>
+                <Text style={quoteText}>
+                  "{quote}"
+                </Text>
+                <Text style={quoteAuthorText}>
+                  — {quoteAuthor}
+                </Text>
+              </div>
+            </Section>
+          )}
 
           {/* CTA Buttons */}
           <Section style={ctaSection}>
@@ -119,7 +153,7 @@ const container = {
   maxWidth: '520px',
 };
 
-const header = {
+const headerSection = {
   marginBottom: '24px',
 };
 
@@ -146,8 +180,8 @@ const primaryCard = {
 };
 
 const strengthBadge = {
-  backgroundColor: '#FFD60A',
-  color: '#1A1A1A',
+  backgroundColor: '#CC9B00', // Dark mode compatible yellow
+  color: '#0F172A', // Dark mode compatible text
   fontSize: '12px',
   fontWeight: '700',
   letterSpacing: '1px',
@@ -158,7 +192,7 @@ const strengthBadge = {
 };
 
 const primaryTip = {
-  color: '#1A1A1A',
+  color: '#0F172A', // Dark mode compatible
   fontSize: '17px',
   lineHeight: '1.6',
   margin: '0 0 20px 0',
@@ -169,6 +203,18 @@ const divider = {
   height: '1px',
   backgroundColor: '#E5E7EB',
   margin: '20px 0',
+};
+
+const techniqueSection = {
+  color: '#0F172A', // Dark mode compatible
+  fontSize: '16px',
+  lineHeight: '1.5',
+  margin: '0',
+};
+
+const techniqueIcon = {
+  color: '#003566',
+  marginRight: '4px',
 };
 
 const actionPrompt = {
@@ -203,10 +249,41 @@ const miniCardLabel = {
   textTransform: 'uppercase' as const,
 };
 
+const teamIcon = {
+  color: '#003566',
+  marginRight: '4px',
+};
+
 const miniCardText = {
-  color: '#1A1A1A',
+  color: '#0F172A', // Dark mode compatible
   fontSize: '15px',
   lineHeight: '1.5',
+  margin: '0',
+};
+
+const quoteSection = {
+  marginBottom: '32px',
+};
+
+const quoteCard = {
+  backgroundColor: 'rgba(204, 155, 0, 0.1)', // Light yellow background
+  borderRadius: '12px',
+  padding: '20px 24px',
+  borderLeft: '4px solid #CC9B00',
+};
+
+const quoteText = {
+  color: '#0F172A', // Dark mode compatible
+  fontSize: '16px',
+  lineHeight: '1.5',
+  fontStyle: 'italic',
+  margin: '0 0 8px 0',
+};
+
+const quoteAuthorText = {
+  color: '#6B7280',
+  fontSize: '14px',
+  fontWeight: '500',
   margin: '0',
 };
 
@@ -221,7 +298,7 @@ const ctaSection = {
 };
 
 const primaryButton = {
-  backgroundColor: '#1A1A1A',
+  backgroundColor: '#003566', // Dark mode compatible blue
   borderRadius: '24px',
   color: '#F5F0E8',
   fontSize: '16px',
@@ -321,10 +398,13 @@ export const WelcomeEmail = ({
                     <p style={{ fontSize: 18, lineHeight: 1.6, margin: '0 0 16px 0', color: '#0F172A' }}>
                       {greeting}
                     </p>
+                    <p style={{ fontSize: 16, lineHeight: 1.6, margin: 0, color: '#374151' }}>
+                      Most managers try to be good at everything. You're about to discover why that's backwards—and how your natural strengths can transform your leadership.
+                    </p>
                   </div>
                   {/* Key Strengths Focus */}
                   <div style={{ background: '#F1F5F9', borderRadius: 8, padding: 24, marginBottom: 32, borderLeft: '4px solid #CC9B00' }}>
-                    <h2 style={{ color: '#003566', fontSize: 16, fontWeight: 700, margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <h2 style={{ color: '#003566', fontSize: 16, fontWeight: 700, margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                       Your Leadership DNA
                     </h2>
                     <p style={{ color: '#0F172A', fontSize: 18, fontWeight: 600, margin: '0 0 8px 0', lineHeight: 1.4 }}>
@@ -349,13 +429,16 @@ export const WelcomeEmail = ({
                       What happens next?
                     </h3>
                     <p style={{ color: '#374151', fontSize: 15, lineHeight: 1.6, margin: '0 0 16px 0' }}>
-                      {whatsNext}
+                      Every Monday for 12 weeks, you'll get one practical way to use your {strength1} advantage in real leadership situations.
+                    </p>
+                    <p style={{ color: '#374151', fontSize: 15, lineHeight: 1.6, margin: 0 }}>
+                      No theory. No generic advice. Just specific techniques that work with how your mind naturally operates.
                     </p>
                   </div>
                   {/* Next Step */}
                   <div style={{ background: '#F8FAFC', borderRadius: 8, padding: 20, textAlign: 'center' }}>
                     <p style={{ color: '#003566', fontSize: 16, fontWeight: 600, margin: 0 }}>
-                      {cta}
+                      First insight arrives {nextMonday}
                     </p>
                     <p style={{ color: '#6B7280', fontSize: 14, margin: '8px 0 0 0' }}>
                       Get ready to lead differently.

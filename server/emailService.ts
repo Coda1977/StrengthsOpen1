@@ -22,24 +22,19 @@ export class EmailService {
         day: 'numeric' 
       });
 
-      // Generate welcome email content using your exact template
-      const welcomeContent = {
-        subject: `Welcome to your strengths journey, ${user.firstName || 'Manager'}`,
-        greeting: `Hi ${user.firstName || 'Manager'},`,
-        dna: `${strength1} + ${strength2} = ${this.generateDNAInsight(strength1, strength2)}`,
-        challenge: this.generateChallenge(strength1),
-        challengeText: this.generateChallenge(strength1),
-        whatsNext: "Your first weekly coaching email arrives next Monday at 9 AM.",
-        cta: "Start Building Your Team →",
-        metrics: "12-week journey • Weekly insights • Personalized for your team"
-      };
+      // Generate strength-focused subject line (max 40 chars per AI instructions)
+      const firstName = user.firstName || 'there';
+      const subjectLine = `${firstName}, your ${strength1} mind is rare`;
 
-      // Generate professional HTML using your exact welcome email template
+      // Generate proper greeting following AI instructions
+      const greeting = `Hi ${firstName},`;
+
+      // Generate professional HTML using the refined welcome email template
       const emailHtml = this.generateProfessionalWelcomeEmail(
-        welcomeContent.greeting,
+        greeting,
         strength1,
         strength2,
-        welcomeContent.challengeText,
+        this.generateChallenge(strength1),
         nextMondayStr
       );
 
@@ -47,7 +42,7 @@ export class EmailService {
       const { data, error } = await this.resend.emails.send({
         from: this.fromEmail,
         to: [user.email!],
-        subject: welcomeContent.subject,
+        subject: subjectLine,
         html: emailHtml,
       });
 
@@ -60,7 +55,7 @@ export class EmailService {
       await storage.createEmailLog({
         userId: user.id,
         emailType: 'welcome',
-        emailSubject: welcomeContent.subject,
+        emailSubject: subjectLine,
         resendId: data?.id,
         status: 'sent'
       });
@@ -150,22 +145,27 @@ export class EmailService {
   // Helper methods for welcome email content generation
   private generateDNAInsight(s1: string, s2: string): string {
     const combinations: { [key: string]: string } = {
-      'Strategic_Achiever': 'spot opportunities others miss, then actually follow through',
-      'Strategic_Responsibility': 'create long-term plans you can fully commit to',
-      'Strategic_Analytical': 'see patterns in data that reveal future possibilities',
-      'Achiever_Responsibility': 'complete important work others can depend on',
-      'Achiever_Focus': 'drive projects to completion without getting distracted',
-      'Relator_Developer': 'build trust while growing people simultaneously',
-      'Developer_Responsibility': 'invest in people with unwavering commitment',
-      'Analytical_Responsibility': 'make data-driven decisions you can stand behind',
-      'Communication_Relator': 'explain complex ideas in ways that build connection',
-      'Ideation_Strategic': 'generate creative solutions with practical pathways'
+      'Strategic_Achiever': 'spot opportunities others miss, then actually follow through. That\'s a rare combination that most leaders struggle to develop.',
+      'Strategic_Responsibility': 'create long-term plans you can fully commit to. That\'s a rare combination that most leaders struggle to develop.',
+      'Strategic_Analytical': 'see patterns in data that reveal future possibilities. That\'s a rare combination that most leaders struggle to develop.',
+      'Achiever_Responsibility': 'complete important work others can depend on. That\'s a rare combination that most leaders struggle to develop.',
+      'Achiever_Focus': 'drive projects to completion without getting distracted. That\'s a rare combination that most leaders struggle to develop.',
+      'Relator_Developer': 'build trust while growing people simultaneously. That\'s a rare combination that most leaders struggle to develop.',
+      'Developer_Responsibility': 'invest in people with unwavering commitment. That\'s a rare combination that most leaders struggle to develop.',
+      'Analytical_Responsibility': 'make data-driven decisions you can stand behind. That\'s a rare combination that most leaders struggle to develop.',
+      'Communication_Relator': 'explain complex ideas in ways that build connection. That\'s a rare combination that most leaders struggle to develop.',
+      'Ideation_Strategic': 'generate creative solutions with practical pathways. That\'s a rare combination that most leaders struggle to develop.',
+      'Learner_Developer': 'continuously grow while helping others grow. That\'s a rare combination that most leaders struggle to develop.',
+      'Focus_Achiever': 'maintain direction while delivering results consistently. That\'s a rare combination that most leaders struggle to develop.',
+      'Responsibility_Relator': 'build deep relationships you can count on. That\'s a rare combination that most leaders struggle to develop.',
+      'Communication_Strategic': 'articulate vision in ways that inspire action. That\'s a rare combination that most leaders struggle to develop.',
+      'Ideation_Communication': 'turn creative ideas into compelling stories. That\'s a rare combination that most leaders struggle to develop.'
     };
     
     const key1 = `${s1}_${s2}`;
     const key2 = `${s2}_${s1}`;
     
-    return combinations[key1] || combinations[key2] || `combine ${s1.toLowerCase()} thinking with ${s2.toLowerCase()} execution in unique ways`;
+    return combinations[key1] || combinations[key2] || `combine ${s1.toLowerCase()} thinking with ${s2.toLowerCase()} execution in unique ways. That's a rare combination that most leaders struggle to develop.`;
   }
 
   private generateChallenge(strength: string): string {
@@ -192,19 +192,38 @@ export class EmailService {
     challengeText: string,
     nextMonday: string
   ): string {
-    // Use your exact welcome email template design with proper beige background
+    // Use the refined welcome email template design following AI instructions
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to Strengths Manager</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:AllowPNG/>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
     <style>
         body, p { margin: 0; }
         table { border-collapse: collapse; }
         @media only screen and (max-width: 600px) {
-            .email-container { width: 100% !important; }
-            .content-padding { padding: 20px !important; }
+            .email-container {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .content-padding {
+                padding: 20px !important;
+            }
+            .mobile-text {
+                font-size: 16px !important;
+                line-height: 1.5 !important;
+            }
         }
     </style>
 </head>
@@ -224,54 +243,92 @@ export class EmailService {
                     <tr>
                         <td class="content-padding" style="padding: 40px 32px 32px 32px; text-align: center;">
                             <h1 style="color: #003566; font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px;">
-                                Welcome to Your Strengths Journey
+                                Welcome to Strengths Manager
                             </h1>
                         </td>
                     </tr>
                     
                     <!-- Main Content -->
                     <tr>
-                        <td class="content-padding" style="padding: 0 32px 32px 32px;">
-                            <p style="color: #0F172A; font-size: 18px; line-height: 1.6; margin: 0 0 24px 0;">
-                                ${greeting}
-                            </p>
+                        <td class="content-padding" style="padding: 0 32px 40px 32px;">
                             
-                            <div style="background-color: #F8F9FA; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-                                <h2 style="color: #003566; font-size: 20px; font-weight: 600; margin: 0 0 16px 0;">
-                                    Your Unique DNA
-                                </h2>
-                                <p style="color: #0F172A; font-size: 16px; line-height: 1.5; margin: 0;">
-                                    <strong>${strength1}</strong> + <strong>${strength2}</strong> = ${this.generateDNAInsight(strength1, strength2)}
+                            <!-- Personal Greeting -->
+                            <div style="margin-bottom: 32px;">
+                                <p style="font-size: 18px; line-height: 1.6; margin: 0 0 16px 0; color: #0F172A;">
+                                    ${greeting}
+                                </p>
+                                <p style="color: #0F172A; font-size: 16px; line-height: 1.6; margin: 0; color: #374151;">
+                                    Most managers try to be good at everything. You're about to discover why that's backwards—and how your natural strengths can transform your leadership.
                                 </p>
                             </div>
                             
-                            <div style="background-color: #FFF4E6; border-radius: 8px; padding: 24px; margin-bottom: 32px;">
-                                <h2 style="color: #CC9B00; font-size: 18px; font-weight: 600; margin: 0 0 16px 0;">
-                                    This Week's Challenge
+                            <!-- Key Strengths Focus -->
+                            <div style="background: #F1F5F9; border-radius: 8px; padding: 24px; margin-bottom: 32px; border-left: 4px solid #CC9B00;">
+                                <h2 style="color: #003566; font-size: 16px; font-weight: 700; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    Your Leadership DNA
                                 </h2>
-                                <p style="color: #0F172A; font-size: 16px; line-height: 1.5; margin: 0;">
+                                <p style="color: #0F172A; font-size: 18px; font-weight: 600; margin: 0 0 8px 0; line-height: 1.4;">
+                                    ${strength1} + ${strength2}
+                                </p>
+                                <p style="color: #4B5563; font-size: 15px; line-height: 1.6; margin: 0;">
+                                    ${this.generateDNAInsight(strength1, strength2)}
+                                </p>
+                            </div>
+                            
+                            <!-- Today's Challenge -->
+                            <div style="background: #FEF3C7; border-radius: 8px; padding: 20px; margin-bottom: 32px;">
+                                <h3 style="color: #92400E; font-size: 15px; font-weight: 700; margin: 0 0 12px 0;">
+                                    Try This Today:
+                                </h3>
+                                <p style="color: #1F2937; font-size: 15px; line-height: 1.5; margin: 0;">
                                     ${challengeText}
                                 </p>
                             </div>
                             
-                            <p style="color: #6B7280; font-size: 16px; line-height: 1.5; margin: 0 0 32px 0;">
-                                Your first weekly coaching email arrives <strong>${nextMonday} at 9 AM</strong>.
-                            </p>
-                            
-                            <div style="text-align: center;">
-                                <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/dashboard" style="background-color: #003566; border-radius: 8px; color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; text-align: center; display: inline-block; padding: 14px 32px;">
-                                    Start Building Your Team →
-                                </a>
+                            <!-- What's Next -->
+                            <div style="margin-bottom: 32px;">
+                                <h3 style="color: #003566; font-size: 18px; font-weight: 700; margin: 0 0 16px 0;">
+                                    What happens next?
+                                </h3>
+                                <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 16px 0;">
+                                    Every Monday for 12 weeks, you'll get one practical way to use your ${strength1} advantage in real leadership situations.
+                                </p>
+                                <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0;">
+                                    No theory. No generic advice. Just specific techniques that work with how your mind naturally operates.
+                                </p>
                             </div>
+                            
+                            <!-- Next Step -->
+                            <div style="background: #F8FAFC; border-radius: 8px; padding: 20px; text-align: center;">
+                                <p style="color: #003566; font-size: 16px; font-weight: 600; margin: 0;">
+                                    First insight arrives ${nextMonday}
+                                </p>
+                                <p style="color: #6B7280; font-size: 14px; margin: 8px 0 0 0;">
+                                    Get ready to lead differently.
+                                </p>
+                            </div>
+                            
                         </td>
                     </tr>
                     
                     <!-- Footer -->
                     <tr>
-                        <td style="text-align: center; padding: 20px 32px 40px 32px; border-top: 1px solid #E5E7EB;">
-                            <p style="color: #9CA3AF; font-size: 13px; margin: 0;">
-                                Tiny Strength Manager
-                            </p>
+                        <td class="content-padding" style="padding: 24px 32px 32px 32px; border-top: 1px solid #E5E7EB;">
+                            <div style="text-align: center;">
+                                <p style="color: #6B7280; font-size: 14px; margin: 0 0 8px 0; font-weight: 500;">
+                                    Strengths Manager
+                                </p>
+                                <p style="color: #9CA3AF; font-size: 13px; margin: 0 0 16px 0;">
+                                    AI-powered leadership development
+                                </p>
+                                
+                                <!-- CAN-SPAM Compliance -->
+                                <p style="margin: 16px 0 0 0;">
+                                    <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/unsubscribe?token=${greeting.split(' ')[1] || 'user'}" style="color: #6B7280; font-size: 12px; text-decoration: underline;">
+                                        Unsubscribe
+                                    </a>
+                                </p>
+                            </div>
                         </td>
                     </tr>
                     
