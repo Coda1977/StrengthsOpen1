@@ -75,7 +75,7 @@ export class EmailService {
   async sendWeeklyCoachingEmail(user: User, weekNumber: number): Promise<void> {
     try {
       // Get user's team members for AI context
-      const teamMembers = await storage.getTeamMembersByUserId(user.id);
+      const teamMembers = await storage.getTeamMembers(user.id);
       const userStrengths = user.topStrengths || [];
       
       if (teamMembers.length === 0) {

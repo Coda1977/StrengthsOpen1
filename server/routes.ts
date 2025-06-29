@@ -833,6 +833,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug route to preview weekly email content without sending
+  app.post('/api/admin/emails/preview-weekly', isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req as AuthenticatedRequest).user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { targetUserId, weekNumber = 1 } = req.body;
+      const targetUser = await storage.getUser(targetUserId);
+      
+      if (!targetUser) {
+        return res.status(404).json({ error: 'Target user not found' });
+      }
+
+      // Get user's team members for AI context
+      const teamMembers = await storage.getTeamMembers(targetUser.id);
+      const userStrengths = targetUser.topStrengths || [];
+      
+      if (teamMembers.length === 0) {
+        return res.json({ 
+          error: 'No team members found for user',
+          preview: false 
+        });
+      }
+
+      // Select featured team member and strength for this week
+      const featuredMemberIndex = (weekNumber - 1) % teamMembers.length;
+      const featuredMember = teamMembers[featuredMemberIndex];
+      const memberStrengths = featuredMember.strengths || [];
+      const featuredStrength = userStrengths[(weekNumber - 1) % userStrengths.length] || 'Strategic';
+      const teamMemberFeaturedStrength = memberStrengths[0] || 'Focus';
+
+      // Import email generation function
+      const { generateWeeklyEmailContent } = require('./openai');
+
+      // Generate AI-powered weekly email content following your exact instructions
+      const weeklyContent = await generateWeeklyEmailContent(
+        targetUser.firstName || 'Manager',
+        userStrengths,
+        weekNumber,
+        teamMembers.length,
+        featuredStrength,
+        featuredMember.name,
+        memberStrengths,
+        teamMemberFeaturedStrength,
+        [], // previousPersonalTips - would track from email logs
+        [], // previousOpeners - would track from email logs  
+        []  // previousTeamMembers - would track from email logs
+      );
+
+      res.json({ 
+        success: true,
+        preview: true,
+        weekNumber,
+        targetUser: targetUser.email,
+        aiContent: weeklyContent,
+        context: {
+          userStrengths,
+          featuredStrength,
+          featuredMember: featuredMember.name,
+          teamMemberFeaturedStrength,
+          teamSize: teamMembers.length
+        }
+      });
+    } catch (error) {
+      console.error('Error previewing weekly email:', error);
+      res.status(500).json({ error: 'Failed to preview weekly email', details: String(error) });
+    }
+  });
+
   app.get('/api/admin/analytics', isAuthenticated, async (req, res) => {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
