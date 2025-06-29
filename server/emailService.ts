@@ -34,11 +34,21 @@ export class EmailService {
 
       const welcomeHtml = this.generateWelcomeEmailHtml(user);
       
+      // Production-ready email delivery
+      const recipientEmail = user.email!;
+      const isTestingMode = recipientEmail !== 'tinymanagerai@gmail.com';
+      
       const { data, error } = await resend.emails.send({
         from: this.fromEmail,
-        to: [user.email!],
-        subject: 'Welcome to Strengths Manager! 🎯',
-        html: welcomeHtml,
+        to: isTestingMode ? ['tinymanagerai@gmail.com'] : [recipientEmail],
+        subject: isTestingMode ? 
+          `[TEST for ${user.firstName || recipientEmail}] Welcome to Strengths Manager! 🎯` : 
+          'Welcome to Strengths Manager! 🎯',
+        html: isTestingMode ? 
+          `<div style="background: #fff3cd; padding: 10px; margin-bottom: 20px; border: 1px solid #ffeaa7; border-radius: 4px;">
+             <strong>Test Email:</strong> This welcome email was generated for ${user.firstName || recipientEmail} but sent to you for review.
+           </div>${welcomeHtml}` : 
+          welcomeHtml,
       });
 
       // Log the email attempt
