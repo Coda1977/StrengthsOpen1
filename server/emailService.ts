@@ -4,7 +4,7 @@ import { db } from './db';
 import { storage } from './storage';
 import { emailSubscriptions, emailLogs, users, teamMembers } from '../shared/schema';
 import type { InsertEmailSubscription, InsertEmailLog, User } from '../shared/schema';
-import { generateWeeklyEmailContent, generateWelcomeEmailContent } from './openai';
+import { generateWeeklyEmailContent } from './openai';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
