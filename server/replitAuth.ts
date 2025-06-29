@@ -183,8 +183,6 @@ export async function setupAuth(app: Express) {
       const host = req.get('host') || req.hostname + (req.get('x-forwarded-port') || ':5000');
       const baseUrl = `${protocol}://${host}`;
       
-      console.log('Logout redirect URL:', baseUrl);
-      
       res.redirect(
         client.buildEndSessionUrl(config, {
           client_id: process.env.REPL_ID!,
