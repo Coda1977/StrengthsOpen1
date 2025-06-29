@@ -6,7 +6,7 @@ import { generateWeeklyEmailContent, generateWelcomeEmailContent } from './opena
 
 export class EmailService {
   private resend = new Resend(process.env.RESEND_API_KEY);
-  private fromEmail = 'onboarding@tinymanager.ai';
+  private fromEmail = 'strengths@tinymanager.ai';
 
   async sendWelcomeEmail(user: User, timezone: string = 'America/New_York'): Promise<void> {
     try {
