@@ -491,7 +491,15 @@ Generate the email content in JSON format with these exact fields:
     if (parsed.subjectLine.length > 45) {
       parsed.subjectLine = parsed.subjectLine.substring(0, 42) + '...';
     }
-    if (parsed.preHeader.length < 40 || parsed.preHeader.length > 50) {
+    if (parsed.preHeader.length < 40) {
+      // Pad short pre-headers to meet 40-char minimum
+      const padding = ' - your weekly insight';
+      if (parsed.preHeader.length + padding.length <= 50) {
+        parsed.preHeader = parsed.preHeader + padding;
+      } else {
+        parsed.preHeader = parsed.preHeader + ' - insight';
+      }
+    } else if (parsed.preHeader.length > 50) {
       parsed.preHeader = parsed.preHeader.substring(0, 47) + '...';
     }
 
