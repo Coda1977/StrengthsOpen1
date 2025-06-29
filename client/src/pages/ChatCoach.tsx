@@ -779,7 +779,7 @@ const ChatCoach = () => {
     <ErrorBoundary>
       <div className="dashboard" style={{ background: 'var(--bg-primary)', minHeight: '100vh' }}>
         <Navigation />
-        <div className="main-container">
+        <div className="main-container" style={{ paddingTop: '80px' }}>
           {/* Sidebar Toggle Button */}
           {!sidebarOpen && (
             <button 

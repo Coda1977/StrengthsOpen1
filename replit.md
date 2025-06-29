@@ -97,6 +97,8 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Conversation Backups Table**: Handles data migration and corruption recovery
 
 ## Recent Changes
+- June 29, 2025: Fixed AI Coach page header overlap issue by adding proper top padding to prevent content from being cut off by the fixed navigation header
+- June 29, 2025: Resolved database schema error by adding missing is_admin column, enabling successful user authentication and account creation
 - June 29, 2025: Fixed critical authentication strategy error by ensuring both Replit domain and localhost strategies are properly registered, resolving "Unknown authentication strategy" error that prevented user login and signup
 - June 26, 2025: Implemented comprehensive email system with Resend integration featuring welcome emails and 12-week coaching email series with timezone-aware Monday 9 AM delivery, email subscription management, logging, and user settings interface
 - June 25, 2025: Fixed all TypeScript errors and prepared application for production deployment with enhanced type safety
