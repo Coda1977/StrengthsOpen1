@@ -97,7 +97,7 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Conversation Backups Table**: Handles data migration and corruption recovery
 
 ## Recent Changes
-- June 29, 2025: Fixed logout redirect URI issue that was causing "invalid_request" error by properly constructing the post-logout redirect URL with correct host and port information
+- June 29, 2025: Fixed logout "invalid_request" error by implementing simplified logout flow that clears session and redirects to home page without relying on Replit Auth end session URL
 - June 29, 2025: Successfully tested and verified email delivery system - 4/4 production tests passed with 738ms delivery speed, ready for hundreds of users
 - June 29, 2025: Fixed email domain configuration to use verified resend.dev domain, ensuring reliable email delivery for welcome and coaching emails
 - June 29, 2025: Resolved database schema UUID generation issues by implementing proper crypto.randomUUID imports for all email-related tables

@@ -178,17 +178,14 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/logout", (req, res) => {
     req.logout(() => {
-      // Get proper host and protocol for redirect
-      const protocol = req.protocol || 'http';
-      const host = req.get('host') || req.hostname + (req.get('x-forwarded-port') || ':5000');
-      const baseUrl = `${protocol}://${host}`;
-      
-      res.redirect(
-        client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: baseUrl,
-        }).href
-      );
+      // Clear the session and redirect to home page
+      req.session.destroy((err) => {
+        if (err) {
+          console.error('Session destruction error:', err);
+        }
+        res.clearCookie('sessionId');
+        res.redirect('/');
+      });
     });
   });
 }
