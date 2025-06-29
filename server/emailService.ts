@@ -643,7 +643,7 @@ export class EmailService {
       // Implementation for bulk weekly email processing
       // This would be called by the email scheduler
     } catch (error) {
-      console.error('Error processing weekly emails:', error);
+      if (process.env.NODE_ENV !== 'production') console.error('Error processing weekly emails:', error);
     }
   }
 }

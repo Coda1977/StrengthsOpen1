@@ -501,7 +501,7 @@ Generate the email content in JSON format with these exact fields:
                              parsed.techniqueName.toLowerCase().includes(featuredStrength.toLowerCase());
     
     if (!strengthMentioned) {
-      console.warn(`AI content doesn't mention featured strength: ${featuredStrength}`);
+      if (process.env.NODE_ENV !== 'production') console.warn(`AI content doesn't mention featured strength: ${featuredStrength}`);
       // Fix the content to include the featured strength
       parsed.personalInsight = `Your ${featuredStrength} strength ${parsed.personalInsight.toLowerCase().replace(/^your \w+ strength /, '')}`;
     }

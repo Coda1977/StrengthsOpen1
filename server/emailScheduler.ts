@@ -8,11 +8,11 @@ export class EmailScheduler {
     // Schedule weekly emails to run every Monday at 9 AM in different timezones
     // This runs every hour to check for users in different timezones
     cron.schedule('0 * * * 1', async () => {
-      console.log('Checking for weekly emails to send...');
+      if (process.env.NODE_ENV !== 'production') console.log('Checking for weekly emails to send...');
       await this.processWeeklyEmails();
     });
 
-    console.log('Email scheduler initialized');
+    if (process.env.NODE_ENV !== 'production') console.log('Email scheduler initialized');
   }
 
   private async processWeeklyEmails(): Promise<void> {
@@ -25,11 +25,11 @@ export class EmailScheduler {
       const targetTimezones = this.getTimezonesAt9AM(currentHour);
       
       if (targetTimezones.length > 0) {
-        console.log(`Processing weekly emails for timezones: ${targetTimezones.join(', ')}`);
+        if (process.env.NODE_ENV !== 'production') console.log(`Processing weekly emails for timezones: ${targetTimezones.join(', ')}`);
         await emailService.processWeeklyEmails();
       }
     } catch (error) {
-      console.error('Error processing weekly emails:', error);
+      if (process.env.NODE_ENV !== 'production') console.error('Error processing weekly emails:', error);
     }
   }
 
@@ -71,17 +71,17 @@ export class EmailScheduler {
       };
 
       await emailService.sendWelcomeEmail(user as any, timezone);
-      console.log(`Welcome email scheduled for ${userEmail}`);
+      if (process.env.NODE_ENV !== 'production') console.log(`Welcome email scheduled for ${userEmail}`);
     } catch (error) {
-      console.error('Error sending welcome email:', error);
+      if (process.env.NODE_ENV !== 'production') console.error('Error sending welcome email:', error);
     }
   }
 
   stop(): void {
-    console.log('Stopping email scheduler...');
+    if (process.env.NODE_ENV !== 'production') console.log('Stopping email scheduler...');
     this.scheduledJobs.forEach((job, jobId) => {
       job.stop();
-      console.log(`Stopped scheduled job: ${jobId}`);
+      if (process.env.NODE_ENV !== 'production') console.log(`Stopped scheduled job: ${jobId}`);
     });
     this.scheduledJobs.clear();
   }
