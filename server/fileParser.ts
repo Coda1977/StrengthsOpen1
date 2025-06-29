@@ -25,7 +25,7 @@ const ALL_STRENGTHS = [
 async function extractTextWithAI(text: string): Promise<TeamMemberData[]> {
   // Check if OpenAI API key is available
   if (!process.env.OPENAI_API_KEY) {
-    console.error('OpenAI API key not found');
+    if (process.env.NODE_ENV !== 'production') console.error('OpenAI API key not found');
     throw new Error('AI processing is not available. Please configure the OpenAI API key.');
   }
 
@@ -79,7 +79,7 @@ Rules:
     const result = JSON.parse(content);
     return result.members || [];
   } catch (error) {
-    console.error('AI extraction error:', error);
+    if (process.env.NODE_ENV !== 'production') console.error('AI extraction error:', error);
     if (error instanceof Error && error.message?.includes('API key')) {
       throw new Error('OpenAI API key is invalid or expired. Please check your API key configuration.');
     }
@@ -96,7 +96,7 @@ export async function parseTeamMembersFile(buffer: Buffer, mimetype: string, fil
     const sanitizedFilename = sanitizeFilename(filename);
     const fileHash = generateFileHash(buffer);
     
-    console.log(`Processing file: ${sanitizedFilename} (hash: ${fileHash})`);
+    if (process.env.NODE_ENV !== 'production') console.log(`Processing file: ${sanitizedFilename} (hash: ${fileHash})`);
     
     // Scan for malicious content
     const scanResult = scanFileBuffer(buffer, sanitizedFilename);
@@ -106,7 +106,7 @@ export async function parseTeamMembersFile(buffer: Buffer, mimetype: string, fil
     
     // Log warnings but continue processing
     if (scanResult.warnings.length > 0) {
-      console.warn(`File security warnings for ${sanitizedFilename}:`, scanResult.warnings);
+      if (process.env.NODE_ENV !== 'production') console.warn(`File security warnings for ${sanitizedFilename}:`, scanResult.warnings);
     }
     
     // Validate file integrity
@@ -162,7 +162,7 @@ async function processFileWithCleanup(buffer: Buffer, mimetype: string, sanitize
             .substring(0, 50000); // Limit text size
           
         } catch (xlsxError) {
-          console.error('Excel/CSV parsing error:', xlsxError);
+          if (process.env.NODE_ENV !== 'production') console.error('Excel/CSV parsing error:', xlsxError);
           throw new Error('Failed to parse spreadsheet file. Please ensure it\'s a valid Excel or CSV file.');
         }
         break;
@@ -204,7 +204,7 @@ async function processFileWithCleanup(buffer: Buffer, mimetype: string, sanitize
     }));
 
   } catch (error) {
-    console.error('File parsing error:', error);
+    if (process.env.NODE_ENV !== 'production') console.error('File parsing error:', error);
     throw new Error(`Failed to parse file: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
@@ -266,7 +266,7 @@ async function processImageWithOCR(buffer: Buffer): Promise<string> {
     return extractedText;
     
   } catch (ocrError) {
-    console.error('OCR processing failed:', ocrError);
+    if (process.env.NODE_ENV !== 'production') console.error('OCR processing failed:', ocrError);
     throw new Error('Image text recognition failed. Please ensure the image contains clear, readable text and no embedded scripts.');
   } finally {
     // Always release worker back to pool
@@ -274,7 +274,7 @@ async function processImageWithOCR(buffer: Buffer): Promise<string> {
       try {
         ocrWorkerPool.releaseWorker(worker);
       } catch (releaseError) {
-        console.error('Failed to release OCR worker:', releaseError);
+        if (process.env.NODE_ENV !== 'production') console.error('Failed to release OCR worker:', releaseError);
         // Force cleanup if release fails
         await resourceManager.terminateWorker(worker);
       }

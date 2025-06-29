@@ -524,7 +524,7 @@ Generate the email content in JSON format with these exact fields:
 
     return parsed;
   } catch (error) {
-    console.error('Failed to generate weekly email content:', error);
+    if (process.env.NODE_ENV !== 'production') console.error('Failed to generate weekly email content:', error);
     throw new Error('Failed to generate weekly email content');
   }
 }
