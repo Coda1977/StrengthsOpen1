@@ -5,8 +5,6 @@ import { storage } from './storage';
 import { emailSubscriptions, emailLogs, users, teamMembers } from '../shared/schema';
 import type { InsertEmailSubscription, InsertEmailLog, User } from '../shared/schema';
 import { generateWeeklyEmailContent, generateWelcomeEmailContent } from './openai';
-import { render } from '@react-email/components';
-import { WelcomeEmail, WeeklyNudgeEmail } from './emailTemplates';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -81,19 +79,18 @@ export class EmailService {
         return;
       }
       
-      // Render the proper React email template
-      const welcomeHtml = await render(WelcomeEmail({
-        firstName: user.firstName ?? undefined,
-        strength1: strength1 || 'Strengths',
-        strength2: strength2 || 'Leadership',
-        challengeText: welcomeContent.challengeText,
-        nextMonday: nextMondayStr,
-        greeting: welcomeContent.greeting,
-        dna: welcomeContent.dna,
-        whatsNext: welcomeContent.whatsNext,
-        cta: welcomeContent.cta,
-        unsubscribeUrl: `${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/unsubscribe?token=${user.id}`
-      }));
+      // Generate professional welcome email HTML with AI content
+      const welcomeHtml = this.generateProfessionalWelcomeEmail(
+        user.firstName || 'there',
+        strength1 || 'Strengths',
+        strength2 || 'Leadership', 
+        welcomeContent.challengeText,
+        nextMondayStr,
+        welcomeContent.greeting,
+        welcomeContent.dna,
+        welcomeContent.whatsNext,
+        welcomeContent.cta
+      );
       
       // Direct email delivery to recipient
       const { data, error } = await resend.emails.send({
@@ -178,19 +175,17 @@ export class EmailService {
         ? userTeamMembers[Math.floor(Math.random() * userTeamMembers.length)]
         : null;
 
-      // Render the proper React email template
-      const emailHtml = await render(WeeklyNudgeEmail({
-        managerName: user.firstName || 'Manager',
-        personalStrength: emailContent.personalStrength,
-        personalTip: emailContent.personalInsight,
-        specificAction: emailContent.techniqueContent || `Focus on leveraging your ${emailContent.personalStrength} strength this week`,
-        teamMemberName: randomTeamMember?.name || emailContent.teamMemberName || 'Team Member',
-        teamMemberStrength: randomTeamMember?.strengths?.[0] || emailContent.teamMemberStrength || 'Strategic Thinking',
-        teamTip: emailContent.teamSection || 'Continue building team collaboration',
-        weekNumber: weekNumber,
-        dashboardUrl: `${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/dashboard`,
-        unsubscribeUrl: `${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/unsubscribe?token=${user.id}`
-      }));
+      // Generate professional weekly coaching email HTML with AI content
+      const emailHtml = this.generateProfessionalWeeklyEmail(
+        user.firstName || 'Manager',
+        emailContent.personalStrength,
+        emailContent.personalInsight,
+        emailContent.techniqueContent || `Focus on leveraging your ${emailContent.personalStrength} strength this week`,
+        randomTeamMember?.name || emailContent.teamMemberName || 'Team Member',
+        randomTeamMember?.strengths?.[0] || emailContent.teamMemberStrength || 'Strategic Thinking',
+        emailContent.teamSection || 'Continue building team collaboration',
+        weekNumber
+      );
 
       const { data, error } = await resend.emails.send({
         from: this.fromEmail,
@@ -407,6 +402,198 @@ export class EmailService {
     } catch (error) {
       console.error('Error processing weekly emails:', error);
     }
+  }
+
+  private generateProfessionalWelcomeEmail(
+    firstName: string,
+    strength1: string,
+    strength2: string,
+    challengeText: string,
+    nextMonday: string,
+    greeting: string,
+    dna: string,
+    whatsNext: string,
+    cta: string
+  ): string {
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Welcome to Strengths Manager</title>
+        <style>
+          body, p { margin: 0; }
+          table { border-collapse: collapse; }
+          @media only screen and (max-width: 600px) {
+            .email-container { width: 100% !important; max-width: 100% !important; }
+            .content-padding { padding: 20px !important; }
+            .mobile-text { font-size: 16px !important; line-height: 1.5 !important; }
+          }
+        </style>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #F5F0E8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0F172A;">
+        <span style="display: none; font-size: 1px; color: #F5F0E8; line-height: 1px; max-height: 0; max-width: 0; opacity: 0; overflow: hidden;">
+          Your 12-week strengths journey starts now
+        </span>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #F5F0E8; min-height: 100vh;">
+          <tr>
+            <td align="center" style="padding: 40px 20px;">
+              <table class="email-container" width="100%" style="max-width: 540px; background-color: #FFFFFF; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td class="content-padding" style="padding: 40px 32px 32px 32px; text-align: center;">
+                    <h1 style="color: #003566; font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px;">
+                      Welcome to Strengths Manager
+                    </h1>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="content-padding" style="padding: 0 32px 40px 32px;">
+                    <div style="margin-bottom: 32px;">
+                      <p style="font-size: 18px; line-height: 1.6; margin: 0 0 16px 0; color: #0F172A;">
+                        ${greeting}
+                      </p>
+                    </div>
+                    <div style="background: #F1F5F9; border-radius: 8px; padding: 24px; margin-bottom: 32px; border-left: 4px solid #CC9B00;">
+                      <h2 style="color: #003566; font-size: 16px; font-weight: 700; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Your Leadership DNA
+                      </h2>
+                      <p style="color: #0F172A; font-size: 18px; font-weight: 600; margin: 0 0 8px 0; line-height: 1.4;">
+                        ${strength1} + ${strength2}
+                      </p>
+                      <p style="color: #4B5563; font-size: 15px; line-height: 1.6; margin: 0;">
+                        ${dna}
+                      </p>
+                    </div>
+                    <div style="background: #FEF3C7; border-radius: 8px; padding: 20px; margin-bottom: 32px;">
+                      <h3 style="color: #92400E; font-size: 15px; font-weight: 700; margin: 0 0 12px 0;">
+                        Try This Today:
+                      </h3>
+                      <p style="color: #1F2937; font-size: 15px; line-height: 1.5; margin: 0;">
+                        ${challengeText}
+                      </p>
+                    </div>
+                    <div style="margin-bottom: 32px;">
+                      <h3 style="color: #003566; font-size: 18px; font-weight: 700; margin: 0 0 16px 0;">
+                        What happens next?
+                      </h3>
+                      <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 16px 0;">
+                        ${whatsNext}
+                      </p>
+                    </div>
+                    <div style="background: #F8FAFC; border-radius: 8px; padding: 20px; text-align: center;">
+                      <p style="color: #003566; font-size: 16px; font-weight: 600; margin: 0;">
+                        ${cta}
+                      </p>
+                      <p style="color: #6B7280; font-size: 14px; margin: 8px 0 0 0;">
+                        Get ready to lead differently.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="content-padding" style="padding: 24px 32px 32px 32px; border-top: 1px solid #E5E7EB;">
+                    <div style="text-align: center;">
+                      <p style="color: #6B7280; font-size: 14px; margin: 0 0 8px 0; font-weight: 500;">
+                        Strengths Manager
+                      </p>
+                      <p style="color: #9CA3AF; font-size: 13px; margin: 0 0 16px 0;">
+                        AI-powered leadership development
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+  }
+
+  private generateProfessionalWeeklyEmail(
+    managerName: string,
+    personalStrength: string,
+    personalTip: string,
+    specificAction: string,
+    teamMemberName: string,
+    teamMemberStrength: string,
+    teamTip: string,
+    weekNumber: number
+  ): string {
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Week ${weekNumber} Strengths Coaching</title>
+        <style>
+          body, p { margin: 0; }
+          table { border-collapse: collapse; }
+          @media only screen and (max-width: 600px) {
+            .email-container { width: 100% !important; }
+            .content-padding { padding: 20px !important; }
+          }
+        </style>
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc;">
+          <tr>
+            <td align="center" style="padding: 40px 20px;">
+              <table class="email-container" width="100%" style="max-width: 540px; background-color: #ffffff; border-radius: 8px; overflow: hidden;" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 32px; text-align: center;">
+                    <p style="color: #ffffff; font-size: 14px; font-weight: 600; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 1px;">
+                      Week ${weekNumber}: Your ${personalStrength} strength spotlight
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 32px;">
+                    <div style="background: #f1f5f9; border-radius: 8px; padding: 24px; margin-bottom: 24px; border-left: 4px solid #3b82f6;">
+                      <div style="background: #3b82f6; color: white; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 12px; display: inline-block; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        ${personalStrength.toUpperCase()}
+                      </div>
+                      <p style="color: #1f2937; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0; font-weight: 500;">
+                        ${personalTip}
+                      </p>
+                      <div style="border-top: 1px solid #e5e7eb; margin: 16px 0; padding-top: 16px;">
+                        <p style="color: #1f2937; font-size: 15px; margin: 0;">
+                          <span style="color: #059669; font-weight: 600;">This week, try:</span> ${specificAction}
+                        </p>
+                      </div>
+                    </div>
+                    <div style="background: #fef3f2; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                      <p style="color: #7c2d12; font-size: 13px; font-weight: 600; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Team insight
+                      </p>
+                      <p style="color: #1f2937; font-size: 14px; line-height: 1.5; margin: 0;">
+                        <strong>${teamMemberName}</strong>'s ${teamMemberStrength}: ${teamTip}
+                      </p>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 24px;">
+                      <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/dashboard" style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">
+                        View Dashboard →
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                      Tiny Strength Manager
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
   }
 
   private generateWelcomeEmailHtml(user: User): string {
