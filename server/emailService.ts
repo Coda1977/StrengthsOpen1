@@ -126,34 +126,55 @@ export class EmailService {
 
       // Function to add natural line breaks at appropriate points
       const addIntelligentLineBreaks = (text: string): string => {
-        // Split into sentences
-        const sentences = text.split(/(?<=[.!?])\s+/);
+        // First, fix missing spaces after periods and other punctuation
+        let cleaned = text
+          .replace(/([.!?])([A-Z])/g, '$1 $2') // Add space after period before capital letter
+          .replace(/([.!?])([a-z])/g, '$1 $2') // Add space after period before lowercase (for edge cases)
+          .replace(/\s+/g, ' ') // Normalize multiple spaces
+          .trim();
+        
+        // Split into sentences with better regex that handles the fixed spacing
+        const sentences = cleaned.split(/(?<=[.!?])\s+/);
         
         // Group sentences into logical paragraphs
         const paragraphs: string[] = [];
         let currentParagraph: string[] = [];
         
         sentences.forEach((sentence, index) => {
-          currentParagraph.push(sentence.trim());
+          const trimmedSentence = sentence.trim();
+          if (!trimmedSentence) return;
           
-          // Create paragraph breaks at natural transition points
+          currentParagraph.push(trimmedSentence);
+          
+          // Enhanced pattern detection for natural break points
           const isTransition = 
-            sentence.includes('Instead of') ||
-            sentence.includes('Your action:') ||
-            sentence.includes('This week:') ||
-            sentence.includes('Combine it with') ||
-            sentence.includes('Harness this') ||
-            sentence.includes('Focus on') ||
-            sentence.includes('Notice how') ||
-            (currentParagraph.length >= 2 && index < sentences.length - 1);
+            // Explicit transition phrases
+            trimmedSentence.includes('Instead of') ||
+            trimmedSentence.includes('Your action:') ||
+            trimmedSentence.includes('This week:') ||
+            trimmedSentence.includes('Combine it with') ||
+            trimmedSentence.includes('Harness this') ||
+            trimmedSentence.includes('Focus on') ||
+            trimmedSentence.includes('Notice how') ||
+            trimmedSentence.includes('Start with') ||
+            trimmedSentence.includes('Break it into') ||
+            trimmedSentence.includes('This focus') ||
+            // Questions that should start new paragraphs
+            trimmedSentence.match(/^(Know what|Want to|Ready to|How do)/i) ||
+            // Technique-related breaks
+            trimmedSentence.includes('Elevate by') ||
+            trimmedSentence.includes('Clarify your') ||
+            // Length-based breaks (longer content needs more breaks)
+            (currentParagraph.length >= 2 && currentParagraph.join(' ').length > 100);
           
+          // Force paragraph break at the end or when transition detected
           if (isTransition || index === sentences.length - 1) {
             paragraphs.push(currentParagraph.join(' '));
             currentParagraph = [];
           }
         });
         
-        // Join paragraphs with line breaks
+        // Join paragraphs with proper line breaks for email HTML
         return paragraphs
           .filter(p => p.trim().length > 0)
           .join('<br><br>');
