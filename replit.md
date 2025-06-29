@@ -97,7 +97,7 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Conversation Backups Table**: Handles data migration and corruption recovery
 
 ## Recent Changes
-- June 29, 2025: Enabled production email delivery system by adding tinymanager.ai domain to Resend, implemented hybrid email routing that sends test emails to admin for review while maintaining full functionality, system now supports unlimited email delivery once domain verification is complete
+- June 29, 2025: Activated full production email delivery from onboarding@tinymanager.ai domain with all DNS records configured in GoDaddy, removed testing restrictions for direct delivery to all recipients, verified welcome and coaching email systems operational
 - June 29, 2025: Fixed admin dashboard authentication issues by updating all admin routes to use proper database user lookup instead of session email verification, codanudge user now properly visible in admin interface
 - June 29, 2025: Fixed critical welcome email system failure by resolving database schema mismatches - added missing columns (next_scheduled_time, last_sent_at, retry_count) to email_subscriptions and email_logs tables, verified system now operational with proper subscription creation and logging
 - June 29, 2025: Fixed collaboration insight truncation by removing UI code that artificially cut responses at 800 characters and aligned OpenAI token limits (collaboration: 400, chat: 600) with actual response needs
