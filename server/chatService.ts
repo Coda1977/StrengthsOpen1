@@ -25,7 +25,7 @@ export class ChatService {
       try {
         chatHistory = JSON.parse(localStorageData);
       } catch (parseError) {
-        console.error('Failed to parse localStorage data:', parseError);
+        if (process.env.NODE_ENV !== 'production') console.error('Failed to parse localStorage data:', parseError);
         return { success: false, conversationsCreated: 0, messagesCreated: 0, error: 'Invalid localStorage data format' };
       }
 
@@ -45,7 +45,7 @@ export class ChatService {
       // Migrate each conversation
       for (const chatData of chatHistory) {
         if (!chatData.title || !chatData.messages || !Array.isArray(chatData.messages)) {
-          console.warn('Skipping invalid conversation data:', chatData);
+          if (process.env.NODE_ENV !== 'production') console.warn('Skipping invalid conversation data:', chatData);
           continue;
         }
 
@@ -65,7 +65,7 @@ export class ChatService {
         // Create messages
         for (const messageData of chatData.messages) {
           if (!messageData.content || !messageData.type) {
-            console.warn('Skipping invalid message data:', messageData);
+            if (process.env.NODE_ENV !== 'production') console.warn('Skipping invalid message data:', messageData);
             continue;
           }
 
@@ -92,7 +92,7 @@ export class ChatService {
 
       return { success: true, conversationsCreated, messagesCreated };
     } catch (error) {
-      console.error('Migration failed:', error);
+      if (process.env.NODE_ENV !== 'production') console.error('Migration failed:', error);
       return { success: false, conversationsCreated: 0, messagesCreated: 0, error: 'Migration failed: ' + (error as Error).message };
     }
   }
@@ -103,7 +103,7 @@ export class ChatService {
       const conversations = await storage.getConversations(userId);
       return conversations.length > 0;
     } catch (error) {
-      console.error('Error checking existing conversations:', error);
+      if (process.env.NODE_ENV !== 'production') console.error('Error checking existing conversations:', error);
       return false;
     }
   }
@@ -119,7 +119,7 @@ export class ChatService {
       const messages = await storage.getMessages(conversationId, userId);
       return { conversation, messages };
     } catch (error) {
-      console.error('Error fetching conversation with messages:', error);
+      if (process.env.NODE_ENV !== 'production') console.error('Error fetching conversation with messages:', error);
       return null;
     }
   }
@@ -148,7 +148,7 @@ export class ChatService {
 
       return exportData;
     } catch (error) {
-      console.error('Error exporting conversations:', error);
+      if (process.env.NODE_ENV !== 'production') console.error('Error exporting conversations:', error);
       throw new Error('Failed to export conversations');
     }
   }
@@ -186,7 +186,7 @@ export class ChatService {
         message: 'localStorage data was corrupted and could not be recovered. A record of the incident has been saved.'
       };
     } catch (error) {
-      console.error('Error handling corrupted localStorage:', error);
+      if (process.env.NODE_ENV !== 'production') console.error('Error handling corrupted localStorage:', error);
       return {
         success: false,
         message: 'Failed to handle localStorage corruption: ' + (error as Error).message
@@ -238,7 +238,7 @@ export class ChatService {
 
       return { archived };
     } catch (error) {
-      console.error('Error archiving old conversations:', error);
+      if (process.env.NODE_ENV !== 'production') console.error('Error archiving old conversations:', error);
       throw new Error('Failed to archive old conversations');
     }
   }
