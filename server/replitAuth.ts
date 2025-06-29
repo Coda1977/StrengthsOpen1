@@ -106,7 +106,10 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  const domains = process.env.REPLIT_DOMAINS?.split(",") || ['localhost'];
+  // Register strategies for both Replit domains and localhost
+  const replitDomains = process.env.REPLIT_DOMAINS?.split(",") || [];
+  const domains = [...replitDomains, 'localhost'];
+  
   for (const domain of domains) {
     const strategy = new Strategy(
       {
@@ -124,14 +127,22 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    const hostname = req.hostname || req.get('host')?.split(':')[0] || 'localhost';
+    const strategyName = `replitauth:${hostname}`;
+    
+
+    
+    passport.authenticate(strategyName, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", async (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, async (err: any, user: any) => {
+    const hostname = req.hostname || req.get('host')?.split(':')[0] || 'localhost';
+    const strategyName = `replitauth:${hostname}`;
+    
+    passport.authenticate(strategyName, async (err: any, user: any) => {
       if (err) {
         console.error('Authentication error:', err);
         return res.redirect("/api/login");
