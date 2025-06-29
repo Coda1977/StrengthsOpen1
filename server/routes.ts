@@ -704,10 +704,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/users', async (req, res) => {
+  app.get('/api/admin/users', isAuthenticated, async (req, res) => {
     try {
-      const user = req.user as any;
-      if (!user || user.email !== 'tinymanagerai@gmail.com') {
+      const userId = (req as AuthenticatedRequest).user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
@@ -732,10 +734,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/users/:userId', async (req, res) => {
+  app.delete('/api/admin/users/:userId', isAuthenticated, async (req, res) => {
     try {
-      const user = req.user as any;
-      if (!user || user.email !== 'tinymanagerai@gmail.com') {
+      const currentUserId = (req as AuthenticatedRequest).user.claims.sub;
+      const currentUser = await storage.getUser(currentUserId);
+      
+      if (!currentUser || !currentUser.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
@@ -752,8 +756,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/admin/emails', async (req, res) => {
     try {
-      const user = req.user as any;
-      if (!user || user.email !== 'tinymanagerai@gmail.com') {
+      const userId = (req as AuthenticatedRequest).user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
