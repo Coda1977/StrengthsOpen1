@@ -9,6 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { randomUUID } from "crypto";
 
 // Session storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
@@ -140,19 +141,7 @@ export const conversationBackups = pgTable("conversation_backups", {
 
 // Email tracking tables
 export const emailSubscriptions = pgTable("email_subscriptions", {
-  id: varchar("id").primaryKey().notNull().$defaultFn(() => {
-    try {
-      const crypto = require('crypto');
-      return crypto.randomUUID();
-    } catch (e) {
-      const crypto = require('crypto');
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c: string) => {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
-    }
-  }),
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => randomUUID()),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   emailType: text("email_type", { enum: ["welcome", "weekly_coaching"] }).notNull(),
   isActive: boolean("is_active").default(true),
@@ -172,19 +161,7 @@ export const emailSubscriptions = pgTable("email_subscriptions", {
 });
 
 export const emailLogs = pgTable("email_logs", {
-  id: varchar("id").primaryKey().notNull().$defaultFn(() => {
-    try {
-      const crypto = require('crypto');
-      return crypto.randomUUID();
-    } catch (e) {
-      const crypto = require('crypto');
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c: string) => {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
-    }
-  }),
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => randomUUID()),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   emailType: text("email_type", { enum: ["welcome", "weekly_coaching"] }).notNull(),
   emailSubject: text("email_subject").notNull(),
@@ -199,19 +176,7 @@ export const emailLogs = pgTable("email_logs", {
 
 // New table for email metrics
 export const emailMetrics = pgTable("email_metrics", {
-  id: varchar("id").primaryKey().notNull().$defaultFn(() => {
-    try {
-      const crypto = require('crypto');
-      return crypto.randomUUID();
-    } catch (e) {
-      const crypto = require('crypto');
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c: string) => {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
-    }
-  }),
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => randomUUID()),
   date: timestamp("date").defaultNow(),
   totalAttempted: text("total_attempted").default("0"),
   succeeded: text("succeeded").default("0"),
