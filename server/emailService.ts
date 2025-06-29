@@ -114,27 +114,37 @@ export class EmailService {
         []  // previousTeamMembers - would track from email logs
       );
 
-      // Clean function to preserve important formatting while removing excess
-      const cleanMarkdown = async (content: string) => {
+      // Clean function to preserve line breaks and structure
+      const cleanContent = async (content: string) => {
         if (!content) return '';
         const html = await marked(content);
         return html
-          .replace(/<p>/g, '')
-          .replace(/<\/p>/g, '')
-          .replace(/\n/g, ' ')
+          .replace(/<p>/g, '<div>')
+          .replace(/<\/p>/g, '</div>')
+          .replace(/<strong>/g, '<b>')
+          .replace(/<\/strong>/g, '</b>')
           .trim();
       };
 
-      // Process content fields while preserving structure
-      weeklyContent.personalInsight = await cleanMarkdown(weeklyContent.personalInsight);
-      weeklyContent.techniqueName = await cleanMarkdown(weeklyContent.techniqueName);
-      weeklyContent.techniqueContent = await cleanMarkdown(weeklyContent.techniqueContent);
-      weeklyContent.teamSection = await cleanMarkdown(weeklyContent.teamSection);
-      weeklyContent.quote = await cleanMarkdown(weeklyContent.quote);
-      weeklyContent.quoteAuthor = await cleanMarkdown(weeklyContent.quoteAuthor);
-      weeklyContent.header = await cleanMarkdown(weeklyContent.header);
-      weeklyContent.preHeader = await cleanMarkdown(weeklyContent.preHeader);
-      weeklyContent.subjectLine = await cleanMarkdown(weeklyContent.subjectLine);
+      // Clean simple text fields (no HTML needed)
+      const cleanSimpleText = (content: string) => {
+        if (!content) return '';
+        return content
+          .replace(/<[^>]*>/g, '') // Remove any HTML tags
+          .replace(/\n/g, ' ') // Replace newlines with spaces
+          .trim();
+      };
+
+      // Process content fields appropriately
+      weeklyContent.personalInsight = await cleanContent(weeklyContent.personalInsight);
+      weeklyContent.techniqueContent = await cleanContent(weeklyContent.techniqueContent);
+      weeklyContent.teamSection = await cleanContent(weeklyContent.teamSection);
+      weeklyContent.techniqueName = cleanSimpleText(weeklyContent.techniqueName);
+      weeklyContent.quote = cleanSimpleText(weeklyContent.quote);
+      weeklyContent.quoteAuthor = cleanSimpleText(weeklyContent.quoteAuthor);
+      weeklyContent.header = cleanSimpleText(weeklyContent.header);
+      weeklyContent.preHeader = cleanSimpleText(weeklyContent.preHeader);
+      weeklyContent.subjectLine = cleanSimpleText(weeklyContent.subjectLine);
 
       // Ensure content consistency - verify the AI content matches the featured strength
       if (!weeklyContent.personalInsight.toLowerCase().includes(featuredStrength.toLowerCase())) {
@@ -395,15 +405,6 @@ export class EmailService {
     teamTip: string,
     weekNumber: number
   ): string {
-    // Clean HTML content to remove extra paragraph tags from marked() conversion
-    const cleanHtml = (content: string) => {
-      if (!content) return '';
-      return content
-        .replace(/<p>/g, '')
-        .replace(/<\/p>/g, '')
-        .replace(/^\s+|\s+$/g, '')
-        .trim();
-    };
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -426,7 +427,7 @@ export class EmailService {
     
     <!-- Hidden pre-header -->
     <span style="display:none; font-size:1px; color:#F5F0E8; line-height:1px; max-height:0px; max-width:0px; opacity:0; overflow:hidden;">
-        ${cleanHtml(weeklyContent.preHeader || 'Your weekly strength insight')}
+        ${weeklyContent.preHeader || 'Your weekly strength insight'}
     </span>
     
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F5F0E8; padding: 40px 20px;">
@@ -438,7 +439,7 @@ export class EmailService {
                     <tr>
                         <td style="padding-bottom: 24px; text-align: center;">
                             <h1 style="color: #003566; font-size: 18px; font-weight: 600; margin: 0; font-family: Arial, Helvetica, sans-serif;">
-                                ${cleanHtml(weeklyContent.header || `Week ${weekNumber}: Your ${personalStrength} strength spotlight`)}
+                                ${weeklyContent.header || `Week ${weekNumber}: Your ${personalStrength} strength spotlight`}
                             </h1>
                         </td>
                     </tr>
@@ -459,16 +460,16 @@ export class EmailService {
                                             </tr>
                                             <tr>
                                                 <td style="color: #0F172A; font-size: 17px; line-height: 1.6; padding-bottom: 20px; font-family: Arial, Helvetica, sans-serif;">
-                                                    ${cleanHtml(weeklyContent.personalInsight || 'Your strength insight for this week.')}
+                                                    ${weeklyContent.personalInsight || 'Your strength insight for this week.'}
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td style="border-top: 1px solid #E5E7EB; padding-top: 20px;">
                                                     <div style="margin-bottom: 8px;">
-                                                        <span style="color: #003566; font-weight: 600; font-family: Arial, Helvetica, sans-serif; font-size: 14px;">► ${cleanHtml(weeklyContent.techniqueName || 'This Week\'s Focus')}:</span>
+                                                        <span style="color: #003566; font-weight: 600; font-family: Arial, Helvetica, sans-serif; font-size: 14px;">► ${weeklyContent.techniqueName || 'This Week\'s Focus'}:</span>
                                                     </div>
                                                     <div style="color: #374151; font-size: 15px; line-height: 1.6; font-family: Arial, Helvetica, sans-serif;">
-                                                        ${cleanHtml(weeklyContent.techniqueContent || 'Apply your strength in one key interaction this week.')}
+                                                        ${weeklyContent.techniqueContent || 'Apply your strength in one key interaction this week.'}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -489,7 +490,7 @@ export class EmailService {
                                             TEAM INSIGHT
                                         </div>
                                         <div style="color: #0F172A; font-size: 16px; line-height: 1.6; margin: 0; font-family: Arial, Helvetica, sans-serif;">
-                                            ${cleanHtml(weeklyContent.teamSection || `This week: ${teamMemberName}'s ${teamMemberStrength} needs focused challenges. Instead of overwhelming them with busy work, provide one meaningful project. Your action: Schedule 15 minutes to discuss their learning goals.`)}
+                                            ${weeklyContent.teamSection || `This week: ${teamMemberName}'s ${teamMemberStrength} needs focused challenges. Instead of overwhelming them with busy work, provide one meaningful project. Your action: Schedule 15 minutes to discuss their learning goals.`}
                                         </div>
                                     </td>
                                 </tr>
@@ -504,10 +505,10 @@ export class EmailService {
                                 <tr>
                                     <td style="padding: 20px 24px;">
                                         <div style="color: #0F172A; font-size: 16px; line-height: 1.5; font-style: italic; margin-bottom: 8px; font-family: Arial, Helvetica, sans-serif;">
-                                            "${cleanHtml(weeklyContent.quote || 'Success usually comes to those who are too busy to be looking for it.')}"
+                                            "${weeklyContent.quote || 'Success usually comes to those who are too busy to be looking for it.'}"
                                         </div>
                                         <div style="color: #6B7280; font-size: 14px; font-weight: 500; font-family: Arial, Helvetica, sans-serif;">
-                                            — ${cleanHtml(weeklyContent.quoteAuthor || 'Henry David Thoreau')}
+                                            — ${weeklyContent.quoteAuthor || 'Henry David Thoreau'}
                                         </div>
                                     </td>
                                 </tr>

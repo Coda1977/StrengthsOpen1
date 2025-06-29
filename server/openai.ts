@@ -424,8 +424,10 @@ Use: Week ${weekNumber}: Your ${featuredStrength} strength spotlight
 - Actionable revelation focused on ${featuredStrength}
 
 ### 5. TECHNIQUE SECTION (60-80 words)
-► [Technique Name] - must be memorable and specific
+► [Technique Name] - must be memorable and specific, DO NOT repeat the featured strength name
 Must pass the "Monday Morning Test": Can they do this TODAY?
+
+IMPORTANT: Do not start technique content with the technique name or strength name again - go straight to the action.
 
 ### 6. TEAM SECTION (40-55 words)
 **FORMAT:** "This week: ${featuredTeamMember}'s ${teamMemberFeaturedStrength} needs [specific need]. Instead of [common mistake], try [better approach]. Your action: [one specific thing to do this week]."
