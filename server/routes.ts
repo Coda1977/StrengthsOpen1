@@ -798,22 +798,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      // For testing mode, send to admin email but with target user content
-      const testUser = {
-        ...targetUser,
-        email: user.email // Send to admin email to bypass Resend testing restrictions
-      };
-
+      // Production mode - send directly to target user
       if (emailType === 'welcome') {
-        await emailService.sendWelcomeEmail(testUser);
+        await emailService.sendWelcomeEmail(targetUser);
       } else if (emailType === 'weekly') {
         const weekNumber = 1; // Test with week 1
-        await emailService.sendWeeklyCoachingEmail(testUser, weekNumber);
+        await emailService.sendWeeklyCoachingEmail(targetUser, weekNumber);
       }
 
       res.json({ 
         success: true, 
-        message: `Test ${emailType} email sent to ${user.email} (content for ${targetUser.firstName || targetUser.email})` 
+        message: `${emailType} email sent to ${targetUser.email}` 
       });
     } catch (error) {
       console.error('Error sending test email:', error);
