@@ -427,14 +427,17 @@ Use: Week ${weekNumber}: Your ${featuredStrength} strength spotlight
 ► [Technique Name] - must be memorable and specific
 Must pass the "Monday Morning Test": Can they do this TODAY?
 
-### 6. TEAM SECTION (50-65 words)
-**OPENER:** "▶ This week: ${featuredTeamMember}'s ${teamMemberFeaturedStrength}"
-**STRUCTURE:**
-1. What the strength really needs (not surface level)
-2. Comparison:
-   - ✗ Common mistake
-   - ✓ Better approach
-3. ONE SPECIFIC ACTION the manager can take THIS WEEK
+### 6. TEAM SECTION (40-55 words)
+**FORMAT:** "This week: ${featuredTeamMember}'s ${teamMemberFeaturedStrength} needs [specific need]. Instead of [common mistake], try [better approach]. Your action: [one specific thing to do this week]."
+
+**EXAMPLE:** "This week: Sarah's Learner needs continuous intellectual challenge. Instead of overwhelming her with busy work, give her one research project that connects to team goals. Your action: Ask her to present findings in Friday's meeting."
+
+**RULES:**
+- Use person's actual name
+- Focus on ONE clear need
+- Contrast common mistake vs better approach  
+- End with specific manager action
+- Keep conversational and direct
 
 ### 7. QUOTE SELECTION
 Rotate sources by week:

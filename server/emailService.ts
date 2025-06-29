@@ -484,12 +484,12 @@ export class EmailService {
                         <td style="padding-bottom: 32px;">
                             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #FFFFFF; border-radius: 12px; border: 1px solid #E5E7EB;">
                                 <tr>
-                                    <td style="padding: 20px 24px;">
-                                        <div style="color: #003566; font-size: 12px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; font-family: Arial, Helvetica, sans-serif;">
-                                            ▶ TEAM INSIGHT
+                                    <td style="padding: 24px 28px;">
+                                        <div style="color: #CC9B00; font-size: 12px; font-weight: 700; margin-bottom: 16px; text-transform: uppercase; font-family: Arial, Helvetica, sans-serif; letter-spacing: 0.5px;">
+                                            TEAM INSIGHT
                                         </div>
-                                        <div style="color: #0F172A; font-size: 15px; line-height: 1.5; margin: 0; font-family: Arial, Helvetica, sans-serif;">
-                                            ${cleanHtml(weeklyContent.teamSection || `This week: ${teamMemberName}'s ${teamMemberStrength} needs continuous challenges. Avoid overwhelming tasks. Opt for bite-sized learning opportunities.`)}
+                                        <div style="color: #0F172A; font-size: 16px; line-height: 1.6; margin: 0; font-family: Arial, Helvetica, sans-serif;">
+                                            ${cleanHtml(weeklyContent.teamSection || `This week: ${teamMemberName}'s ${teamMemberStrength} needs focused challenges. Instead of overwhelming them with busy work, provide one meaningful project. Your action: Schedule 15 minutes to discuss their learning goals.`)}
                                         </div>
                                     </td>
                                 </tr>
