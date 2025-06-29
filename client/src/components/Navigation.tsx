@@ -26,17 +26,18 @@ const Navigation = ({ simplified = false }: NavigationProps) => {
   const navItems = isAuthenticated && (user as any)?.hasCompletedOnboarding ? [
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/encyclopedia', label: 'Encyclopedia' },
-    { path: '/ai-coach', label: 'AI Coach' },
-    // Add admin link for admin user
-    ...(user?.email === 'tinymanagerai@gmail.com' ? [{ path: '/admin', label: 'Admin' }] : [])
+    { path: '/ai-coach', label: 'AI Coach' }
   ] : [
     { path: '/', label: 'Home' },
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/encyclopedia', label: 'Encyclopedia' },
-    { path: '/ai-coach', label: 'AI Coach' },
-    // Add admin link for admin user even if not onboarded
-    ...(user?.email === 'tinymanagerai@gmail.com' ? [{ path: '/admin', label: 'Admin' }] : [])
+    { path: '/ai-coach', label: 'AI Coach' }
   ];
+
+  // Add admin link only for the specific admin user
+  if (user?.email === 'tinymanagerai@gmail.com') {
+    navItems.push({ path: '/admin', label: 'Admin' });
+  }
 
   return (
     <nav className="app-nav">

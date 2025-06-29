@@ -50,12 +50,14 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
-      {/* Admin route - requires admin privileges */}
-      <Route path="/admin">
-        <ProtectedRoute routeName="Admin">
-          <Admin />
-        </ProtectedRoute>
-      </Route>
+      {/* Admin route - only visible to admin user */}
+      {user?.email === 'tinymanagerai@gmail.com' && (
+        <Route path="/admin">
+          <ProtectedRoute routeName="Admin">
+            <Admin />
+          </ProtectedRoute>
+        </Route>
+      )}
 
       {/* Special onboarding route - requires auth but not completed onboarding */}
       <Route path="/onboarding">

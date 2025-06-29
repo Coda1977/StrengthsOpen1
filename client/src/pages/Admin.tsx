@@ -64,7 +64,7 @@ export default function Admin() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Check if user is admin
+  // Check if user is admin and redirect immediately if not
   useEffect(() => {
     if (user && user.email !== 'tinymanagerai@gmail.com') {
       toast({
@@ -72,8 +72,14 @@ export default function Admin() {
         description: "Admin access required",
         variant: "destructive",
       });
-      // Redirect to dashboard
+      // Redirect to dashboard immediately
       window.location.href = '/dashboard';
+      return;
+    }
+    
+    // Only fetch data if user is admin
+    if (user?.email === 'tinymanagerai@gmail.com') {
+      fetchData();
     }
   }, [user, toast]);
 
@@ -103,12 +109,6 @@ export default function Admin() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (user?.email === 'tinymanagerai@gmail.com') {
-      fetchData();
-    }
-  }, [user]);
 
   const deleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
@@ -235,7 +235,8 @@ export default function Admin() {
     );
   }
 
-  if (user?.email !== 'tinymanagerai@gmail.com') {
+  // Show access denied for non-admin users
+  if (!user || user.email !== 'tinymanagerai@gmail.com') {
     return (
       <div className="container mx-auto p-6">
         <Alert>
