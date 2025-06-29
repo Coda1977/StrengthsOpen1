@@ -4,9 +4,9 @@ import { db } from './db';
 import { storage } from './storage';
 import { emailSubscriptions, emailLogs, users, teamMembers } from '../shared/schema';
 import type { InsertEmailSubscription, InsertEmailLog, User } from '../shared/schema';
-import { generateWeeklyEmailContent } from './openai';
-// import { render } from '@react-email/components';
-// import WeeklyNudgeEmail from './emailTemplates';
+import { generateWeeklyEmailContent, generateWelcomeEmailContent } from './openai';
+import { render } from '@react-email/components';
+import { WelcomeEmail, WeeklyNudgeEmail } from './emailTemplates';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -32,13 +32,74 @@ export class EmailService {
         weeklyEmailCount: '0',
       });
 
-      const welcomeHtml = this.generateWelcomeEmailHtml(user);
+      // Get user's top strengths for AI content generation
+      const userStrengths = user.topStrengths || [];
+      const strength1 = userStrengths[0];
+      const strength2 = userStrengths[1];
+      
+      // Calculate next Monday
+      const today = new Date();
+      const daysUntilMonday = (8 - today.getDay()) % 7 || 7;
+      const nextMonday = new Date(today.getTime() + daysUntilMonday * 24 * 60 * 60 * 1000);
+      const nextMondayStr = nextMonday.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+
+      // Generate AI-powered welcome email content
+      const welcomeContent = await generateWelcomeEmailContent(
+        user.firstName || undefined,
+        strength1,
+        strength2,
+        nextMondayStr
+      );
+      
+      // Handle error case
+      if ('error' in welcomeContent) {
+        console.error('Failed to generate welcome email content:', welcomeContent.error);
+        // Fall back to simple template
+        const { data, error } = await resend.emails.send({
+          from: this.fromEmail,
+          to: [user.email!],
+          subject: 'Welcome to Strengths Manager! 🎯',
+          html: this.generateWelcomeEmailHtml(user),
+        });
+        
+        await storage.createEmailLog({
+          userId: user.id,
+          emailType: 'welcome',
+          emailSubject: 'Welcome to Strengths Manager! 🎯',
+          resendId: data?.id,
+          status: error ? 'failed' : 'sent',
+          errorMessage: error?.message,
+        });
+        
+        if (error) {
+          throw new Error(`Failed to send welcome email: ${error.message}`);
+        }
+        return;
+      }
+      
+      // Render the proper React email template
+      const welcomeHtml = await render(WelcomeEmail({
+        firstName: user.firstName || undefined,
+        strength1: strength1 || 'Strengths',
+        strength2: strength2 || 'Leadership',
+        challengeText: welcomeContent.challengeText,
+        nextMonday: nextMondayStr,
+        greeting: welcomeContent.greeting,
+        dna: welcomeContent.dna,
+        whatsNext: welcomeContent.whatsNext,
+        cta: welcomeContent.cta,
+        unsubscribeUrl: `${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/unsubscribe?token=${user.id}`
+      }));
       
       // Direct email delivery to recipient
       const { data, error } = await resend.emails.send({
         from: this.fromEmail,
         to: [user.email!],
-        subject: 'Welcome to Strengths Manager! 🎯',
+        subject: welcomeContent.subject,
         html: welcomeHtml,
       });
 
@@ -46,7 +107,7 @@ export class EmailService {
       await storage.createEmailLog({
         userId: user.id,
         emailType: 'welcome',
-        emailSubject: 'Welcome to Strengths Manager! 🎯',
+        emailSubject: welcomeContent.subject,
         resendId: data?.id,
         status: error ? 'failed' : 'sent',
         errorMessage: error?.message,
