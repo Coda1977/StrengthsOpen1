@@ -97,6 +97,7 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Conversation Backups Table**: Handles data migration and corruption recovery
 
 ## Recent Changes
+- June 29, 2025: Fixed welcome email system to follow exact AI instructions and design template - implemented precise word count limits, strength-specific DNA insights and challenges, subject lines ≤40 characters, proper beige background styling, and personalized content generation matching user specifications exactly
 - June 29, 2025: Resolved React email template server-side rendering issues by creating professional HTML email templates that replicate the original React component designs - fixed React import errors, maintained beautiful styling and AI-generated content, ensured reliable production email delivery from tinymanager.ai domain
 - June 29, 2025: Activated full production email delivery from onboarding@tinymanager.ai domain with all DNS records configured in GoDaddy, removed testing restrictions for direct delivery to all recipients, verified welcome and coaching email systems operational
 - June 29, 2025: Fixed admin dashboard authentication issues by updating all admin routes to use proper database user lookup instead of session email verification, codanudge user now properly visible in admin interface
