@@ -86,7 +86,7 @@ export class EmailService {
       // Get user's team members for AI context
       const teamMembers = await storage.getTeamMembers(user.id);
       const userStrengths = user.topStrengths || [];
-      
+
       if (teamMembers.length === 0) {
         console.log(`Skipping weekly email for ${user.email} - no team members`);
         return;
@@ -215,10 +215,10 @@ export class EmailService {
       'Communication_Strategic': 'articulate vision in ways that inspire action. That\'s a rare combination that most leaders struggle to develop.',
       'Ideation_Communication': 'turn creative ideas into compelling stories. That\'s a rare combination that most leaders struggle to develop.'
     };
-    
+
     const key1 = `${s1}_${s2}`;
     const key2 = `${s2}_${s1}`;
-    
+
     return combinations[key1] || combinations[key2] || `combine ${s1.toLowerCase()} thinking with ${s2.toLowerCase()} execution in unique ways. That's a rare combination that most leaders struggle to develop.`;
   }
 
@@ -235,7 +235,7 @@ export class EmailService {
       'Ideation': 'generate creative solutions to problems',
       'Learner': 'continuously acquire new knowledge and skills'
     };
-    
+
     return actions[strength] || 'leverage your natural talents effectively';
   }
 
@@ -252,7 +252,7 @@ export class EmailService {
       'Ideation': 'Generate three wild solutions to your current challenge. Your creativity unlocks possibilities.',
       'Learner': 'Teach someone something you learned this week. Your curiosity becomes their growth.'
     };
-    
+
     return challenges[strength] || `Notice how your ${strength} strength shows up in unexpected moments today.`;
   }
 
@@ -300,17 +300,17 @@ export class EmailService {
     </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: #F5F0E8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0F172A;">
-    
+
     <!-- Hidden pre-header -->
     <span style="display:none; font-size:1px; color:#F5F0E8; line-height:1px; max-height:0px; max-width:0px; opacity:0; overflow:hidden;">
         Your 12-week strengths journey starts now
     </span>
-    
+
     <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #F5F0E8; min-height: 100vh;">
         <tr>
             <td align="center" style="padding: 40px 20px;">
                 <table class="email-container" width="100%" style="max-width: 540px; background-color: #FFFFFF; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);" cellpadding="0" cellspacing="0">
-                    
+
                     <!-- Header -->
                     <tr>
                         <td class="content-padding" style="padding: 40px 32px 32px 32px; text-align: center;">
@@ -319,11 +319,11 @@ export class EmailService {
                             </h1>
                         </td>
                     </tr>
-                    
+
                     <!-- Main Content -->
                     <tr>
                         <td class="content-padding" style="padding: 0 32px 40px 32px;">
-                            
+
                             <!-- Personal Greeting -->
                             <div style="margin-bottom: 32px;">
                                 <div style="font-size: 18px; line-height: 1.6; margin: 0 0 16px 0; color: #0F172A;">
@@ -424,17 +424,17 @@ export class EmailService {
     <![endif]-->
 </head>
 <body style="margin: 0; padding: 0; background-color: #F5F0E8; font-family: Arial, Helvetica, sans-serif; color: #0F172A; line-height: 1.4;">
-    
+
     <!-- Hidden pre-header -->
     <span style="display:none; font-size:1px; color:#F5F0E8; line-height:1px; max-height:0px; max-width:0px; opacity:0; overflow:hidden;">
         ${weeklyContent.preHeader || 'Your weekly strength insight'}
     </span>
-    
+
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F5F0E8; padding: 40px 20px;">
         <tr>
             <td align="center">
                 <table width="540" cellpadding="0" cellspacing="0" border="0" style="max-width: 540px; width: 100%;">
-                    
+
                     <!-- Header -->
                     <tr>
                         <td style="padding-bottom: 24px; text-align: center;">
@@ -443,7 +443,7 @@ export class EmailService {
                             </h1>
                         </td>
                     </tr>
-                    
+
                     <!-- Primary Card - Personal Insight -->
                     <tr>
                         <td style="padding-bottom: 20px;">
@@ -459,7 +459,7 @@ export class EmailService {
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <td style="color: #0F172A; font-size: 17px; line-height: 1.6; padding-bottom: 20px; font-family: Arial, Helvetica, sans-serif;">
+                                                <td style="color: #0F172A; font-size: 17px; line-height: 1.7; padding-bottom: 20px; font-family: Arial, Helvetica, sans-serif;">
                                                     ${weeklyContent.personalInsight || 'Your strength insight for this week.'}
                                                 </td>
                                             </tr>
@@ -468,7 +468,7 @@ export class EmailService {
                                                     <div style="margin-bottom: 8px;">
                                                         <span style="color: #003566; font-weight: 600; font-family: Arial, Helvetica, sans-serif; font-size: 14px;">► ${weeklyContent.techniqueName || 'This Week\'s Focus'}:</span>
                                                     </div>
-                                                    <div style="color: #374151; font-size: 15px; line-height: 1.6; font-family: Arial, Helvetica, sans-serif;">
+                                                    <div style="color: #374151; font-size: 15px; line-height: 1.7; font-family: Arial, Helvetica, sans-serif;">
                                                         ${weeklyContent.techniqueContent || 'Apply your strength in one key interaction this week.'}
                                                     </div>
                                                 </td>
@@ -479,7 +479,7 @@ export class EmailService {
                             </table>
                         </td>
                     </tr>
-                    
+
                     <!-- Team Section -->
                     <tr>
                         <td style="padding-bottom: 32px;">
@@ -489,7 +489,7 @@ export class EmailService {
                                         <div style="color: #CC9B00; font-size: 12px; font-weight: 700; margin-bottom: 16px; text-transform: uppercase; font-family: Arial, Helvetica, sans-serif; letter-spacing: 0.5px;">
                                             TEAM INSIGHT
                                         </div>
-                                        <div style="color: #0F172A; font-size: 16px; line-height: 1.6; margin: 0; font-family: Arial, Helvetica, sans-serif;">
+                                        <div style="color: #0F172A; font-size: 16px; line-height: 1.7; margin: 0; font-family: Arial, Helvetica, sans-serif;">
                                             ${weeklyContent.teamSection || `This week: ${teamMemberName}'s ${teamMemberStrength} needs focused challenges. Instead of overwhelming them with busy work, provide one meaningful project. Your action: Schedule 15 minutes to discuss their learning goals.`}
                                         </div>
                                     </td>
@@ -497,7 +497,7 @@ export class EmailService {
                             </table>
                         </td>
                     </tr>
-                    
+
                     <!-- Quote Section -->
                     <tr>
                         <td style="padding-bottom: 32px;">
@@ -515,7 +515,7 @@ export class EmailService {
                             </table>
                         </td>
                     </tr>
-                    
+
                     <!-- CTA Button -->
                     <tr>
                         <td style="text-align: center; padding-bottom: 40px;">
@@ -530,7 +530,7 @@ export class EmailService {
                             </table>
                         </td>
                     </tr>
-                    
+
                     <!-- Footer -->
                     <tr>
                         <td style="text-align: center; padding-top: 20px; border-top: 1px solid #E5E7EB;">
@@ -544,7 +544,7 @@ export class EmailService {
                             </p>
                         </td>
                     </tr>
-                    
+
                 </table>
             </td>
         </tr>

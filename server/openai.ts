@@ -420,7 +420,9 @@ Use: Week ${weekNumber}: Your ${featuredStrength} strength spotlight
 
 **STRUCTURE:**
 - One-line opener (varies by week) - MUST include ${featuredStrength}
+
 - Core insight showing how ${featuredStrength} works with other strengths
+
 - Actionable revelation focused on ${featuredStrength}
 
 ### 5. TECHNIQUE SECTION (60-80 words)
