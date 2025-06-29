@@ -648,11 +648,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
-  app.get('/api/admin/health', async (req, res) => {
+  app.get('/api/admin/health', isAuthenticated, async (req, res) => {
     try {
-      // Check if user is admin
-      const user = req.user as any;
-      if (!user || user.email !== 'tinymanagerai@gmail.com') {
+      const userId = (req as AuthenticatedRequest).user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
@@ -754,7 +755,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/emails', async (req, res) => {
+  app.get('/api/admin/emails', isAuthenticated, async (req, res) => {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const user = await storage.getUser(userId);
@@ -811,10 +812,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/emails/send-weekly', async (req, res) => {
+  app.post('/api/admin/emails/send-weekly', isAuthenticated, async (req, res) => {
     try {
-      const user = req.user as any;
-      if (!user || user.email !== 'tinymanagerai@gmail.com') {
+      const userId = (req as AuthenticatedRequest).user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
@@ -826,10 +829,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/analytics', async (req, res) => {
+  app.get('/api/admin/analytics', isAuthenticated, async (req, res) => {
     try {
-      const user = req.user as any;
-      if (!user || user.email !== 'tinymanagerai@gmail.com') {
+      const userId = (req as AuthenticatedRequest).user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
