@@ -111,12 +111,14 @@ export async function setupAuth(app: Express) {
   const domains = [...replitDomains, 'localhost'];
   
   for (const domain of domains) {
+    // Use the actual Replit domain for callback URL, even for localhost requests
+    const callbackDomain = domain === 'localhost' ? replitDomains[0] || domain : domain;
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
         config,
         scope: "openid email profile offline_access",
-        callbackURL: `https://${domain}/api/callback`,
+        callbackURL: `https://${callbackDomain}/api/callback`,
       },
       verify,
     );
