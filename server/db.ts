@@ -20,10 +20,10 @@ const isDev = process.env.NODE_ENV === 'development';
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
   max: 1, // Single connection for serverless to avoid conflicts
-  idleTimeoutMillis: 0, // Disable idle timeout for serverless
+  idleTimeoutMillis: 30000, // 30 seconds idle timeout for Neon
   connectionTimeoutMillis: 20000, // Increased timeout
-  maxUses: Infinity, // Allow unlimited reuse
-  allowExitOnIdle: false,
+  maxUses: 7500, // Limit reuse to prevent stale connections
+  allowExitOnIdle: true, // Allow pool to exit when idle
 });
 
 // Enhanced error handling with reconnection logic
