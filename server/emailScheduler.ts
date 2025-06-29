@@ -1,7 +1,7 @@
 import * as cron from 'node-cron';
 import { DateTime } from 'luxon';
 import { and, eq, lt, gt } from 'drizzle-orm';
-import { emailService } from './emailService';
+import { EmailService } from './emailService';
 import { db } from './db';
 import { emailSubscriptions, emailLogs, emailMetrics, users } from '../shared/schema';
 import type { EmailSubscription, User } from '../shared/schema';
@@ -17,12 +17,17 @@ export class EmailScheduler {
   private scheduledJobs: Map<string, cron.ScheduledTask> = new Map();
   private readonly BATCH_SIZE = 50;
   private readonly MAX_RETRIES = 3;
+  private emailService: EmailService;
   private metrics: EmailMetricsData = {
     totalAttempted: 0,
     succeeded: 0,
     failed: 0,
     timezoneBreakdown: {}
   };
+
+  constructor() {
+    this.emailService = new EmailService();
+  }
 
   init(): void {
     // Run every 5 minutes to check for due emails
@@ -141,7 +146,7 @@ export class EmailScheduler {
 
   private async sendWithRetry(user: User, weekNumber: number, subscription: EmailSubscription, attempt = 1): Promise<void> {
     try {
-      await emailService.sendWeeklyCoachingEmail(user, weekNumber);
+      await this.emailService.sendWeeklyCoachingEmail(user, weekNumber);
     } catch (error) {
       if (attempt < this.MAX_RETRIES) {
         // Exponential backoff
@@ -197,7 +202,7 @@ export class EmailScheduler {
 
           if (!user) continue;
 
-          await emailService.sendWeeklyCoachingEmail(user, parseInt(email.weekNumber || '0'));
+          await this.emailService.sendWeeklyCoachingEmail(user, parseInt(email.weekNumber || '0'));
           
           // Update log on success
           await db
@@ -246,7 +251,16 @@ export class EmailScheduler {
             .then(results => results[0]);
           if (!user) continue;
 
-          await emailService.sendWelcomeEmail(user, user.timezone || 'America/New_York');
+          // Get timezone from subscription
+          const subscription = await db
+            .select()
+            .from(emailSubscriptions)
+            .where(eq(emailSubscriptions.userId, email.userId))
+            .limit(1)
+            .then(results => results[0]);
+
+          const timezone = subscription?.timezone || 'America/New_York';
+          await this.emailService.sendWelcomeEmail(user, timezone);
           await db.update(emailLogs).set({ status: 'sent', sentAt: new Date() }).where(eq(emailLogs.id, email.id));
         } catch (error) {
           const retryCount = parseInt(email.retryCount || '0') + 1;
@@ -298,7 +312,7 @@ export class EmailScheduler {
         updatedAt: new Date(),
       };
 
-      await emailService.sendWelcomeEmail(user, timezone);
+      await this.emailService.sendWelcomeEmail(user, timezone);
       
       // Set up next scheduled time for weekly emails
       const nextScheduledTime = this.calculateNextScheduleTime(timezone);

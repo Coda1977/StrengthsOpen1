@@ -16,6 +16,12 @@ import {
   updateConversationSchema,
   insertConversationBackupSchema
 } from '../shared/schema';
+import { OpenAI } from 'openai';
+import { Resend } from 'resend';
+import { sql, desc, eq, gte } from 'drizzle-orm';
+import { db } from './db';
+import { users, emailLogs } from '../shared/schema';
+import { EmailService } from './emailService';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -638,6 +644,250 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(createSuccessResponse(logs));
     } catch (error) {
       next(error);
+    }
+  });
+
+  // Admin routes
+  app.get('/api/admin/health', async (req, res) => {
+    try {
+      // Check if user is admin
+      const user = req.user as any;
+      if (!user || user.email !== 'tinymanagerai@gmail.com') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      // System health checks
+      const health = {
+        database: 'unknown',
+        openai: 'unknown',
+        resend: 'unknown',
+        timestamp: new Date().toISOString()
+      };
+
+      // Test database
+      try {
+        await db.execute(sql`SELECT 1`);
+        health.database = 'healthy';
+      } catch (error) {
+        health.database = 'error';
+      }
+
+      // Test OpenAI
+      try {
+        if (process.env.OPENAI_API_KEY) {
+          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          await openai.models.list();
+          health.openai = 'healthy';
+        } else {
+          health.openai = 'no_key';
+        }
+      } catch (error) {
+        health.openai = 'error';
+      }
+
+      // Test Resend
+      try {
+        if (process.env.RESEND_API_KEY) {
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          await resend.domains.list();
+          health.resend = 'healthy';
+        } else {
+          health.resend = 'no_key';
+        }
+      } catch (error) {
+        health.resend = 'error';
+      }
+
+      res.json(health);
+    } catch (error) {
+      res.status(500).json({ error: 'Health check failed' });
+    }
+  });
+
+  app.get('/api/admin/users', async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user || user.email !== 'tinymanagerai@gmail.com') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const allUsers = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          hasCompletedOnboarding: users.hasCompletedOnboarding,
+          topStrengths: users.topStrengths,
+          isAdmin: users.isAdmin,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+        })
+        .from(users)
+        .orderBy(desc(users.createdAt));
+
+      res.json(allUsers);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch users' });
+    }
+  });
+
+  app.delete('/api/admin/users/:userId', async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user || user.email !== 'tinymanagerai@gmail.com') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { userId } = req.params;
+      
+      // Delete user and all related data (cascade)
+      await db.delete(users).where(eq(users.id, userId));
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete user' });
+    }
+  });
+
+  app.get('/api/admin/emails', async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user || user.email !== 'tinymanagerai@gmail.com') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const emailLogsData = await db
+        .select()
+        .from(emailLogs)
+        .orderBy(desc(emailLogs.createdAt))
+        .limit(100);
+
+      res.json(emailLogsData);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch email logs' });
+    }
+  });
+
+  app.post('/api/admin/emails/test', async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user || user.email !== 'tinymanagerai@gmail.com') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { emailType, userId } = req.body;
+      
+      const targetUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1)
+        .then(results => results[0]);
+
+      if (!targetUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const emailService = new EmailService();
+      
+      if (emailType === 'welcome') {
+        await emailService.sendWelcomeEmail(targetUser);
+      } else if (emailType === 'weekly') {
+        const weekNumber = 1; // Test with week 1
+        await emailService.sendWeeklyCoachingEmail(targetUser, weekNumber);
+      }
+
+      res.json({ success: true, message: `${emailType} email sent to ${targetUser.email}` });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to send test email' });
+    }
+  });
+
+  app.post('/api/admin/emails/send-weekly', async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user || user.email !== 'tinymanagerai@gmail.com') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const emailService = new EmailService();
+      await emailService.processWeeklyEmails();
+      
+      res.json({ success: true, message: 'Weekly emails processed' });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to process weekly emails' });
+    }
+  });
+
+  app.get('/api/admin/analytics', async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user || user.email !== 'tinymanagerai@gmail.com') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      // User analytics
+      const totalUsers = await db.select({ count: sql<number>`count(*)` }).from(users);
+      const onboardedUsers = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.hasCompletedOnboarding, true));
+      
+      // Email analytics
+      const totalEmails = await db.select({ count: sql<number>`count(*)` }).from(emailLogs);
+      const sentEmails = await db.select({ count: sql<number>`count(*)` }).from(emailLogs).where(eq(emailLogs.status, 'sent'));
+      const failedEmails = await db.select({ count: sql<number>`count(*)` }).from(emailLogs).where(eq(emailLogs.status, 'failed'));
+
+      // Recent activity
+      const recentUsers = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(users)
+        .where(gte(users.createdAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)));
+
+      const recentEmails = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(emailLogs)
+        .where(gte(emailLogs.createdAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)));
+
+      res.json({
+        users: {
+          total: totalUsers[0]?.count || 0,
+          onboarded: onboardedUsers[0]?.count || 0,
+          recent: recentUsers[0]?.count || 0,
+        },
+        emails: {
+          total: totalEmails[0]?.count || 0,
+          sent: sentEmails[0]?.count || 0,
+          failed: failedEmails[0]?.count || 0,
+          recent: recentEmails[0]?.count || 0,
+        },
+        deliveryRate: totalEmails[0]?.count ? Math.round((sentEmails[0]?.count || 0) / totalEmails[0].count * 100) : 0,
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch analytics' });
+    }
+  });
+
+  // Setup admin user endpoint (one-time use)
+  app.post('/api/admin/setup', async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (email !== 'tinymanagerai@gmail.com') {
+        return res.status(403).json({ error: 'Invalid admin email' });
+      }
+
+      // Find user by email
+      const [user] = await db.select().from(users).where(eq(users.email, email));
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Update user to admin
+      await storage.updateUserAdminStatus(user.id, true);
+      
+      res.json({ success: true, message: 'Admin privileges granted' });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to setup admin' });
     }
   });
 

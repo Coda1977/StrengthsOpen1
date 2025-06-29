@@ -35,6 +35,9 @@ export const users = pgTable("users", {
   hasCompletedOnboarding: boolean("has_completed_onboarding").default(false),
   topStrengths: jsonb("top_strengths").$type<string[]>(),
   
+  // Admin functionality
+  isAdmin: boolean("is_admin").default(false),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -158,6 +161,12 @@ export const emailSubscriptions = pgTable("email_subscriptions", {
   weeklyEmailCount: text("weekly_email_count").default("0"), // Track how many weekly emails sent (max 12)
   nextScheduledTime: timestamp("next_scheduled_time"), // When the next email should be sent
   lastSentAt: timestamp("last_sent_at"), // When the last email was sent
+  // New fields for email variety tracking
+  previousOpeners: jsonb("previous_openers").$type<string[]>().default([]), // Track last 4 opener patterns
+  previousTeamMembers: jsonb("previous_team_members").$type<string[]>().default([]), // Track last 4 team members featured
+  previousPersonalTips: jsonb("previous_personal_tips").$type<string[]>().default([]), // Track last 4 personal tips
+  previousSubjectPatterns: jsonb("previous_subject_patterns").$type<string[]>().default([]), // Track last 4 subject line patterns
+  previousQuoteSources: jsonb("previous_quote_sources").$type<string[]>().default([]), // Track last 4 quote source types
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

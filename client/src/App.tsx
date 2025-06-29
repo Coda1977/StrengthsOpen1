@@ -11,6 +11,7 @@ import Dashboard from "@/pages/Dashboard";
 import Encyclopedia from "@/pages/Encyclopedia";
 import ChatCoach from "@/pages/ChatCoach";
 import Onboarding from "@/pages/Onboarding";
+import Admin from "@/pages/Admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -46,6 +47,13 @@ function Router() {
       <Route path="/ai-coach">
         <ProtectedRoute routeName="AI Coach" requireOnboarding>
           <ChatCoach />
+        </ProtectedRoute>
+      </Route>
+
+      {/* Admin route - requires admin privileges */}
+      <Route path="/admin">
+        <ProtectedRoute routeName="Admin">
+          <Admin />
         </ProtectedRoute>
       </Route>
 

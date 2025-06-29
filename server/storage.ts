@@ -37,6 +37,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserOnboarding(id: string, data: UpdateUserOnboarding): Promise<User | undefined>;
+  updateUserAdminStatus(id: string, isAdmin: boolean): Promise<User | undefined>;
   
   // Team member operations
   getTeamMembers(managerId: string): Promise<TeamMember[]>;
@@ -209,6 +210,28 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       if (isDev) console.error('Failed to update user onboarding:', error);
       throw new Error('Failed to update user onboarding');
+    }
+  }
+
+  async updateUserAdminStatus(id: string, isAdmin: boolean): Promise<User | undefined> {
+    try {
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          isAdmin,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, id))
+        .returning();
+      
+      if (updatedUser) {
+        this.setCachedUser(id, updatedUser);
+      }
+      
+      return updatedUser;
+    } catch (error) {
+      if (isDev) console.error('Failed to update user admin status:', error);
+      throw new Error('Failed to update user admin status');
     }
   }
 
