@@ -1,0 +1,173 @@
+# AI Instructions - Refined Welcome Email
+
+You are crafting a simplified, focused welcome email for new Strengths Manager users.
+
+## DESIGN PHILOSOPHY
+- **Less is more**: Focus on 2 key strengths instead of overwhelming with 5
+- **Specific over generic**: Avoid buzzwords, use concrete language
+- **Action-oriented**: Give them something to try immediately
+- **Clear value**: Explain what the app actually does
+
+## CONTEXT VALIDATION
+Before generating, verify required fields:
+```json
+{
+  "first_name": "[Name or 'there' if missing]",
+  "strength_1": "[Required - primary strength]",
+  "strength_2": "[Required - secondary strength]",
+  "next_monday": "[Date or 'Monday' if missing]"
+}
+```
+
+**If any strength is missing, return:**
+```json
+{
+  "error": "Missing required strengths",
+  "missing_fields": ["strength_X"],
+  "status": "failed"
+}
+```
+
+## TECHNICAL REQUIREMENTS
+- Subject line: Maximum 40 characters (tighter limit)
+- Pre-header: "Your 12-week strengths journey starts now" (fixed)
+- Total email length: Maximum 250 words (reduced from 350)
+- Use specified colors: #0F172A (text), #CC9B00 (accent), #003566 (headers), #F5F0E8 (beige background)
+- Single-column layout for better mobile experience
+- Modern CSS with flexbox-friendly structure
+
+## CONTENT STRUCTURE
+
+### 1. SUBJECT LINE (≤40 chars)
+Focus on the primary strength:
+- "{{first_name|Hi}}, your {{strength_1}} mind is rare" 
+- "Ready to lead with {{strength_1}}?"
+- "{{first_name}}, let's unlock {{strength_1}}"
+
+### 2. GREETING (20-30 words)
+```
+Hi {{first_name|there}},
+
+Most managers try to be good at everything. You're about to discover why that's backwards—and how your natural strengths can transform your leadership.
+```
+
+### 3. LEADERSHIP DNA (30-40 words)
+Focus on just 2 strengths with specific insight:
+```
+{{strength_1}} + {{strength_2}} means you naturally [specific behavior]. That's a rare combination that most leaders struggle to develop.
+```
+
+**Examples:**
+- Strategic + Achiever: "spot opportunities others miss, then actually follow through"
+- Relator + Developer: "build trust while growing people simultaneously"
+- Analytical + Responsibility: "make data-driven decisions you can stand behind"
+
+### 4. TODAY'S CHALLENGE (25-35 words)
+Make it strength-specific and immediately actionable:
+```
+Try This Today:
+{{challenge_text|[Specific observation/action based on strength_1]}}
+```
+
+**Challenge Examples:**
+- Strategic: "In your next meeting, notice how you naturally see 3 different approaches to any problem"
+- Achiever: "Count how many small wins you create for your team in one day"
+- Relator: "Have one important conversation without checking your phone once"
+
+### 5. WHAT'S NEXT (40-50 words)
+Clear value proposition:
+```
+Every Monday for 12 weeks, you'll get one practical way to use your {{strength_1}} advantage in real leadership situations.
+
+No theory. No generic advice. Just specific techniques that work with how your mind naturally operates.
+```
+
+### 6. CALL TO ACTION (15 words)
+```
+First insight arrives {{next_monday|Monday}}
+Get ready to lead differently.
+```
+
+## DESIGN IMPROVEMENTS
+
+### Visual Hierarchy
+- **Header**: Clean, single-focus title
+- **Content**: Single column with clear sections
+- **Accent**: Subtle left borders instead of decorative elements
+- **Spacing**: Generous whitespace between sections
+
+### Color Usage
+- **Headers**: #003566 (navy blue)
+- **Body text**: #0F172A (dark slate)
+- **Accent**: #CC9B00 (warm yellow) - used sparingly
+- **Background**: #F5F0E8 (beige) for outer container
+
+### Mobile Optimization
+- Single column layout
+- Touch-friendly spacing
+- Readable font sizes (16px+ on mobile)
+- No nested complexity
+
+## TONE GUIDELINES
+- **Conversational but professional**: Like a skilled colleague sharing insights
+- **Confident without being boastful**: "You naturally..." instead of "You're amazing at..."
+- **Specific over general**: Replace "leadership superpower" with concrete behaviors
+- **Action-oriented**: Every section should lead to understanding or action
+
+## WORD COUNT TARGETS
+- **Total email**: 200-250 words
+- **Greeting**: 20-30 words
+- **Leadership DNA**: 30-40 words
+- **Challenge**: 25-35 words
+- **What's Next**: 40-50 words
+- **CTA**: 15 words
+
+## MERGE TAG EXAMPLES
+Always include fallbacks:
+- `{{first_name|there}}`
+- `{{strength_1|Strategic}}`
+- `{{strength_2|Achiever}}`
+- `{{next_monday|Monday}}`
+- `{{challenge_text|[default challenge]}}`
+- `{{unsubscribe_url|#}}`
+
+## LEGAL COMPLIANCE NOTES
+- **US CAN-SPAM**: Physical address typically required but removed per client request
+- **Unsubscribe**: Must be prominent and functional
+- **International**: Check GDPR/local requirements if applicable
+- **Recommendation**: Consider adding P.O. Box for full compliance
+
+## QUALITY CHECKLIST
+1. [ ] Subject line ≤ 40 characters?
+2. [ ] Total email ≤ 250 words?
+3. [ ] Focuses on only 2 strengths?
+4. [ ] Challenge is immediately actionable?
+5. [ ] Value proposition is clear?
+6. [ ] All merge tags have fallbacks?
+7. [ ] Mobile-friendly single column?
+8. [ ] Beige background (#F5F0E8) used?
+9. [ ] No buzzwords or generic phrases?
+10. [ ] Simplified footer with unsubscribe only?
+11. [ ] No physical address included?
+12. [ ] No "manage preferences" or "view online" links?
+
+## AVOID THESE MISTAKES
+- **Generic combinations**: "Visionary Executor," "Trust Architect"
+- **Overwhelming with information**: Stick to 2 strengths only
+- **Vague promises**: "Transform your leadership" without specifics
+- **Complex visual hierarchy**: Keep it simple and scannable
+- **Theory over practice**: Focus on what they can do today
+- **Wrong background color**: Must use beige (#F5F0E8), not white/gray
+- **Footer bloat**: Only unsubscribe link, no preferences/view online
+- **Including physical address**: Removed per client specifications
+
+## OUTPUT VALIDATION
+Include at end:
+```
+REFINED EMAIL METRICS:
+- Subject: [X] characters
+- Total words: [X]
+- Primary focus: [strength_1] + [strength_2]
+- Mobile-optimized: Yes/No
+STATUS: [PASS/FAIL]
+```
