@@ -66,14 +66,19 @@ async function runProductionEmailTest() {
     // Test 2: Error handling with invalid email
     console.log('\n2. Testing error handling...');
     try {
-      await resend.emails.send({
+      const { data: errorData, error: testError } = await resend.emails.send({
         from: 'onboarding@resend.dev',
         to: ['invalid-email-format'],
         subject: 'Error Test',
         html: '<p>This should fail</p>'
       });
+      
+      if (testError) {
+        console.log('✅ Error handling works correctly - caught invalid email');
+        testResults.errorHandling = true;
+      }
     } catch (errorTest) {
-      console.log('✅ Error handling works correctly');
+      console.log('✅ Error handling works correctly - exception caught');
       testResults.errorHandling = true;
     }
 
