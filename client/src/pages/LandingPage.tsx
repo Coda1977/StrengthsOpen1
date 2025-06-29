@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
-import fingerprintImg from '../assets/rainbow-fingerprint.svg';
+import fingerprintImg from '@assets/image_1751180885555.png';
 
 const LandingPage = () => {
   useEffect(() => {
