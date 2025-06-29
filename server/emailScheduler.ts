@@ -307,7 +307,8 @@ export class EmailScheduler {
         lastName: null,
         profileImageUrl: null,
         hasCompletedOnboarding: true,
-        topStrengths: null,
+        topStrengths: [],
+        isAdmin: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
