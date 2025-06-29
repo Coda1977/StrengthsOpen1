@@ -5,8 +5,8 @@ import { storage } from './storage';
 import { emailSubscriptions, emailLogs, users, teamMembers } from '../shared/schema';
 import type { InsertEmailSubscription, InsertEmailLog, User } from '../shared/schema';
 import { generateWeeklyEmailContent } from './openai';
-import { render } from '@react-email/components';
-import WeeklyNudgeEmail from './emailTemplates';
+// import { render } from '@react-email/components';
+// import WeeklyNudgeEmail from './emailTemplates';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -111,19 +111,14 @@ export class EmailService {
         userTeamMembers
       );
 
-      // Render the React Email template
-      const emailHtml = await render(WeeklyNudgeEmail({
-        managerName: user.firstName || 'Manager',
-        personalStrength: emailContent.personalStrength,
-        personalTip: emailContent.personalInsight,
-        specificAction: emailContent.techniqueContent,
-        teamMemberName: emailContent.teamMemberName,
-        teamMemberStrength: emailContent.teamMemberStrength,
-        teamTip: emailContent.teamSection,
-        weekNumber,
-        dashboardUrl: `${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/dashboard`,
-        unsubscribeUrl: `${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/settings/unsubscribe`,
-      }));
+      // Temporarily use simple HTML for stability testing
+      const emailHtml = `
+        <h2>Weekly Strengths Coaching - Week ${weekNumber}</h2>
+        <p>Hi ${user.firstName || 'Manager'},</p>
+        <p>Your personal strength focus: ${emailContent.personalStrength}</p>
+        <p>Weekly insight: ${emailContent.personalInsight}</p>
+        <p>Best regards,<br>Your Strengths Coach</p>
+      `;
 
       const { data, error } = await resend.emails.send({
         from: this.fromEmail,
@@ -403,4 +398,4 @@ export class EmailService {
       </html>
     `;
   }
-} 
+} export const emailService = new EmailService();

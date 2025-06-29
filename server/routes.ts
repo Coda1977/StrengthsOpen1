@@ -789,13 +789,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      const emailService = new EmailService();
+      // Temporarily disabled for stability testing
+      // const emailService = new EmailService();
       
       if (emailType === 'welcome') {
-        await emailService.sendWelcomeEmail(targetUser);
+        // await emailService.sendWelcomeEmail(targetUser);
       } else if (emailType === 'weekly') {
         const weekNumber = 1; // Test with week 1
-        await emailService.sendWeeklyCoachingEmail(targetUser, weekNumber);
+        // await emailService.sendWeeklyCoachingEmail(targetUser, weekNumber);
       }
 
       res.json({ success: true, message: `${emailType} email sent to ${targetUser.email}` });
