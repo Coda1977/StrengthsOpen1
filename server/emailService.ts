@@ -71,7 +71,7 @@ export class EmailService {
       });
 
       if (error) {
-        console.error('Welcome email failed to send:', error);
+        if (process.env.NODE_ENV !== 'production') console.error('Welcome email failed to send:', error);
         throw new Error('Failed to send welcome email');
       }
 
@@ -84,9 +84,9 @@ export class EmailService {
         status: 'sent'
       });
 
-      console.log(`Welcome email sent to ${user.email}`);
+      if (process.env.NODE_ENV !== 'production') console.log(`Welcome email sent to ${user.email}`);
     } catch (error) {
-      console.error('Error sending welcome email:', error);
+      if (process.env.NODE_ENV !== 'production') console.error('Error sending welcome email:', error);
       throw error;
     }
   }
@@ -98,7 +98,7 @@ export class EmailService {
       const userStrengths = user.topStrengths || [];
 
       if (teamMembers.length === 0) {
-        console.log(`Skipping weekly email for ${user.email} - no team members`);
+        if (process.env.NODE_ENV !== 'production') console.log(`Skipping weekly email for ${user.email} - no team members`);
         return;
       }
 
@@ -224,7 +224,7 @@ export class EmailService {
 
       // Ensure content consistency - verify the AI content matches the featured strength
       if (!weeklyContent.personalInsight.toLowerCase().includes(featuredStrength.toLowerCase())) {
-        console.warn('AI content mismatch detected, using fallback content');
+        if (process.env.NODE_ENV !== 'production') console.warn('AI content mismatch detected, using fallback content');
         weeklyContent.personalInsight = `Your ${featuredStrength} strength gives you a unique advantage this week. You naturally ${this.getStrengthAction(featuredStrength)}, which sets you apart from other leaders.`;
         weeklyContent.techniqueName = `${featuredStrength} Focus`;
         weeklyContent.techniqueContent = `This week, consciously apply your ${featuredStrength} strength in one key decision or interaction. Notice how it changes the outcome.`;
@@ -259,7 +259,7 @@ export class EmailService {
       });
 
       if (error) {
-        console.error('Weekly email failed to send:', error);
+        if (process.env.NODE_ENV !== 'production') console.error('Weekly email failed to send:', error);
         throw new Error('Failed to send weekly email');
       }
 
@@ -273,9 +273,9 @@ export class EmailService {
         weekNumber: weekNumber.toString()
       });
 
-      console.log(`Weekly email ${weekNumber} sent to ${user.email}`);
+      if (process.env.NODE_ENV !== 'production') console.log(`Weekly email ${weekNumber} sent to ${user.email}`);
     } catch (error) {
-      console.error('Error sending weekly email:', error);
+      if (process.env.NODE_ENV !== 'production') console.error('Error sending weekly email:', error);
       throw error;
     }
   }
@@ -639,7 +639,7 @@ export class EmailService {
 
   async processWeeklyEmails(): Promise<void> {
     try {
-      console.log('Processing weekly emails...');
+      if (process.env.NODE_ENV !== 'production') console.log('Processing weekly emails...');
       // Implementation for bulk weekly email processing
       // This would be called by the email scheduler
     } catch (error) {
