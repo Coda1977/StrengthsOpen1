@@ -1,7 +1,8 @@
 import { Resend } from 'resend';
 import { User } from '../shared/schema';
 import { storage } from './storage';
-import { generateWeeklyEmailContent } from './openai';
+import { generateWeeklyEmailContent, generateWelcomeEmailContent } from './openai';
+import { marked } from 'marked';
 
 export class EmailService {
   private resend = new Resend(process.env.RESEND_API_KEY);
@@ -22,19 +23,26 @@ export class EmailService {
         day: 'numeric' 
       });
 
-      // Generate strength-focused subject line (max 40 chars per AI instructions)
-      const firstName = user.firstName || 'there';
-      const subjectLine = `${firstName}, your ${strength1} mind is rare`;
+      // Use AI to generate welcome email content
+      const aiContent = await generateWelcomeEmailContent(user.firstName || '', strength1, strength2, nextMondayStr);
+      if ('error' in aiContent) {
+        throw new Error('Failed to generate welcome email content: ' + aiContent.error);
+      }
 
-      // Generate proper greeting following AI instructions
-      const greeting = `Hi ${firstName},`;
+      // Convert all AI-generated fields from Markdown to HTML (await since marked returns a Promise)
+      const greetingHtml = await marked(aiContent.greeting);
+      const dnaHtml = await marked(aiContent.dna);
+      const challengeHtml = await marked(aiContent.challengeText);
+      const whatsNextHtml = await marked(aiContent.whatsNext);
+      const ctaHtml = await marked(aiContent.cta);
 
-      // Generate professional HTML using the refined welcome email template
+      // Generate professional HTML using the AI-generated content
       const emailHtml = this.generateProfessionalWelcomeEmail(
-        greeting,
-        strength1,
-        strength2,
-        this.generateChallenge(strength1),
+        greetingHtml,
+        dnaHtml,
+        challengeHtml,
+        whatsNextHtml,
+        ctaHtml,
         nextMondayStr
       );
 
@@ -42,7 +50,7 @@ export class EmailService {
       const { data, error } = await this.resend.emails.send({
         from: this.fromEmail,
         to: [user.email!],
-        subject: subjectLine,
+        subject: aiContent.subject,
         html: emailHtml,
       });
 
@@ -51,11 +59,11 @@ export class EmailService {
         throw new Error('Failed to send welcome email');
       }
 
-      // Log successful email delivery
+      // Log successful email delivery (remove metadata property if not supported)
       await storage.createEmailLog({
         userId: user.id,
         emailType: 'welcome',
-        emailSubject: subjectLine,
+        emailSubject: aiContent.subject,
         resendId: data?.id,
         status: 'sent'
       });
@@ -99,6 +107,17 @@ export class EmailService {
         [], // previousOpeners - would track from email logs  
         []  // previousTeamMembers - would track from email logs
       );
+
+      // Convert all AI-generated fields from Markdown to HTML for weeklyContent (await since marked returns a Promise)
+      weeklyContent.personalInsight = await marked(weeklyContent.personalInsight);
+      weeklyContent.techniqueName = await marked(weeklyContent.techniqueName);
+      weeklyContent.techniqueContent = await marked(weeklyContent.techniqueContent);
+      weeklyContent.teamSection = await marked(weeklyContent.teamSection);
+      weeklyContent.quote = await marked(weeklyContent.quote);
+      weeklyContent.quoteAuthor = await marked(weeklyContent.quoteAuthor);
+      weeklyContent.header = await marked(weeklyContent.header);
+      weeklyContent.preHeader = await marked(weeklyContent.preHeader);
+      weeklyContent.subjectLine = await marked(weeklyContent.subjectLine);
 
       // Generate professional HTML using your exact weekly email template
       const emailHtml = this.generateProfessionalWeeklyEmail(
@@ -186,10 +205,11 @@ export class EmailService {
   }
 
   private generateProfessionalWelcomeEmail(
-    greeting: string,
-    strength1: string,
-    strength2: string,
-    challengeText: string,
+    greetingHtml: string,
+    dnaHtml: string,
+    challengeHtml: string,
+    whatsNextHtml: string,
+    ctaHtml: string,
     nextMonday: string
   ): string {
     // Use the refined welcome email template design following AI instructions
@@ -254,63 +274,48 @@ export class EmailService {
                             
                             <!-- Personal Greeting -->
                             <div style="margin-bottom: 32px;">
-                                <p style="font-size: 18px; line-height: 1.6; margin: 0 0 16px 0; color: #0F172A;">
-                                    ${greeting}
-                                </p>
-                                <p style="color: #0F172A; font-size: 16px; line-height: 1.6; margin: 0; color: #374151;">
-                                    Most managers try to be good at everything. You're about to discover why that's backwards—and how your natural strengths can transform your leadership.
-                                </p>
+                                <div style="font-size: 18px; line-height: 1.6; margin: 0 0 16px 0; color: #0F172A;">
+                                    ${greetingHtml}
+                                </div>
                             </div>
-                            
                             <!-- Key Strengths Focus -->
                             <div style="background: #F1F5F9; border-radius: 8px; padding: 24px; margin-bottom: 32px; border-left: 4px solid #CC9B00;">
                                 <h2 style="color: #003566; font-size: 16px; font-weight: 700; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.5px;">
                                     Your Leadership DNA
                                 </h2>
-                                <p style="color: #0F172A; font-size: 18px; font-weight: 600; margin: 0 0 8px 0; line-height: 1.4;">
-                                    ${strength1} + ${strength2}
-                                </p>
-                                <p style="color: #4B5563; font-size: 15px; line-height: 1.6; margin: 0;">
-                                    ${this.generateDNAInsight(strength1, strength2)}
-                                </p>
+                                <div style="color: #0F172A; font-size: 18px; font-weight: 600; margin: 0 0 8px 0; line-height: 1.4;">
+                                    ${dnaHtml}
+                                </div>
                             </div>
-                            
-                            <!-- Today's Challenge -->
+                            <!-- Challenge Section -->
                             <div style="background: #FEF3C7; border-radius: 8px; padding: 20px; margin-bottom: 32px;">
                                 <h3 style="color: #92400E; font-size: 15px; font-weight: 700; margin: 0 0 12px 0;">
                                     Try This Today:
                                 </h3>
-                                <p style="color: #1F2937; font-size: 15px; line-height: 1.5; margin: 0;">
-                                    ${challengeText}
-                                </p>
+                                <div style="color: #1F2937; font-size: 15px; line-height: 1.5; margin: 0;">
+                                    ${challengeHtml}
+                                </div>
                             </div>
-                            
                             <!-- What's Next -->
                             <div style="margin-bottom: 32px;">
                                 <h3 style="color: #003566; font-size: 18px; font-weight: 700; margin: 0 0 16px 0;">
                                     What happens next?
                                 </h3>
-                                <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 16px 0;">
-                                    Every Monday for 12 weeks, you'll get one practical way to use your ${strength1} advantage in real leadership situations.
-                                </p>
-                                <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0;">
-                                    No theory. No generic advice. Just specific techniques that work with how your mind naturally operates.
-                                </p>
+                                <div style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 16px 0;">
+                                    ${whatsNextHtml}
+                                </div>
                             </div>
-                            
                             <!-- Next Step -->
                             <div style="background: #F8FAFC; border-radius: 8px; padding: 20px; text-align: center;">
-                                <p style="color: #003566; font-size: 16px; font-weight: 600; margin: 0;">
-                                    First insight arrives ${nextMonday}
-                                </p>
-                                <p style="color: #6B7280; font-size: 14px; margin: 8px 0 0 0;">
+                                <div style="color: #003566; font-size: 16px; font-weight: 600; margin: 0;">
+                                    ${ctaHtml}
+                                </div>
+                                <div style="color: #6B7280; font-size: 14px; margin: 8px 0 0 0;">
                                     Get ready to lead differently.
-                                </p>
+                                </div>
                             </div>
-                            
                         </td>
                     </tr>
-                    
                     <!-- Footer -->
                     <tr>
                         <td class="content-padding" style="padding: 24px 32px 32px 32px; border-top: 1px solid #E5E7EB;">
@@ -321,17 +326,15 @@ export class EmailService {
                                 <p style="color: #9CA3AF; font-size: 13px; margin: 0 0 16px 0;">
                                     AI-powered leadership development
                                 </p>
-                                
                                 <!-- CAN-SPAM Compliance -->
                                 <p style="margin: 16px 0 0 0;">
-                                    <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/unsubscribe?token=${greeting.split(' ')[1] || 'user'}" style="color: #6B7280; font-size: 12px; text-decoration: underline;">
+                                    <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/unsubscribe?token=${greetingHtml.split(' ')[1] || 'user'}" style="color: #6B7280; font-size: 12px; text-decoration: underline;">
                                         Unsubscribe
                                     </a>
                                 </p>
                             </div>
                         </td>
                     </tr>
-                    
                 </table>
             </td>
         </tr>
