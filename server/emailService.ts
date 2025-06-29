@@ -114,19 +114,18 @@ export class EmailService {
         []  // previousTeamMembers - would track from email logs
       );
 
-      // Clean function to process text content properly
+      // Clean function to preserve important formatting while removing excess
       const cleanMarkdown = async (content: string) => {
         if (!content) return '';
         const html = await marked(content);
         return html
           .replace(/<p>/g, '')
           .replace(/<\/p>/g, '')
-          .replace(/<[^>]*>/g, '') // Remove remaining HTML tags
           .replace(/\n/g, ' ')
           .trim();
       };
 
-      // Process all content fields, keeping them as clean text
+      // Process content fields while preserving structure
       weeklyContent.personalInsight = await cleanMarkdown(weeklyContent.personalInsight);
       weeklyContent.techniqueName = await cleanMarkdown(weeklyContent.techniqueName);
       weeklyContent.techniqueContent = await cleanMarkdown(weeklyContent.techniqueContent);
@@ -136,6 +135,14 @@ export class EmailService {
       weeklyContent.header = await cleanMarkdown(weeklyContent.header);
       weeklyContent.preHeader = await cleanMarkdown(weeklyContent.preHeader);
       weeklyContent.subjectLine = await cleanMarkdown(weeklyContent.subjectLine);
+
+      // Ensure content consistency - verify the AI content matches the featured strength
+      if (!weeklyContent.personalInsight.toLowerCase().includes(featuredStrength.toLowerCase())) {
+        console.warn('AI content mismatch detected, using fallback content');
+        weeklyContent.personalInsight = `Your ${featuredStrength} strength gives you a unique advantage this week. You naturally ${this.getStrengthAction(featuredStrength)}, which sets you apart from other leaders.`;
+        weeklyContent.techniqueName = `${featuredStrength} Focus`;
+        weeklyContent.techniqueContent = `This week, consciously apply your ${featuredStrength} strength in one key decision or interaction. Notice how it changes the outcome.`;
+      }
 
       // Generate professional HTML using your exact weekly email template
       const emailHtml = this.generateProfessionalWeeklyEmail(
@@ -203,6 +210,23 @@ export class EmailService {
     const key2 = `${s2}_${s1}`;
     
     return combinations[key1] || combinations[key2] || `combine ${s1.toLowerCase()} thinking with ${s2.toLowerCase()} execution in unique ways. That's a rare combination that most leaders struggle to develop.`;
+  }
+
+  private getStrengthAction(strength: string): string {
+    const actions: { [key: string]: string } = {
+      'Strategic': 'see multiple pathways to success',
+      'Achiever': 'drive consistent progress toward goals',
+      'Relator': 'build deep, authentic relationships',
+      'Developer': 'spot growth potential in others',
+      'Analytical': 'find logical patterns others miss',
+      'Focus': 'maintain direction when others get distracted',
+      'Responsibility': 'follow through on commitments completely',
+      'Communication': 'make complex ideas clear and compelling',
+      'Ideation': 'generate creative solutions to problems',
+      'Learner': 'continuously acquire new knowledge and skills'
+    };
+    
+    return actions[strength] || 'leverage your natural talents effectively';
   }
 
   private generateChallenge(strength: string): string {
@@ -440,11 +464,12 @@ export class EmailService {
                                             </tr>
                                             <tr>
                                                 <td style="border-top: 1px solid #E5E7EB; padding-top: 20px;">
-                                                    <span style="color: #003566; font-weight: 600; font-family: Arial, Helvetica, sans-serif;">►</span> 
-                                                    <strong style="color: #0F172A; font-family: Arial, Helvetica, sans-serif;">${cleanHtml(weeklyContent.techniqueName || 'Daily Achievement Log')}:</strong>
-                                                    <span style="color: #4A4A4A; font-size: 16px; line-height: 1.5; font-family: Arial, Helvetica, sans-serif;">
-                                                        ${cleanHtml(weeklyContent.techniqueContent || 'Start today by keeping a simple log of your daily accomplishments.')}
-                                                    </span>
+                                                    <div style="margin-bottom: 8px;">
+                                                        <span style="color: #003566; font-weight: 600; font-family: Arial, Helvetica, sans-serif; font-size: 14px;">► ${cleanHtml(weeklyContent.techniqueName || 'This Week\'s Focus')}:</span>
+                                                    </div>
+                                                    <div style="color: #374151; font-size: 15px; line-height: 1.6; font-family: Arial, Helvetica, sans-serif;">
+                                                        ${cleanHtml(weeklyContent.techniqueContent || 'Apply your strength in one key interaction this week.')}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         </table>

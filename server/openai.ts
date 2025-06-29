@@ -409,6 +409,8 @@ Always include the technique name or specific action
 Use: Week ${weekNumber}: Your ${featuredStrength} strength spotlight
 
 ### 4. PERSONAL INSIGHT (45-60 words)
+**CRITICAL: Must mention ${featuredStrength} by name and be consistent throughout**
+
 **OPENER VARIETY (rotate these patterns):**
 - Question: "Know what separates good ${featuredStrength}s from great ones?"
 - Observation: "Your ${featuredStrength} does something unusual:"
@@ -417,9 +419,9 @@ Use: Week ${weekNumber}: Your ${featuredStrength} strength spotlight
 - Direct: "Time to upgrade your ${featuredStrength}."
 
 **STRUCTURE:**
-- One-line opener (varies by week)
-- Core insight showing strength combination
-- **Bolded revelation** (the "aha" moment)
+- One-line opener (varies by week) - MUST include ${featuredStrength}
+- Core insight showing how ${featuredStrength} works with other strengths
+- Actionable revelation focused on ${featuredStrength}
 
 ### 5. TECHNIQUE SECTION (60-80 words)
 ► [Technique Name] - must be memorable and specific
@@ -485,6 +487,16 @@ Generate the email content in JSON format with these exact fields:
       if (!parsed[field] || typeof parsed[field] !== 'string') {
         throw new Error(`Missing or invalid field: ${field}`);
       }
+    }
+
+    // Validate strength consistency
+    const strengthMentioned = parsed.personalInsight.toLowerCase().includes(featuredStrength.toLowerCase()) ||
+                             parsed.techniqueName.toLowerCase().includes(featuredStrength.toLowerCase());
+    
+    if (!strengthMentioned) {
+      console.warn(`AI content doesn't mention featured strength: ${featuredStrength}`);
+      // Fix the content to include the featured strength
+      parsed.personalInsight = `Your ${featuredStrength} strength ${parsed.personalInsight.toLowerCase().replace(/^your \w+ strength /, '')}`;
     }
 
     // Validate character limits
