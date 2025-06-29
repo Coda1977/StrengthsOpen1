@@ -397,35 +397,23 @@ export class EmailService {
         </xml>
     </noscript>
     <![endif]-->
-    <style>
-        body, p { margin: 0; padding: 0; }
-        table { border-collapse: collapse; }
-        img { max-width: 100%; height: auto; }
-        .email-container { max-width: 540px; }
-        .content-padding { padding: 20px; }
-        @media only screen and (max-width: 600px) {
-            .email-container { width: 100% !important; max-width: 100% !important; }
-            .content-padding { padding: 16px !important; }
-            .mobile-text { font-size: 16px !important; line-height: 1.5 !important; }
-        }
-    </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #F5F0E8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #0F172A; line-height: 1.4;">
+<body style="margin: 0; padding: 0; background-color: #F5F0E8; font-family: Arial, Helvetica, sans-serif; color: #0F172A; line-height: 1.4;">
     
     <!-- Hidden pre-header -->
     <span style="display:none; font-size:1px; color:#F5F0E8; line-height:1px; max-height:0px; max-width:0px; opacity:0; overflow:hidden;">
         ${cleanHtml(weeklyContent.preHeader || 'Your weekly strength insight')}
     </span>
     
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #F5F0E8; min-height: 100vh;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F5F0E8; padding: 40px 20px;">
         <tr>
-            <td align="center" style="padding: 40px 20px;">
-                <table class="email-container" width="540" style="max-width: 540px;" cellpadding="0" cellspacing="0">
+            <td align="center">
+                <table width="540" cellpadding="0" cellspacing="0" border="0" style="max-width: 540px; width: 100%;">
                     
                     <!-- Header -->
                     <tr>
                         <td style="padding-bottom: 24px; text-align: center;">
-                            <h1 style="color: #003566; font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.25px; line-height: 1.3;">
+                            <h1 style="color: #003566; font-size: 18px; font-weight: 600; margin: 0; font-family: Arial, Helvetica, sans-serif;">
                                 ${cleanHtml(weeklyContent.header || `Week ${weekNumber}: Your ${personalStrength} strength spotlight`)}
                             </h1>
                         </td>
@@ -434,19 +422,32 @@ export class EmailService {
                     <!-- Primary Card - Personal Insight -->
                     <tr>
                         <td style="padding-bottom: 20px;">
-                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #FFFFFF; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #FFFFFF; border-radius: 12px; border: 1px solid #E5E7EB;">
                                 <tr>
                                     <td style="padding: 32px 28px;">
-                                        <div style="background-color: #CC9B00; color: #0F172A; font-size: 12px; font-weight: 700; letter-spacing: 1px; padding: 6px 12px; border-radius: 20px; display: inline-block; margin-bottom: 16px; text-transform: uppercase;">
-                                            ${personalStrength}
-                                        </div>
-                                        <div style="color: #0F172A; font-size: 17px; line-height: 1.6; margin: 0 0 20px 0; font-weight: 400;">
-                                            ${cleanHtml(weeklyContent.personalInsight || 'Your strength insight for this week.')}
-                                        </div>
-                                        <div style="height: 1px; background-color: #E5E7EB; margin: 20px 0;"></div>
-                                        <div style="color: #4A4A4A; font-size: 16px; line-height: 1.5; margin: 0;">
-                                            <span style="color: #003566; font-weight: 600;">►</span> <strong>${cleanHtml(weeklyContent.techniqueName || 'Daily Achievement Log')}:</strong> ${cleanHtml(weeklyContent.techniqueContent || 'Start today by keeping a simple log of your daily accomplishments.')}
-                                        </div>
+                                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td>
+                                                    <span style="background-color: #CC9B00; color: #0F172A; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 20px; display: inline-block; margin-bottom: 16px; text-transform: uppercase; font-family: Arial, Helvetica, sans-serif;">
+                                                        ${personalStrength}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #0F172A; font-size: 17px; line-height: 1.6; padding-bottom: 20px; font-family: Arial, Helvetica, sans-serif;">
+                                                    ${cleanHtml(weeklyContent.personalInsight || 'Your strength insight for this week.')}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="border-top: 1px solid #E5E7EB; padding-top: 20px;">
+                                                    <span style="color: #003566; font-weight: 600; font-family: Arial, Helvetica, sans-serif;">►</span> 
+                                                    <strong style="color: #0F172A; font-family: Arial, Helvetica, sans-serif;">${cleanHtml(weeklyContent.techniqueName || 'Daily Achievement Log')}:</strong>
+                                                    <span style="color: #4A4A4A; font-size: 16px; line-height: 1.5; font-family: Arial, Helvetica, sans-serif;">
+                                                        ${cleanHtml(weeklyContent.techniqueContent || 'Start today by keeping a simple log of your daily accomplishments.')}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </table>
                                     </td>
                                 </tr>
                             </table>
@@ -456,13 +457,13 @@ export class EmailService {
                     <!-- Team Section -->
                     <tr>
                         <td style="padding-bottom: 32px;">
-                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #FFFFFF; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #FFFFFF; border-radius: 12px; border: 1px solid #E5E7EB;">
                                 <tr>
                                     <td style="padding: 20px 24px;">
-                                        <div style="color: #003566; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 12px; text-transform: uppercase;">
-                                            <span>▶</span> Team Insight
+                                        <div style="color: #003566; font-size: 12px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; font-family: Arial, Helvetica, sans-serif;">
+                                            ▶ TEAM INSIGHT
                                         </div>
-                                        <div style="color: #0F172A; font-size: 15px; line-height: 1.5; margin: 0;">
+                                        <div style="color: #0F172A; font-size: 15px; line-height: 1.5; margin: 0; font-family: Arial, Helvetica, sans-serif;">
                                             ${cleanHtml(weeklyContent.teamSection || `This week: ${teamMemberName}'s ${teamMemberStrength} needs continuous challenges. Avoid overwhelming tasks. Opt for bite-sized learning opportunities.`)}
                                         </div>
                                     </td>
@@ -474,13 +475,13 @@ export class EmailService {
                     <!-- Quote Section -->
                     <tr>
                         <td style="padding-bottom: 32px;">
-                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: rgba(204, 155, 0, 0.1); border-radius: 12px; border-left: 4px solid #CC9B00;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #FEF3C7; border-radius: 12px; border-left: 4px solid #CC9B00;">
                                 <tr>
                                     <td style="padding: 20px 24px;">
-                                        <div style="color: #0F172A; font-size: 16px; line-height: 1.5; font-style: italic; margin-bottom: 8px;">
+                                        <div style="color: #0F172A; font-size: 16px; line-height: 1.5; font-style: italic; margin-bottom: 8px; font-family: Arial, Helvetica, sans-serif;">
                                             "${cleanHtml(weeklyContent.quote || 'Success usually comes to those who are too busy to be looking for it.')}"
                                         </div>
-                                        <div style="color: #6B7280; font-size: 14px; font-weight: 500;">
+                                        <div style="color: #6B7280; font-size: 14px; font-weight: 500; font-family: Arial, Helvetica, sans-serif;">
                                             — ${cleanHtml(weeklyContent.quoteAuthor || 'Henry David Thoreau')}
                                         </div>
                                     </td>
@@ -492,10 +493,10 @@ export class EmailService {
                     <!-- CTA Button -->
                     <tr>
                         <td style="text-align: center; padding-bottom: 40px;">
-                            <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                            <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
                                 <tr>
                                     <td style="background-color: #003566; border-radius: 8px; text-align: center;">
-                                        <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/dashboard" style="display: inline-block; color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 8px;">
+                                        <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/dashboard" style="display: block; color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 32px; font-family: Arial, Helvetica, sans-serif;">
                                             View Dashboard →
                                         </a>
                                     </td>
@@ -507,11 +508,11 @@ export class EmailService {
                     <!-- Footer -->
                     <tr>
                         <td style="text-align: center; padding-top: 20px; border-top: 1px solid #E5E7EB;">
-                            <p style="color: #9CA3AF; font-size: 13px; margin: 0 0 16px 0; font-weight: 500;">
+                            <p style="color: #9CA3AF; font-size: 13px; margin: 0 0 16px 0; font-weight: 500; font-family: Arial, Helvetica, sans-serif;">
                                 Strengths Manager
                             </p>
                             <p style="margin: 0;">
-                                <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/unsubscribe?token=${managerName}" style="color: #6B7280; font-size: 12px; text-decoration: underline;">
+                                <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/unsubscribe?token=${managerName}" style="color: #6B7280; font-size: 12px; text-decoration: underline; font-family: Arial, Helvetica, sans-serif;">
                                     Unsubscribe
                                 </a>
                             </p>
