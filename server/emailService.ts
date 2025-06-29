@@ -11,7 +11,7 @@ import { generateWeeklyEmailContent } from './openai';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export class EmailService {
-  private fromEmail = 'onboarding@strengthsmanager.com';
+  private fromEmail = 'onboarding@resend.dev';
   
   async sendWelcomeEmail(user: User, timezone: string = 'America/New_York'): Promise<void> {
     try {
