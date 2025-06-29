@@ -4,6 +4,16 @@ import { setupVite, serveStatic, log } from "./vite";
 import { errorHandler } from "./errorHandler";
 
 export const app = express();
+
+// Replit host bypass middleware
+app.use((req, res, next) => {
+  // Override host header for Replit domains
+  if (req.headers.host && req.headers.host.includes('replit.dev')) {
+    req.headers.host = 'localhost:5000';
+  }
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
