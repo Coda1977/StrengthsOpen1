@@ -776,19 +776,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/emails/test', async (req, res) => {
+  app.post('/api/admin/emails/test', isAuthenticated, async (req, res) => {
     try {
-      const user = req.user as any;
-      if (!user || user.email !== 'tinymanagerai@gmail.com') {
+      const userId = (req as AuthenticatedRequest).user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
-      const { emailType, userId } = req.body;
+      const { emailType, userId: targetUserId } = req.body;
       
       const targetUser = await db
         .select()
         .from(users)
-        .where(eq(users.id, userId))
+        .where(eq(users.id, targetUserId))
         .limit(1)
         .then(results => results[0]);
 
@@ -796,18 +798,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      // Temporarily disabled for stability testing
-      // const emailService = new EmailService();
-      
+      // Re-enable email sending functionality
       if (emailType === 'welcome') {
-        // await emailService.sendWelcomeEmail(targetUser);
+        await emailService.sendWelcomeEmail(targetUser);
       } else if (emailType === 'weekly') {
         const weekNumber = 1; // Test with week 1
-        // await emailService.sendWeeklyCoachingEmail(targetUser, weekNumber);
+        await emailService.sendWeeklyCoachingEmail(targetUser, weekNumber);
       }
 
       res.json({ success: true, message: `${emailType} email sent to ${targetUser.email}` });
     } catch (error) {
+      console.error('Error sending test email:', error);
       res.status(500).json({ error: 'Failed to send test email' });
     }
   });
