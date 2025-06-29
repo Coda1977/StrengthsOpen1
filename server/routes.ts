@@ -812,7 +812,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
-      const emailService = new EmailService();
       await emailService.processWeeklyEmails();
       
       res.json({ success: true, message: 'Weekly emails processed' });
