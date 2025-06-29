@@ -526,6 +526,8 @@ export class DatabaseStorage implements IStorage {
   async createEmailLog(data: InsertEmailLog): Promise<EmailLog> {
     try {
       const id = this.generateSecureId();
+      console.log('Creating email log with data:', { id, ...data });
+      
       const [log] = await db.insert(emailLogs)
         .values({
           id,
@@ -535,8 +537,9 @@ export class DatabaseStorage implements IStorage {
 
       return log;
     } catch (error) {
-      if (isDev) console.error('Error creating email log:', error);
-      throw new Error('Failed to create email log');
+      console.error('Error creating email log:', error);
+      console.error('Data attempted to insert:', { id: this.generateSecureId(), ...data });
+      throw error; // Re-throw the original error for debugging
     }
   }
 
