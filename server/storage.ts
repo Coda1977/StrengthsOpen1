@@ -7,6 +7,7 @@ import {
   conversationBackups,
   emailSubscriptions,
   emailLogs,
+  unsubscribeTokens,
   type User, 
   type UpsertUser, 
   type UpdateUserOnboarding, 
@@ -24,7 +25,10 @@ import {
   type InsertEmailSubscription,
   type UpdateEmailSubscription,
   type EmailLog,
-  type InsertEmailLog
+  type InsertEmailLog,
+  type UnsubscribeToken,
+  type InsertUnsubscribeToken,
+  type UpdateUnsubscribeToken
 } from '../shared/schema';
 import { eq, and, inArray, sql, count, desc, asc } from 'drizzle-orm';
 import crypto from 'crypto';
@@ -72,6 +76,14 @@ export interface IStorage {
 
   // Team analytics
   getTeamAnalytics(managerId: string): Promise<{ totalMembers: number; strengthsDistribution: Record<string, number>; averageStrengthsPerMember: number }>;
+
+  // Unsubscribe token operations
+  getUnsubscribeTokens(userId: string): Promise<UnsubscribeToken[]>;
+  createUnsubscribeToken(userId: string, token: string, emailType: 'welcome' | 'weekly_coaching' | 'all'): Promise<UnsubscribeToken>;
+  updateUnsubscribeToken(userId: string, token: string, data: UpdateUnsubscribeToken): Promise<UnsubscribeToken | undefined>;
+  deleteUnsubscribeToken(userId: string, token: string): Promise<void>;
+  validateUnsubscribeToken(userId: string, token: string): Promise<boolean>;
+  unsubscribeFromEmails(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -80,6 +92,7 @@ export class DatabaseStorage implements IStorage {
   private teamMembersCache = new Map<string, { members: TeamMember[]; timestamp: number }>();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
   private readonly MAX_CACHE_SIZE = 1000; // Prevent memory leaks
+  private cacheCleanupInterval: NodeJS.Timeout | null = null;
 
   private getCachedUser(id: string): User | null {
     if (!id) return null;
@@ -547,9 +560,24 @@ export class DatabaseStorage implements IStorage {
 
   // Periodic cache cleanup
   startCacheCleanup(): void {
-    setInterval(() => {
+    // Run cleanup every 10 minutes
+    if (this.cacheCleanupInterval) return; // Prevent multiple intervals
+    this.cacheCleanupInterval = setInterval(() => {
       this.clearExpiredCache();
-    }, 10 * 60 * 1000); // Clean up every 10 minutes
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Storage] Periodic cache cleanup ran.');
+      }
+    }, 10 * 60 * 1000); // 10 minutes
+  }
+
+  stopCacheCleanup(): void {
+    if (this.cacheCleanupInterval) {
+      clearInterval(this.cacheCleanupInterval);
+      this.cacheCleanupInterval = null;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Storage] Cache cleanup interval stopped.');
+      }
+    }
   }
 
   // Conversation operations
@@ -894,6 +922,128 @@ export class DatabaseStorage implements IStorage {
 
   private invalidateCache(key: string): void {
     this.teamMembersCache.delete(key);
+  }
+
+  // Unsubscribe token operations
+  async getUnsubscribeTokens(userId: string): Promise<UnsubscribeToken[]> {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    try {
+      const tokens = await db.select()
+        .from(unsubscribeTokens)
+        .where(eq(unsubscribeTokens.userId, userId));
+
+      return tokens;
+    } catch (error) {
+      if (isDev) console.error('Error fetching unsubscribe tokens:', error);
+      throw new Error('Failed to fetch unsubscribe tokens');
+    }
+  }
+
+  async createUnsubscribeToken(userId: string, token: string, emailType: 'welcome' | 'weekly_coaching' | 'all'): Promise<UnsubscribeToken> {
+    if (!userId || !token) {
+      throw new Error('User ID and token are required');
+    }
+
+    try {
+      // Set expiration to 30 days from now
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+
+      const [unsubscribeToken] = await db.insert(unsubscribeTokens)
+        .values({
+          userId,
+          token,
+          emailType,
+          expiresAt,
+        })
+        .returning();
+
+      return unsubscribeToken;
+    } catch (error) {
+      if (isDev) console.error('Error creating unsubscribe token:', error);
+      throw new Error('Failed to create unsubscribe token');
+    }
+  }
+
+  async updateUnsubscribeToken(userId: string, token: string, data: UpdateUnsubscribeToken): Promise<UnsubscribeToken | undefined> {
+    if (!userId || !token) {
+      throw new Error('User ID and token are required');
+    }
+
+    try {
+      const [unsubscribeToken] = await db.update(unsubscribeTokens)
+        .set(data)
+        .where(and(
+          eq(unsubscribeTokens.userId, userId),
+          eq(unsubscribeTokens.token, token)
+        ))
+        .returning();
+
+      return unsubscribeToken;
+    } catch (error) {
+      if (isDev) console.error('Error updating unsubscribe token:', error);
+      throw new Error('Failed to update unsubscribe token');
+    }
+  }
+
+  async deleteUnsubscribeToken(userId: string, token: string): Promise<void> {
+    if (!userId || !token) {
+      throw new Error('User ID and token are required');
+    }
+
+    try {
+      await db.delete(unsubscribeTokens)
+        .where(and(
+          eq(unsubscribeTokens.userId, userId),
+          eq(unsubscribeTokens.token, token)
+        ));
+    } catch (error) {
+      if (isDev) console.error('Error deleting unsubscribe token:', error);
+      throw new Error('Failed to delete unsubscribe token');
+    }
+  }
+
+  async validateUnsubscribeToken(userId: string, token: string): Promise<boolean> {
+    if (!userId || !token) {
+      throw new Error('User ID and token are required');
+    }
+
+    try {
+      const [unsubscribeToken] = await db.select()
+        .from(unsubscribeTokens)
+        .where(and(
+          eq(unsubscribeTokens.userId, userId),
+          eq(unsubscribeTokens.token, token)
+        ));
+
+      return !!unsubscribeToken;
+    } catch (error) {
+      if (isDev) console.error('Error validating unsubscribe token:', error);
+      throw new Error('Failed to validate unsubscribe token');
+    }
+  }
+
+  async unsubscribeFromEmails(userId: string): Promise<void> {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    try {
+      // Delete all unsubscribe tokens for the user
+      await db.delete(unsubscribeTokens)
+        .where(eq(unsubscribeTokens.userId, userId));
+      
+      // Update email subscriptions to inactive
+      await db.update(emailSubscriptions)
+        .set({ isActive: false })
+        .where(eq(emailSubscriptions.userId, userId));
+    } catch (error) {
+      if (isDev) console.error('Error unsubscribing from emails:', error);
+      throw new Error('Failed to unsubscribe from emails');
+    }
   }
 }
 

@@ -53,16 +53,23 @@ interface Analytics {
   deliveryRate: number;
 }
 
+interface OpenAIUsage {
+  total: number;
+  perUser: { userId: string; total: number }[];
+}
+
 export default function Admin() {
   const [users, setUsers] = useState<User[]>([]);
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([]);
   const [health, setHealth] = useState<SystemHealth | null>(null);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [openaiUsage, setOpenaiUsage] = useState<OpenAIUsage | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string>('');
   const [emailType, setEmailType] = useState<'welcome' | 'weekly'>('welcome');
   const { toast } = useToast();
   const { user } = useAuth();
+  const [adminProfile, setAdminProfile] = useState<User | null>(null);
 
   // Check if user is admin and redirect immediately if not
   useEffect(() => {
@@ -88,17 +95,21 @@ export default function Admin() {
       setLoading(true);
       
       // Fetch all data in parallel
-      const [usersRes, emailLogsRes, healthRes, analyticsRes] = await Promise.all([
+      const [usersRes, emailLogsRes, healthRes, analyticsRes, openaiUsageRes, adminProfileRes] = await Promise.all([
         fetch('/api/admin/users'),
         fetch('/api/admin/emails'),
         fetch('/api/admin/health'),
         fetch('/api/admin/analytics'),
+        fetch('/api/admin/openai-usage'),
+        fetch('/api/auth/user'),
       ]);
 
       if (usersRes.ok) setUsers(await usersRes.json());
       if (emailLogsRes.ok) setEmailLogs(await emailLogsRes.json());
       if (healthRes.ok) setHealth(await healthRes.json());
       if (analyticsRes.ok) setAnalytics(await analyticsRes.json());
+      if (openaiUsageRes.ok) setOpenaiUsage(await openaiUsageRes.json());
+      if (adminProfileRes.ok) setAdminProfile(await adminProfileRes.json());
     } catch (error) {
       toast({
         title: "Error",
@@ -255,7 +266,7 @@ export default function Admin() {
 
       {/* Analytics Cards */}
       {analytics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -297,6 +308,36 @@ export default function Admin() {
             <CardContent>
               <div className="text-2xl font-bold">{analytics.emails.recent}</div>
               <p className="text-xs text-muted-foreground">Last 7 days</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">OpenAI Spend</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ${openaiUsage ? openaiUsage.total.toFixed(2) : '0.00'}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Total spent on OpenAI API
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Your Top 5 Strengths</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg font-bold">
+                {adminProfile && adminProfile.topStrengths && adminProfile.topStrengths.length > 0
+                  ? adminProfile.topStrengths.slice(0, 5).join(', ')
+                  : 'Not set'}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                As set in your profile
+              </p>
             </CardContent>
           </Card>
         </div>

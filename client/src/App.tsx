@@ -44,6 +44,12 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
+      <Route path="/encyclopedia/:strength">
+        <ProtectedRoute routeName="Encyclopedia" requireOnboarding>
+          <Encyclopedia />
+        </ProtectedRoute>
+      </Route>
+
       <Route path="/ai-coach">
         <ProtectedRoute routeName="AI Coach" requireOnboarding>
           <ChatCoach />

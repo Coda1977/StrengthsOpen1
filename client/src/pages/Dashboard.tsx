@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTeamAnalytics, useOptimizedQuery, STRENGTHS_DOMAIN_MAP, ALL_STRENGTHS } from '@/hooks/usePerformanceOptimized';
 import { useFileUploadCleanup, useCleanup } from '@/hooks/useCleanup';
 import Navigation from '../components/Navigation';
+import { useLocation } from 'wouter';
 
 interface TeamMember {
   id: string;
@@ -22,6 +23,7 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   
   // Optimized team members query
   const { data: teamMembers = [], isLoading: teamMembersLoading, error: teamMembersError } = useOptimizedQuery<TeamMember[]>(
@@ -268,11 +270,98 @@ const Dashboard = () => {
     );
   }, [searchTerm]);
 
+  // Edit Strengths modal
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editStrengths, setEditStrengths] = useState<string[]>(user?.topStrengths?.slice(0, 5) || Array(5).fill(''));
+  const [saving, setSaving] = useState(false);
+
+  const handleEditStrengths = () => setModalOpen(true);
+  const handleStrengthChange = (idx: number, value: string) => {
+    const updated = [...editStrengths];
+    updated[idx] = value;
+    setEditStrengths(updated);
+  };
+  const handleSaveStrengths = async () => {
+    setSaving(true);
+    // Save to backend (assume /api/user/strengths PATCH)
+    await fetch('/api/user/strengths', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topStrengths: editStrengths }),
+    });
+    setSaving(false);
+    setModalOpen(false);
+    window.location.reload(); // Or refetch user
+  };
+
   return (
     <div className="dashboard">
       <Navigation />
       
       <div className="dashboard-container">
+        {/* My Top 5 Strengths Card - Styled to match screenshot */}
+        <div style={{
+          background: '#fff',
+          borderRadius: '24px',
+          padding: '2rem',
+          marginBottom: '2rem',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.5rem',
+          maxWidth: '100%',
+        }}>
+          <div style={{ fontWeight: 700, fontSize: '2rem', color: '#181818', marginBottom: '1rem' }}>
+            My Top 5 Strengths
+          </div>
+          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+            {user && user.topStrengths && user.topStrengths.length > 0 ? (
+              user.topStrengths.slice(0, 5).map((strength: string, idx: number) => (
+                <span
+                  key={strength}
+                  style={{
+                    background: '#FFD600',
+                    color: '#181818',
+                    fontWeight: 600,
+                    fontSize: '1.15rem',
+                    borderRadius: '24px',
+                    padding: '0.5rem 1.5rem',
+                    display: 'inline-block',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => navigate(`/encyclopedia/${encodeURIComponent(strength)}`)}
+                >
+                  {strength}
+                </span>
+              ))
+            ) : (
+              <span style={{ color: '#888', fontSize: '1.1rem' }}>Not set</span>
+            )}
+          </div>
+          <button
+            onClick={handleEditStrengths}
+            style={{
+              background: '#003366',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: '1rem',
+              border: 'none',
+              borderRadius: '999px',
+              padding: '0.75rem 2rem',
+              cursor: 'pointer',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+              outline: 'none',
+              marginTop: '0.5rem',
+              transition: 'background 0.2s',
+            }}
+            onMouseOver={e => (e.currentTarget.style.background = '#002244')}
+            onMouseOut={e => (e.currentTarget.style.background = '#003366')}
+          >
+            Edit Strengths
+          </button>
+        </div>
+
         <div className="dashboard-header">
           <h1>Team Dashboard</h1>
           <p>Manage your team's strengths and generate insights</p>
@@ -333,7 +422,12 @@ const Dashboard = () => {
                       </div>
                       <div className="member-strengths">
                         {(member.strengths || []).map((strength: string, index: number) => (
-                          <span key={index} className="small-strength">
+                          <span
+                            key={index}
+                            className="small-strength"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => navigate(`/encyclopedia/${encodeURIComponent(strength)}`)}
+                          >
                             {strength}
                           </span>
                         ))}
@@ -615,6 +709,84 @@ const Dashboard = () => {
               >
                 {(addMemberMutation.isPending || updateMemberMutation.isPending) ? 'Saving...' : (editingMember ? 'Update' : 'Add')}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Strengths Modal */}
+      {modalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '18px',
+            padding: '2rem',
+            minWidth: '340px',
+            boxShadow: '0 2px 16px rgba(0,0,0,0.12)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem',
+          }}>
+            <div style={{ fontWeight: 700, fontSize: '1.3rem', marginBottom: '0.5rem' }}>Edit Your Top 5 Strengths</div>
+            {[0,1,2,3,4].map(idx => (
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontWeight: 600, width: 24 }}>{idx+1}.</span>
+                <select
+                  value={editStrengths[idx] || ''}
+                  onChange={e => handleStrengthChange(idx, e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    borderRadius: '8px',
+                    border: '1px solid #ccc',
+                    fontSize: '1rem',
+                  }}
+                >
+                  <option value="">Select strength</option>
+                  {ALL_STRENGTHS.map(str => (
+                    <option key={str} value={str}>{str}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+              <button
+                onClick={() => setModalOpen(false)}
+                style={{
+                  background: '#eee',
+                  color: '#333',
+                  fontWeight: 600,
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '0.5rem 1.5rem',
+                  cursor: 'pointer',
+                }}
+                disabled={saving}
+              >Cancel</button>
+              <button
+                onClick={handleSaveStrengths}
+                style={{
+                  background: '#003366',
+                  color: '#fff',
+                  fontWeight: 700,
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '0.5rem 1.5rem',
+                  cursor: 'pointer',
+                }}
+                disabled={saving || editStrengths.some(s => !s)}
+              >{saving ? 'Saving...' : 'Save'}</button>
             </div>
           </div>
         </div>

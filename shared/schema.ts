@@ -6,6 +6,8 @@ import {
   jsonb,
   index,
   boolean,
+  integer,
+  real,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -185,6 +187,61 @@ export const emailMetrics = pgTable("email_metrics", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// OpenAI usage logs table
+export const openaiUsageLogs = pgTable("openai_usage_logs", {
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => {
+    try {
+      const crypto = require('crypto');
+      return crypto.randomUUID();
+    } catch (e) {
+      try {
+        const crypto = require('crypto');
+        const bytes = crypto.randomBytes(16);
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        const hex = bytes.toString('hex');
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+      } catch (cryptoError) {
+        throw new Error('Cryptographically secure UUID generation is not available.');
+      }
+    }
+  }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  requestType: text("request_type").notNull(), // 'insight', 'coaching_response', 'collaboration_insight', 'email_content'
+  promptTokens: integer("prompt_tokens").notNull(),
+  completionTokens: integer("completion_tokens").notNull(),
+  totalTokens: integer("total_tokens").notNull(),
+  costUsd: real("cost_usd").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Unsubscribe tokens table for secure email unsubscription
+export const unsubscribeTokens = pgTable("unsubscribe_tokens", {
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => {
+    try {
+      const crypto = require('crypto');
+      return crypto.randomUUID();
+    } catch (e) {
+      try {
+        const crypto = require('crypto');
+        const bytes = crypto.randomBytes(16);
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        const hex = bytes.toString('hex');
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+      } catch (cryptoError) {
+        throw new Error('Cryptographically secure UUID generation is not available.');
+      }
+    }
+  }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  token: varchar("token").notNull().unique(), // Cryptographically secure token
+  emailType: text("email_type", { enum: ["welcome", "weekly_coaching", "all"] }).notNull(), // What type of emails to unsubscribe from
+  expiresAt: timestamp("expires_at").notNull(), // Token expiration (30 days from creation)
+  usedAt: timestamp("used_at"), // When the token was used (null if not used yet)
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   firstName: true,
@@ -267,6 +324,17 @@ export const insertEmailLogSchema = createInsertSchema(emailLogs).pick({
   errorMessage: true,
 });
 
+export const insertUnsubscribeTokenSchema = createInsertSchema(unsubscribeTokens).pick({
+  userId: true,
+  token: true,
+  emailType: true,
+  expiresAt: true,
+});
+
+export const updateUnsubscribeTokenSchema = createInsertSchema(unsubscribeTokens).pick({
+  usedAt: true,
+});
+
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -286,3 +354,6 @@ export type InsertEmailSubscription = z.infer<typeof insertEmailSubscriptionSche
 export type UpdateEmailSubscription = z.infer<typeof updateEmailSubscriptionSchema>;
 export type EmailLog = typeof emailLogs.$inferSelect;
 export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
+export type UnsubscribeToken = typeof unsubscribeTokens.$inferSelect;
+export type InsertUnsubscribeToken = z.infer<typeof insertUnsubscribeTokenSchema>;
+export type UpdateUnsubscribeToken = z.infer<typeof updateUnsubscribeTokenSchema>;

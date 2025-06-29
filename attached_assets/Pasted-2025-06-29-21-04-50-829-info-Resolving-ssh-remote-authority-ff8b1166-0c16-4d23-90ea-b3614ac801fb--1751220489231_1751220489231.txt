@@ -1,0 +1,212 @@
+2025-06-29 21:04:50.829 [info] Resolving ssh remote authority 'ff8b1166-0c16-4d23-90ea-b3614ac801fb@ff8b1166-0c16-4d23-90ea-b3614ac801fb-00-1suxl2i0jsba0.pike.replit.dev:22' (Unparsed 'ssh-remote+ff8b1166-0c16-4d23-90ea-b3614ac801fb@ff8b1166-0c16-4d23-90ea-b3614ac801fb-00-1suxl2i0jsba0.pike.replit.dev:22') (attempt #1)
+2025-06-29 21:04:51.031 [info] SSH askpass server listening on port 53005
+2025-06-29 21:04:51.035 [info] Using askpass script: c:\Users\yonat\.cursor\extensions\anysphere.remote-ssh-1.0.17\dist\scripts\launchSSHAskpass.bat with javascript file c:\Users\yonat\.cursor\extensions\anysphere.remote-ssh-1.0.17\dist\scripts\sshAskClient.js. Askpass handle: 53005
+2025-06-29 21:04:51.166 [info] Launching SSH server via shell with command: type "C:\Users\yonat\AppData\Local\Temp\cursor_remote_install_31055.sh" | ssh -v -T -D 53006 -p 22 ff8b1166-0c16-4d23-90ea-b3614ac801fb@ff8b1166-0c16-4d23-90ea-b3614ac801fb-00-1suxl2i0jsba0.pike.replit.dev bash --login -c bash
+2025-06-29 21:04:51.166 [info] Started installation script. Waiting for it to finish...
+2025-06-29 21:04:51.166 [info] Waiting for server to install via process(28616)...
+2025-06-29 21:04:51.479 [info] (ssh_tunnel) stderr: OpenSSH_for_Windows_9.5p1, LibreSSL 3.8.2
+
+2025-06-29 21:04:51.568 [info] (ssh_tunnel) stderr: debug1: Connecting to ff8b1166-0c16-4d23-90ea-b3614ac801fb-00-1suxl2i0jsba0.pike.replit.dev [34.93.221.142] port 22.
+
+2025-06-29 21:04:51.714 [info] (ssh_tunnel) stderr: debug1: Connection established.
+
+2025-06-29 21:04:51.715 [info] (ssh_tunnel) stderr: debug1: identity file C:\\Users\\yonat/.ssh/id_rsa type -1
+
+2025-06-29 21:04:51.716 [info] (ssh_tunnel) stderr: debug1: identity file C:\\Users\\yonat/.ssh/id_rsa-cert type -1
+
+2025-06-29 21:04:51.716 [info] (ssh_tunnel) stderr: debug1: identity file C:\\Users\\yonat/.ssh/id_ecdsa type -1
+
+2025-06-29 21:04:51.717 [info] (ssh_tunnel) stderr: debug1: identity file C:\\Users\\yonat/.ssh/id_ecdsa-cert type -1
+
+2025-06-29 21:04:51.717 [info] (ssh_tunnel) stderr: debug1: identity file C:\\Users\\yonat/.ssh/id_ecdsa_sk type -1
+
+2025-06-29 21:04:51.718 [info] (ssh_tunnel) stderr: debug1: identity file C:\\Users\\yonat/.ssh/id_ecdsa_sk-cert type -1
+
+2025-06-29 21:04:51.718 [info] (ssh_tunnel) stderr: debug1: identity file C:\\Users\\yonat/.ssh/id_ed25519 type -1
+
+2025-06-29 21:04:51.719 [info] (ssh_tunnel) stderr: debug1: identity file C:\\Users\\yonat/.ssh/id_ed25519-cert type -1
+
+2025-06-29 21:04:51.719 [info] (ssh_tunnel) stderr: debug1: identity file C:\\Users\\yonat/.ssh/id_ed25519_sk type -1
+
+2025-06-29 21:04:51.720 [info] (ssh_tunnel) stderr: debug1: identity file C:\\Users\\yonat/.ssh/id_ed25519_sk-cert type -1
+
+2025-06-29 21:04:51.720 [info] (ssh_tunnel) stderr: debug1: identity file C:\\Users\\yonat/.ssh/id_xmss type -1
+
+2025-06-29 21:04:51.721 [info] (ssh_tunnel) stderr: debug1: identity file C:\\Users\\yonat/.ssh/id_xmss-cert type -1
+
+2025-06-29 21:04:51.722 [info] (ssh_tunnel) stderr: debug1: identity file C:\\Users\\yonat/.ssh/id_dsa type -1
+
+2025-06-29 21:04:51.724 [info] (ssh_tunnel) stderr: debug1: identity file C:\\Users\\yonat/.ssh/id_dsa-cert type -1
+
+2025-06-29 21:04:51.729 [info] (ssh_tunnel) stderr: debug1: Local version string SSH-2.0-OpenSSH_for_Windows_9.5
+
+2025-06-29 21:04:51.812 [info] (ssh_tunnel) stderr: debug1: Remote protocol version 2.0, remote software version Replit-SSH-Proxy
+
+2025-06-29 21:04:51.812 [info] (ssh_tunnel) stderr: debug1: compat_banner: no match: Replit-SSH-Proxy
+
+2025-06-29 21:04:51.813 [info] (ssh_tunnel) stderr: debug1: Authenticating to ff8b1166-0c16-4d23-90ea-b3614ac801fb-00-1suxl2i0jsba0.pike.replit.dev:22 as 'ff8b1166-0c16-4d23-90ea-b3614ac801fb'
+
+2025-06-29 21:04:51.820 [info] (ssh_tunnel) stderr: debug1: load_hostkeys: fopen C:\\Users\\yonat/.ssh/known_hosts2: No such file or directory
+
+2025-06-29 21:04:51.820 [info] (ssh_tunnel) stderr: debug1: load_hostkeys: fopen __PROGRAMDATA__\\ssh/ssh_known_hosts: No such file or directory
+
+2025-06-29 21:04:51.820 [info] (ssh_tunnel) stderr: debug1: load_hostkeys: fopen __PROGRAMDATA__\\ssh/ssh_known_hosts2: No such file or directory
+
+2025-06-29 21:04:51.821 [info] (ssh_tunnel) stderr: debug1: SSH2_MSG_KEXINIT sent
+
+2025-06-29 21:04:51.833 [info] (ssh_tunnel) stderr: debug1: SSH2_MSG_KEXINIT received
+
+2025-06-29 21:04:51.833 [info] (ssh_tunnel) stderr: debug1: kex: algorithm: curve25519-sha256
+
+2025-06-29 21:04:51.834 [info] (ssh_tunnel) stderr: debug1: kex: host key algorithm: ecdsa-sha2-nistp384
+
+2025-06-29 21:04:51.834 [info] (ssh_tunnel) stderr: debug1: kex: server->client cipher: chacha20-poly1305@openssh.com MAC: <implicit> compression: none
+
+2025-06-29 21:04:51.834 [info] (ssh_tunnel) stderr: debug1: kex: client->server cipher: chacha20-poly1305@openssh.com MAC: <implicit> compression: none
+
+2025-06-29 21:04:51.836 [info] (ssh_tunnel) stderr: debug1: expecting SSH2_MSG_KEX_ECDH_REPLY
+
+2025-06-29 21:04:51.976 [info] (ssh_tunnel) stderr: debug1: SSH2_MSG_KEX_ECDH_REPLY received
+
+2025-06-29 21:04:51.986 [info] (ssh_tunnel) stderr: debug1: Server host key: ecdsa-sha2-nistp384 SHA256:wjMUe0F6zWoqEz3wRRr05nsFrw6VHdDemwlP+Sx3xNU
+
+2025-06-29 21:04:51.995 [info] (ssh_tunnel) stderr: debug1: load_hostkeys: fopen C:\\Users\\yonat/.ssh/known_hosts2: No such file or directory
+
+2025-06-29 21:04:51.996 [info] (ssh_tunnel) stderr: debug1: load_hostkeys: fopen __PROGRAMDATA__\\ssh/ssh_known_hosts: No such file or directory
+
+2025-06-29 21:04:52.002 [info] (ssh_tunnel) stderr: debug1: load_hostkeys: fopen __PROGRAMDATA__\\ssh/ssh_known_hosts2: No such file or directory
+
+2025-06-29 21:04:52.003 [info] (ssh_tunnel) stderr: debug1: Host 'ff8b1166-0c16-4d23-90ea-b3614ac801fb-00-1suxl2i0jsba0.pike.replit.dev' is known and matches the ECDSA host key.
+
+2025-06-29 21:04:52.021 [info] (ssh_tunnel) stderr: debug1: Found key in C:\\Users\\yonat/.ssh/known_hosts:1
+
+2025-06-29 21:04:52.036 [info] (ssh_tunnel) stderr: debug1: ssh_packet_send2_wrapped: resetting send seqnr 3
+
+2025-06-29 21:04:52.038 [info] (ssh_tunnel) stderr: debug1: rekey out after 134217728 blocks
+
+2025-06-29 21:04:52.042 [info] (ssh_tunnel) stderr: debug1: SSH2_MSG_NEWKEYS sent
+
+2025-06-29 21:04:52.046 [info] (ssh_tunnel) stderr: debug1: expecting SSH2_MSG_NEWKEYS
+
+2025-06-29 21:04:52.047 [info] (ssh_tunnel) stderr: debug1: ssh_packet_read_poll2: resetting read seqnr 3
+
+2025-06-29 21:04:52.048 [info] (ssh_tunnel) stderr: debug1: SSH2_MSG_NEWKEYS received
+
+2025-06-29 21:04:52.048 [info] (ssh_tunnel) stderr: debug1: rekey in after 134217728 blocks
+
+2025-06-29 21:04:52.049 [info] (ssh_tunnel) stderr: debug1: get_agent_identities: ssh_get_authentication_socket: No such file or directory
+
+2025-06-29 21:04:52.050 [info] (ssh_tunnel) stderr: debug1: Will attempt key: C:\\Users\\yonat/.ssh/id_rsa 
+
+2025-06-29 21:04:52.050 [info] (ssh_tunnel) stderr: debug1: Will attempt key: C:\\Users\\yonat/.ssh/id_ecdsa 
+
+2025-06-29 21:04:52.051 [info] (ssh_tunnel) stderr: debug1: Will attempt key: C:\\Users\\yonat/.ssh/id_ecdsa_sk 
+
+2025-06-29 21:04:52.051 [info] (ssh_tunnel) stderr: debug1: Will attempt key: C:\\Users\\yonat/.ssh/id_ed25519 
+
+2025-06-29 21:04:52.052 [info] (ssh_tunnel) stderr: debug1: Will attempt key: C:\\Users\\yonat/.ssh/id_ed25519_sk 
+
+2025-06-29 21:04:52.052 [info] (ssh_tunnel) stderr: debug1: Will attempt key: C:\\Users\\yonat/.ssh/id_xmss 
+
+2025-06-29 21:04:52.054 [info] (ssh_tunnel) stderr: debug1: Will attempt key: C:\\Users\\yonat/.ssh/id_dsa 
+
+2025-06-29 21:04:52.069 [info] (ssh_tunnel) stderr: debug1: SSH2_MSG_EXT_INFO received
+
+2025-06-29 21:04:52.070 [info] (ssh_tunnel) stderr: debug1: kex_input_ext_info: server-sig-algs=<ssh-ed25519,sk-ssh-ed25519@openssh.com,sk-ecdsa-sha2-nistp256@openssh.com,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,rsa-sha2-256,rsa-sha2-512,ssh-rsa,ssh-dss>
+
+2025-06-29 21:04:52.073 [info] (ssh_tunnel) stderr: debug1: kex_ext_info_check_ver: ping@openssh.com=<0>
+
+2025-06-29 21:04:52.169 [info] (ssh_tunnel) stderr: debug1: SSH2_MSG_SERVICE_ACCEPT received
+
+2025-06-29 21:04:52.278 [info] (ssh_tunnel) stderr: Welcome to the Replit SSH Proxy.
+
+Visit https://docs.replit.com/replit-workspace/ssh to learn more about SSH on Replit.
+
+2025-06-29 21:04:52.279 [info] (ssh_tunnel) stderr: debug1: Authentications that can continue: password,publickey
+
+2025-06-29 21:04:52.280 [info] (ssh_tunnel) stderr: debug1: Next authentication method: publickey
+
+2025-06-29 21:04:52.280 [info] (ssh_tunnel) stderr: debug1: Trying private key: C:\\Users\\yonat/.ssh/id_rsa
+
+2025-06-29 21:04:52.281 [info] (ssh_tunnel) stderr: debug1: Trying private key: C:\\Users\\yonat/.ssh/id_ecdsa
+
+2025-06-29 21:04:52.281 [info] (ssh_tunnel) stderr: debug1: Trying private key: C:\\Users\\yonat/.ssh/id_ecdsa_sk
+
+2025-06-29 21:04:52.282 [info] (ssh_tunnel) stderr: debug1: Trying private key: C:\\Users\\yonat/.ssh/id_ed25519
+
+2025-06-29 21:04:52.283 [info] (ssh_tunnel) stderr: debug1: Trying private key: C:\\Users\\yonat/.ssh/id_ed25519_sk
+
+2025-06-29 21:04:52.285 [info] (ssh_tunnel) stderr: debug1: Trying private key: C:\\Users\\yonat/.ssh/id_xmss
+
+2025-06-29 21:04:52.285 [info] (ssh_tunnel) stderr: debug1: Trying private key: C:\\Users\\yonat/.ssh/id_dsa
+
+2025-06-29 21:04:52.285 [info] (ssh_tunnel) stderr: debug1: Next authentication method: password
+
+2025-06-29 21:04:52.286 [info] (ssh_tunnel) stderr: debug1: read_passphrase: requested to askpass
+
+2025-06-29 21:04:52.751 [info] Askpass server received request: POST /
+2025-06-29 21:04:52.753 [info] Askpass server received request body: {"request":"ff8b1166-0c16-4d23-90ea-b3614ac801fb@ff8b1166-0c16-4d23-90ea-b3614ac801fb-00-1suxl2i0jsba0.pike.replit.dev's password: "}
+2025-06-29 21:04:52.753 [info] Received SSH askpass request: ff8b1166-0c16-4d23-90ea-b3614ac801fb@ff8b1166-0c16-4d23-90ea-b3614ac801fb-00-1suxl2i0jsba0.pike.replit.dev's password: 
+2025-06-29 21:05:29.656 [error] Password authentication cancelled
+2025-06-29 21:06:23.723 [info] Resolving ssh remote authority 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDqPcF2btZsMpmgF5fztMnJOYYzRG+DtHuO7gdngT2zj replit-connection' (Unparsed 'ssh-remote+7b22686f73744e616d65223a227373682d65643235353139204141414143334e7a6143316c5a4449314e544535414141414944715063463262745a734d706d674635667a744d6e4a4f59597a52472b447448754f3767646e6754327a6a207265706c69742d636f6e6e656374696f6e227d') (attempt #1)
+2025-06-29 21:06:23.821 [info] SSH askpass server listening on port 53100
+2025-06-29 21:06:23.823 [info] Using askpass script: c:\Users\yonat\.cursor\extensions\anysphere.remote-ssh-1.0.17\dist\scripts\launchSSHAskpass.bat with javascript file c:\Users\yonat\.cursor\extensions\anysphere.remote-ssh-1.0.17\dist\scripts\sshAskClient.js. Askpass handle: 53100
+2025-06-29 21:06:23.890 [info] Launching SSH server via shell with command: type "C:\Users\yonat\AppData\Local\Temp\cursor_remote_install_24108.sh" | ssh -v -T -D 53101 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDqPcF2btZsMpmgF5fztMnJOYYzRG+DtHuO7gdngT2zj replit-connection bash --login -c bash
+2025-06-29 21:06:23.891 [info] Started installation script. Waiting for it to finish...
+2025-06-29 21:06:23.891 [info] Waiting for server to install via process(33256)...
+2025-06-29 21:06:24.112 [info] (ssh_tunnel) stderr: OpenSSH_for_Windows_9.5p1, LibreSSL 3.8.2
+
+2025-06-29 21:06:26.861 [info] (ssh_tunnel) stderr: ssh: Could not resolve hostname ssh-ed25519: No such host is known. 
+
+2025-06-29 21:06:26.865 [info] (ssh_tunnel) stderr: The process tried to write to a nonexistent pipe.
+
+2025-06-29 21:06:26.878 [info] (ssh_tunnel): exit: code=255 signal=null
+2025-06-29 21:06:26.879 [error] Error installing server: Failed to install the Cursor Server. Please check the logs for more details.
+2025-06-29 21:06:29.965 [info] Selected platform windows for remote host ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDqPcF2btZsMpmgF5fztMnJOYYzRG+DtHuO7gdngT2zj replit-connection
+2025-06-29 21:06:29.965 [info] Deleting local script C:\Users\yonat\AppData\Local\Temp\cursor_remote_install_24108.sh
+2025-06-29 21:06:29.967 [info] Using askpass script: c:\Users\yonat\.cursor\extensions\anysphere.remote-ssh-1.0.17\dist\scripts\launchSSHAskpass.bat with javascript file c:\Users\yonat\.cursor\extensions\anysphere.remote-ssh-1.0.17\dist\scripts\sshAskClient.js. Askpass handle: 53100
+2025-06-29 21:06:29.969 [info] Command length (8191 max): 7966
+2025-06-29 21:06:30.095 [info] Launching SSH server via shell with command: type "C:\Users\yonat\AppData\Local\Temp\cursor_remote_install_82319.ps1" | ssh -v -T -D 53105 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDqPcF2btZsMpmgF5fztMnJOYYzRG+DtHuO7gdngT2zj replit-connection powershell -NoProfile
+2025-06-29 21:06:30.096 [info] Waiting for server to install via process(26752)...
+2025-06-29 21:06:30.273 [info] (ssh_tunnel) stderr: OpenSSH_for_Windows_9.5p1, LibreSSL 3.8.2
+
+2025-06-29 21:06:33.013 [info] (ssh_tunnel) stderr: ssh: Could not resolve hostname ssh-ed25519: No such host is known. 
+
+2025-06-29 21:06:33.016 [info] (ssh_tunnel) stderr: The process tried to write to a nonexistent pipe.
+
+2025-06-29 21:06:33.033 [info] (ssh_tunnel): exit: code=255 signal=null
+2025-06-29 21:06:33.033 [error] Error installing server: Failed to install the Cursor Server. Please check the logs for more details.
+2025-06-29 21:06:33.033 [info] Deleting local script C:\Users\yonat\AppData\Local\Temp\cursor_remote_install_82319.ps1
+2025-06-29 21:06:33.035 [error] Error resolving SSH authority Failed to install the Cursor Server. Please check the logs for more details.
+2025-06-29 21:07:26.885 [info] Reloading window
+2025-06-29 21:07:26.945 [error] Error saving platform windows for remote host ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDqPcF2btZsMpmgF5fztMnJOYYzRG+DtHuO7gdngT2zj replit-connection: Canceled: Canceled
+2025-06-29 21:07:30.348 [info] Resolving ssh remote authority 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDqPcF2btZsMpmgF5fztMnJOYYzRG+DtHuO7gdngT2zj replit-connection' (Unparsed 'ssh-remote+7b22686f73744e616d65223a227373682d65643235353139204141414143334e7a6143316c5a4449314e544535414141414944715063463262745a734d706d674635667a744d6e4a4f59597a52472b447448754f3767646e6754327a6a207265706c69742d636f6e6e656374696f6e227d') (attempt #1)
+2025-06-29 21:07:30.511 [info] SSH askpass server listening on port 53148
+2025-06-29 21:07:30.513 [info] Using askpass script: c:\Users\yonat\.cursor\extensions\anysphere.remote-ssh-1.0.17\dist\scripts\launchSSHAskpass.bat with javascript file c:\Users\yonat\.cursor\extensions\anysphere.remote-ssh-1.0.17\dist\scripts\sshAskClient.js. Askpass handle: 53148
+2025-06-29 21:07:30.563 [info] Launching SSH server via shell with command: type "C:\Users\yonat\AppData\Local\Temp\cursor_remote_install_42499.sh" | ssh -v -T -D 53149 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDqPcF2btZsMpmgF5fztMnJOYYzRG+DtHuO7gdngT2zj replit-connection bash --login -c bash
+2025-06-29 21:07:30.563 [info] Started installation script. Waiting for it to finish...
+2025-06-29 21:07:30.563 [info] Waiting for server to install via process(32596)...
+2025-06-29 21:07:30.796 [info] (ssh_tunnel) stderr: OpenSSH_for_Windows_9.5p1, LibreSSL 3.8.2
+
+2025-06-29 21:07:33.514 [info] (ssh_tunnel) stderr: ssh: Could not resolve hostname ssh-ed25519: No such host is known. 
+
+2025-06-29 21:07:33.527 [info] (ssh_tunnel) stderr: The process tried to write to a nonexistent pipe.
+
+2025-06-29 21:07:33.554 [info] (ssh_tunnel): exit: code=255 signal=null
+2025-06-29 21:07:33.557 [error] Error installing server: Failed to install the Cursor Server. Please check the logs for more details.
+2025-06-29 21:07:38.231 [info] Selected platform windows for remote host ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDqPcF2btZsMpmgF5fztMnJOYYzRG+DtHuO7gdngT2zj replit-connection
+2025-06-29 21:07:38.232 [info] Deleting local script C:\Users\yonat\AppData\Local\Temp\cursor_remote_install_42499.sh
+2025-06-29 21:07:38.233 [info] Using askpass script: c:\Users\yonat\.cursor\extensions\anysphere.remote-ssh-1.0.17\dist\scripts\launchSSHAskpass.bat with javascript file c:\Users\yonat\.cursor\extensions\anysphere.remote-ssh-1.0.17\dist\scripts\sshAskClient.js. Askpass handle: 53148
+2025-06-29 21:07:38.235 [info] Command length (8191 max): 7966
+2025-06-29 21:07:38.368 [info] Launching SSH server via shell with command: type "C:\Users\yonat\AppData\Local\Temp\cursor_remote_install_65632.ps1" | ssh -v -T -D 53150 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDqPcF2btZsMpmgF5fztMnJOYYzRG+DtHuO7gdngT2zj replit-connection powershell -NoProfile
+2025-06-29 21:07:38.368 [info] Waiting for server to install via process(17980)...
+2025-06-29 21:07:38.551 [info] (ssh_tunnel) stderr: OpenSSH_for_Windows_9.5p1, LibreSSL 3.8.2
+
+2025-06-29 21:07:41.302 [info] (ssh_tunnel) stderr: ssh: Could not resolve hostname ssh-ed25519: No such host is known. 
+
+2025-06-29 21:07:41.311 [info] (ssh_tunnel) stderr: The process tried to write to a nonexistent pipe.
+
+2025-06-29 21:07:41.346 [info] (ssh_tunnel): exit: code=255 signal=null
+2025-06-29 21:07:41.349 [error] Error installing server: Failed to install the Cursor Server. Please check the logs for more details.
+2025-06-29 21:07:41.349 [info] Deleting local script C:\Users\yonat\AppData\Local\Temp\cursor_remote_install_65632.ps1
+2025-06-29 21:07:41.353 [error] Error resolving SSH authority Failed to install the Cursor Server. Please check the logs for more details.

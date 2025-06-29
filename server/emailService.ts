@@ -2,11 +2,44 @@ import { Resend } from 'resend';
 import { User } from '../shared/schema';
 import { storage } from './storage';
 import { generateWeeklyEmailContent, generateWelcomeEmailContent } from './openai';
+import crypto from 'crypto';
+import { and, eq } from 'drizzle-orm';
 // marked removed - using custom content cleaning instead
 
 export class EmailService {
   private resend = new Resend(process.env.RESEND_API_KEY);
   private fromEmail = 'strengths@tinymanager.ai';
+
+  // Generate a cryptographically secure unsubscribe token
+  private generateUnsubscribeToken(): string {
+    return crypto.randomBytes(32).toString('hex');
+  }
+
+  // Create or get an unsubscribe token for a user
+  private async getOrCreateUnsubscribeToken(userId: string, emailType: 'welcome' | 'weekly_coaching' | 'all' = 'all'): Promise<string> {
+    try {
+      // Check if user already has a valid token
+      const existingTokens = await storage.getUnsubscribeTokens(userId);
+      const validToken = existingTokens.find(token => 
+        token.emailType === emailType && 
+        !token.usedAt && 
+        token.expiresAt > new Date()
+      );
+
+      if (validToken) {
+        return validToken.token;
+      }
+
+      // Create new token
+      const token = this.generateUnsubscribeToken();
+      await storage.createUnsubscribeToken(userId, token, emailType);
+      return token;
+    } catch (error) {
+      console.error('Error creating unsubscribe token:', error);
+      // Fallback to a simple token if storage fails
+      return crypto.randomBytes(16).toString('hex');
+    }
+  }
 
   async sendWelcomeEmail(user: User, timezone: string = 'America/New_York'): Promise<void> {
     try {
@@ -22,6 +55,9 @@ export class EmailService {
         month: 'long', 
         day: 'numeric' 
       });
+
+      // Generate secure unsubscribe token
+      const unsubscribeToken = await this.getOrCreateUnsubscribeToken(user.id, 'welcome');
 
       // Use AI to generate welcome email content
       const aiContent = await generateWelcomeEmailContent(user.firstName || '', strength1, strength2, nextMondayStr);
@@ -53,7 +89,8 @@ export class EmailService {
         challengeHtml,
         whatsNextHtml,
         ctaHtml,
-        nextMondayStr
+        nextMondayStr,
+        unsubscribeToken
       );
 
       // Clean subject line - ensure it's plain text without newlines
@@ -102,6 +139,9 @@ export class EmailService {
         return;
       }
 
+      // Generate secure unsubscribe token
+      const unsubscribeToken = await this.getOrCreateUnsubscribeToken(user.id, 'weekly_coaching');
+
       // Select featured team member and strength for this week
       const featuredMemberIndex = (weekNumber - 1) % teamMembers.length;
       const featuredMember = teamMembers[featuredMemberIndex];
@@ -121,7 +161,8 @@ export class EmailService {
         teamMemberFeaturedStrength,
         [], // previousPersonalTips - would track from email logs
         [], // previousOpeners - would track from email logs  
-        []  // previousTeamMembers - would track from email logs
+        [], // previousTeamMembers - would track from email logs
+        user.id // userId for usage tracking
       );
 
       // Function to add natural line breaks at appropriate points
@@ -247,7 +288,8 @@ export class EmailService {
         featuredMember.name,
         teamMemberFeaturedStrength,
         formattedWeeklyContent.teamSection,
-        weekNumber
+        weekNumber,
+        unsubscribeToken
       );
 
       // Send weekly coaching email
@@ -346,7 +388,8 @@ export class EmailService {
     challengeHtml: string,
     whatsNextHtml: string,
     ctaHtml: string,
-    nextMonday: string
+    nextMonday: string,
+    unsubscribeToken: string
   ): string {
     // Use the refined welcome email template design following AI instructions
     return `<!DOCTYPE html>
@@ -464,7 +507,7 @@ export class EmailService {
                                 </p>
                                 <!-- CAN-SPAM Compliance -->
                                 <p style="margin: 16px 0 0 0;">
-                                    <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/unsubscribe?token=${greetingHtml.split(' ')[1] || 'user'}" style="color: #6B7280; font-size: 12px; text-decoration: underline;">
+                                    <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/unsubscribe?token=${unsubscribeToken}" style="color: #6B7280; font-size: 12px; text-decoration: underline;">
                                         Unsubscribe
                                     </a>
                                 </p>
@@ -487,7 +530,8 @@ export class EmailService {
     teamMemberName: string,
     teamMemberStrength: string,
     teamTip: string,
-    weekNumber: number
+    weekNumber: number,
+    unsubscribeToken: string
   ): string {
 
     return `<!DOCTYPE html>
@@ -622,7 +666,7 @@ export class EmailService {
                                 Strengths Manager
                             </p>
                             <p style="margin: 0;">
-                                <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/unsubscribe?token=${managerName}" style="color: #6B7280; font-size: 12px; text-decoration: underline; font-family: Arial, Helvetica, sans-serif;">
+                                <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/unsubscribe?token=${unsubscribeToken}" style="color: #6B7280; font-size: 12px; text-decoration: underline; font-family: Arial, Helvetica, sans-serif;">
                                     Unsubscribe
                                 </a>
                             </p>
@@ -640,8 +684,49 @@ export class EmailService {
   async processWeeklyEmails(): Promise<void> {
     try {
       if (process.env.NODE_ENV !== 'production') console.log('Processing weekly emails...');
-      // Implementation for bulk weekly email processing
-      // This would be called by the email scheduler
+      // Query all active weekly_coaching subscriptions
+      const { db } = await import('./db');
+      const { emailSubscriptions, users } = await import('../shared/schema');
+      const activeSubs = await db.select()
+        .from(emailSubscriptions)
+        .where(and(
+          eq(emailSubscriptions.isActive, true),
+          eq(emailSubscriptions.emailType, 'weekly_coaching')
+        ));
+
+      let sent = 0;
+      let failed = 0;
+      for (const sub of activeSubs) {
+        try {
+          // Get user
+          const [user] = await db.select().from(users).where(eq(users.id, sub.userId));
+          if (!user) continue;
+
+          // Determine week number
+          const weekNumber = parseInt(sub.weeklyEmailCount || '0', 10) + 1;
+          if (weekNumber > 12) continue; // Only send up to 12 weeks
+
+          // Send email
+          await this.sendWeeklyCoachingEmail(user, weekNumber);
+
+          // Update subscription
+          await db.update(emailSubscriptions)
+            .set({
+              weeklyEmailCount: String(weekNumber),
+              lastSentAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(emailSubscriptions.id, sub.id));
+
+          sent++;
+        } catch (err) {
+          failed++;
+          if (process.env.NODE_ENV !== 'production') console.error('Failed to send weekly email for subscription', sub.id, err);
+        }
+      }
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Weekly email processing complete. Sent: ${sent}, Failed: ${failed}`);
+      }
     } catch (error) {
       if (process.env.NODE_ENV !== 'production') console.error('Error processing weekly emails:', error);
     }

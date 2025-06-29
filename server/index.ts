@@ -109,11 +109,36 @@ if (process.env.NODE_ENV !== 'test') {
         log(`serving on port ${port}`);
       });
 
-      // Handle server shutdown gracefully
-      if (isDev) console.log('Received SIGINT, shutting down gracefully...');
-      if (isDev) console.log('Server closed');
-      if (isDev) console.log('Received SIGTERM, shutting down gracefully...');
-      if (isDev) console.log('Server closed');
+      // Graceful shutdown logic
+      const shutdown = async (signal: string) => {
+        try {
+          log(`Received ${signal}, shutting down gracefully...`);
+          // Stop accepting new connections
+          await new Promise<void>((resolve, reject) => {
+            server.close((err?: Error) => {
+              if (err) return reject(err);
+              resolve();
+            });
+          });
+          // Stop cache cleanup
+          try {
+            const { storage } = await import('./storage');
+            storage.stopCacheCleanup();
+          } catch (e) { /* ignore */ }
+          // Close DB pool if available
+          try {
+            const { db } = await import('./db');
+            if (db && db.$client && typeof db.$client.end === 'function') await db.$client.end();
+          } catch (e) { /* ignore */ }
+          log('Server closed');
+          process.exit(0);
+        } catch (err) {
+          console.error('Error during graceful shutdown:', err);
+          process.exit(1);
+        }
+      };
+      process.on('SIGINT', () => shutdown('SIGINT'));
+      process.on('SIGTERM', () => shutdown('SIGTERM'));
 
     } catch (error) {
       console.error('Failed to start server:', error instanceof Error ? error.message : String(error));

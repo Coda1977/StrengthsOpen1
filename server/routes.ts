@@ -14,14 +14,16 @@ import {
   insertConversationSchema,
   insertMessageSchema,
   updateConversationSchema,
-  insertConversationBackupSchema
+  insertConversationBackupSchema,
+  unsubscribeTokens
 } from '../shared/schema';
 import { OpenAI } from 'openai';
 import { Resend } from 'resend';
-import { sql, desc, eq, gte } from 'drizzle-orm';
+import { sql, desc, eq, gte, and, lt } from 'drizzle-orm';
 import { db } from './db';
-import { users, emailLogs } from '../shared/schema';
+import { users, emailLogs, emailSubscriptions, openaiUsageLogs } from '../shared/schema';
 import { emailService } from './emailService';
+import crypto from 'crypto';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -256,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           strengths: member.strengths
         }))
       };
-      const insight = await generateTeamInsight(teamData);
+      const insight = await generateTeamInsight(teamData, userId);
       res.json(createSuccessResponse(
         { insight, generatedAt: new Date().toISOString() }, 
         req.headers['x-request-id'] as string
@@ -296,7 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const teamMember = teamMembers.find(m => m.name === member2);
         member2Strengths = teamMember?.strengths || [];
       }
-      const insight = await generateCollaborationInsight(member1, member2, member1Strengths, member2Strengths);
+      const insight = await generateCollaborationInsight(member1, member2, member1Strengths, member2Strengths, userId);
       res.json(createSuccessResponse(
         { insight, generatedAt: new Date().toISOString() },
         req.headers['x-request-id'] as string
@@ -457,7 +459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const teamMembers = await storage.getTeamMembers(authReq.user.claims.sub);
       
       // Generate AI response using the coaching system prompt
-      const response = await generateCoachResponse(message, mode, user, teamMembers, conversationHistory);
+      const response = await generateCoachResponse(message, mode, user, teamMembers, conversationHistory, authReq.user.claims.sub);
       
       res.json(createSuccessResponse({ response }));
     } catch (error) {
@@ -976,6 +978,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: 'Admin privileges granted' });
     } catch (error) {
       res.status(500).json({ error: 'Failed to setup admin' });
+    }
+  });
+
+  // Admin route: OpenAI usage summary
+  app.get('/api/admin/openai-usage', isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req as AuthenticatedRequest).user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+      // Total spend
+      const totalResult = await db.select({ total: sql`COALESCE(SUM(cost_usd), 0)` }).from(openaiUsageLogs);
+      // Per-user spend
+      const perUserResult = await db
+        .select({ userId: openaiUsageLogs.userId, total: sql`COALESCE(SUM(cost_usd), 0)` })
+        .from(openaiUsageLogs)
+        .groupBy(openaiUsageLogs.userId);
+      res.json({
+        total: totalResult[0]?.total || 0,
+        perUser: perUserResult || []
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch OpenAI usage' });
+    }
+  });
+
+  // Public unsubscribe route (no authentication required)
+  app.get('/unsubscribe', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ 
+          message: 'Invalid unsubscribe link. Please contact support if you need to unsubscribe.' 
+        });
+      }
+
+      // Find the unsubscribe token
+      const [unsubscribeToken] = await db.select()
+        .from(unsubscribeTokens)
+        .where(and(
+          eq(unsubscribeTokens.token, token),
+          sql`${unsubscribeTokens.usedAt} IS NULL`, // Not used yet
+          sql`${unsubscribeTokens.expiresAt} > NOW()` // Not expired
+        ));
+
+      if (!unsubscribeToken) {
+        return res.status(400).json({ 
+          message: 'Invalid or expired unsubscribe link. Please contact support if you need to unsubscribe.' 
+        });
+      }
+
+      // Mark token as used
+      await db.update(unsubscribeTokens)
+        .set({ usedAt: new Date() })
+        .where(eq(unsubscribeTokens.id, unsubscribeToken.id));
+
+      // Unsubscribe user from emails
+      await db.update(emailSubscriptions)
+        .set({ isActive: false })
+        .where(eq(emailSubscriptions.userId, unsubscribeToken.userId));
+
+      // Return success page
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Unsubscribed Successfully</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            .success { color: #28a745; font-size: 24px; margin-bottom: 20px; }
+            .message { color: #666; margin-bottom: 30px; }
+            .link { color: #007bff; text-decoration: none; }
+          </style>
+        </head>
+        <body>
+          <div class="success">✓ Unsubscribed Successfully</div>
+          <div class="message">
+            You have been unsubscribed from our email campaigns.<br>
+            You will no longer receive weekly coaching emails or other promotional content.
+          </div>
+          <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}" class="link">
+            Return to Strengths Manager
+          </a>
+        </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error('Error processing unsubscribe:', error);
+      res.status(500).json({ 
+        message: 'An error occurred while processing your unsubscribe request. Please try again or contact support.' 
+      });
+    }
+  });
+
+  // API unsubscribe route (requires authentication)
+  app.post('/api/unsubscribe', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = (req as AuthenticatedRequest).user.claims.sub;
+      const { token } = req.body;
+      
+      if (!token) {
+        throw errors.validation('Unsubscribe token is required');
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json(createErrorResponse(req, new AppError(ERROR_CODES.VALIDATION_ERROR, 'User not found', 404)));
+      }
+
+      const isValid = await storage.validateUnsubscribeToken(userId, token);
+      if (!isValid) {
+        return res.status(400).json(createErrorResponse(req, new AppError(ERROR_CODES.VALIDATION_ERROR, 'Invalid unsubscribe token', 400)));
+      }
+
+      await storage.unsubscribeFromEmails(userId);
+      
+      res.json(createSuccessResponse({ message: 'Unsubscribed successfully' }));
+    } catch (error) {
+      next(error);
     }
   });
 

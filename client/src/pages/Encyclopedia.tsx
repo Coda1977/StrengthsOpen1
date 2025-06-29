@@ -1,5 +1,5 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import Navigation from "@/components/Navigation";
 
 const Encyclopedia = () => {
@@ -7,6 +7,7 @@ const Encyclopedia = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [selectedStrength, setSelectedStrength] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [, setLocation] = useLocation();
 
   // Complete CliftonStrengths data
   const strengthsData: Record<string, any> = {
@@ -556,6 +557,20 @@ const Encyclopedia = () => {
     }
   };
 
+  // Check for strength parameter in URL and open modal automatically
+  useEffect(() => {
+    const path = window.location.pathname;
+    const strengthMatch = path.match(/\/encyclopedia\/(.+)/);
+    
+    if (strengthMatch) {
+      const strengthName = decodeURIComponent(strengthMatch[1]);
+      if (strengthsData[strengthName]) {
+        setSelectedStrength({ name: strengthName, ...strengthsData[strengthName] });
+        setIsModalOpen(true);
+      }
+    }
+  }, []);
+
   const getDomainColor = (domain: string) => {
     const colors: Record<string, string> = {
       'Executing': 'var(--executing)',
@@ -592,6 +607,7 @@ const Encyclopedia = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedStrength(null);
+    setLocation('/dashboard');
   };
 
   return (

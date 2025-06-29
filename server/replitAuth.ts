@@ -108,11 +108,11 @@ export async function setupAuth(app: Express) {
 
   // Register strategies for both Replit domains and localhost
   const replitDomains = process.env.REPLIT_DOMAINS?.split(",") || [];
-  const domains = [...replitDomains, 'localhost'];
+  const domains = [...replitDomains, 'localhost', '127.0.0.1'];
   
   for (const domain of domains) {
     // Use the actual Replit domain for callback URL, even for localhost requests
-    const callbackDomain = domain === 'localhost' ? replitDomains[0] || domain : domain;
+    const callbackDomain = domain === 'localhost' || domain === '127.0.0.1' ? replitDomains[0] || domain : domain;
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,

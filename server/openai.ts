@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import { db } from './db';
+import { openaiUsageLogs } from '../shared/schema';
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 export const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -13,7 +15,27 @@ interface TeamStrengthsData {
 
 const isDev = process.env.NODE_ENV === 'development';
 
-export async function generateTeamInsight(data: TeamStrengthsData): Promise<string> {
+// Helper to log OpenAI usage
+async function logOpenAIUsage({ userId, requestType, promptTokens, completionTokens, totalTokens }: {
+  userId: string,
+  requestType: string,
+  promptTokens: number,
+  completionTokens: number,
+  totalTokens: number
+}) {
+  // gpt-4o pricing (as of 2024): $5.00/million input, $15.00/million output
+  const costUsd = (promptTokens * 0.000005) + (completionTokens * 0.000015);
+  await db.insert(openaiUsageLogs).values({
+    userId,
+    requestType,
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    costUsd
+  });
+}
+
+export async function generateTeamInsight(data: TeamStrengthsData, userId?: string): Promise<string> {
   // Check if OpenAI API key is available
   if (!process.env.OPENAI_API_KEY) {
     if (isDev) console.error('OpenAI API key not found');
@@ -92,6 +114,16 @@ Keep the response to 2-3 sentences maximum. No fluff. Be nuanced - acknowledge b
       temperature: 0.7
     });
 
+    if (response.usage && userId) {
+      await logOpenAIUsage({
+        userId,
+        requestType: 'insight',
+        promptTokens: response.usage.prompt_tokens,
+        completionTokens: response.usage.completion_tokens,
+        totalTokens: response.usage.total_tokens
+      });
+    }
+
     return response.choices[0].message.content || "Unable to generate insight at this time.";
   } catch (error) {
     if (error instanceof Error && error.message?.includes('API key')) {
@@ -110,7 +142,8 @@ export async function generateCoachResponse(
   mode: 'personal' | 'team', 
   user: any, 
   teamMembers: any[], 
-  conversationHistory: any[] = []
+  conversationHistory: any[] = [],
+  userId?: string
 ): Promise<string> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OpenAI API key not configured');
@@ -188,6 +221,16 @@ Team Members: ${teamMembers.map(m => `${m.name} (${m.strengths.join(', ')})`).jo
       temperature: 0.7,
     });
 
+    if (completion.usage && userId) {
+      await logOpenAIUsage({
+        userId,
+        requestType: 'coaching_response',
+        promptTokens: completion.usage.prompt_tokens,
+        completionTokens: completion.usage.completion_tokens,
+        totalTokens: completion.usage.total_tokens
+      });
+    }
+
     return completion.choices[0]?.message?.content || 'I apologize, but I encountered an issue generating a response. Please try again.';
   } catch (error) {
     if (error instanceof Error && error.message?.includes('API key')) {
@@ -201,7 +244,13 @@ Team Members: ${teamMembers.map(m => `${m.name} (${m.strengths.join(', ')})`).jo
   }
 }
 
-export async function generateCollaborationInsight(member1: string, member2: string, member1Strengths: string[], member2Strengths: string[]): Promise<string> {
+export async function generateCollaborationInsight(
+  member1: string, 
+  member2: string, 
+  member1Strengths: string[], 
+  member2Strengths: string[],
+  userId?: string
+): Promise<string> {
   // Check if OpenAI API key is available
   if (!process.env.OPENAI_API_KEY) {
     if (isDev) console.error('OpenAI API key not found');
@@ -249,6 +298,16 @@ Remember: Always use their actual names (${member1} and ${member2}) instead of p
       max_tokens: 400,
       temperature: 0.5
     });
+
+    if (response.usage && userId) {
+      await logOpenAIUsage({
+        userId,
+        requestType: 'collaboration_insight',
+        promptTokens: response.usage.prompt_tokens,
+        completionTokens: response.usage.completion_tokens,
+        totalTokens: response.usage.total_tokens
+      });
+    }
 
     return response.choices[0].message.content || "Unable to generate collaboration insight at this time.";
   } catch (error) {
@@ -346,7 +405,8 @@ export async function generateWeeklyEmailContent(
   teamMemberFeaturedStrength: string,
   previousPersonalTips: string[],
   previousOpeners: string[],
-  previousTeamMembers: string[]
+  previousTeamMembers: string[],
+  userId?: string
 ): Promise<{
   subjectLine: string;
   preHeader: string;
@@ -520,6 +580,16 @@ Generate the email content in JSON format with these exact fields:
       }
     } else if (parsed.preHeader.length > 50) {
       parsed.preHeader = parsed.preHeader.substring(0, 47) + '...';
+    }
+
+    if (response.usage && userId) {
+      await logOpenAIUsage({
+        userId,
+        requestType: 'email_content',
+        promptTokens: response.usage.prompt_tokens,
+        completionTokens: response.usage.completion_tokens,
+        totalTokens: response.usage.total_tokens
+      });
     }
 
     return parsed;
