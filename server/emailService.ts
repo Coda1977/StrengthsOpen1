@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 import { User } from '../shared/schema';
 import { storage } from './storage';
 import { generateWeeklyEmailContent, generateWelcomeEmailContent } from './openai';
-import { marked } from 'marked';
+// marked removed - using custom content cleaning instead
 
 export class EmailService {
   private resend = new Resend(process.env.RESEND_API_KEY);
@@ -29,12 +29,22 @@ export class EmailService {
         throw new Error('Failed to generate welcome email content: ' + aiContent.error);
       }
 
-      // Convert all AI-generated fields from Markdown to HTML (await since marked returns a Promise)
-      const greetingHtml = await marked(aiContent.greeting);
-      const dnaHtml = await marked(aiContent.dna);
-      const challengeHtml = await marked(aiContent.challengeText);
-      const whatsNextHtml = await marked(aiContent.whatsNext);
-      const ctaHtml = await marked(aiContent.cta);
+      // Clean AI-generated content for proper display
+      const cleanWelcomeContent = (content: string) => {
+        if (!content) return '';
+        return content
+          .replace(/<[^>]*>/g, '') // Remove any HTML tags
+          .replace(/\s+/g, ' ') // Normalize whitespace
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+          .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
+          .trim();
+      };
+
+      const greetingHtml = cleanWelcomeContent(aiContent.greeting);
+      const dnaHtml = cleanWelcomeContent(aiContent.dna);
+      const challengeHtml = cleanWelcomeContent(aiContent.challengeText);
+      const whatsNextHtml = cleanWelcomeContent(aiContent.whatsNext);
+      const ctaHtml = cleanWelcomeContent(aiContent.cta);
 
       // Generate professional HTML using the AI-generated content
       const emailHtml = this.generateProfessionalWelcomeEmail(
@@ -114,16 +124,23 @@ export class EmailService {
         []  // previousTeamMembers - would track from email logs
       );
 
-      // Clean function to preserve line breaks and structure
-      const cleanContent = async (content: string) => {
+      // Clean function to properly format AI content for email
+      const cleanContent = (content: string) => {
         if (!content) return '';
-        const html = await marked(content);
-        return html
-          .replace(/<p>/g, '<div>')
-          .replace(/<\/p>/g, '</div>')
-          .replace(/<strong>/g, '<b>')
-          .replace(/<\/strong>/g, '</b>')
+        
+        // First clean any existing HTML tags and normalize whitespace
+        let cleaned = content
+          .replace(/<[^>]*>/g, '') // Remove any HTML tags
+          .replace(/\s+/g, ' ') // Replace multiple spaces/newlines with single space
           .trim();
+        
+        // Convert markdown-style formatting to HTML
+        cleaned = cleaned
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+          .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
+          .replace(/`(.*?)`/g, '<code>$1</code>'); // Code
+        
+        return cleaned;
       };
 
       // Clean simple text fields (no HTML needed)
@@ -136,9 +153,9 @@ export class EmailService {
       };
 
       // Process content fields appropriately
-      weeklyContent.personalInsight = await cleanContent(weeklyContent.personalInsight);
-      weeklyContent.techniqueContent = await cleanContent(weeklyContent.techniqueContent);
-      weeklyContent.teamSection = await cleanContent(weeklyContent.teamSection);
+      weeklyContent.personalInsight = cleanContent(weeklyContent.personalInsight);
+      weeklyContent.techniqueContent = cleanContent(weeklyContent.techniqueContent);
+      weeklyContent.teamSection = cleanContent(weeklyContent.teamSection);
       weeklyContent.techniqueName = cleanSimpleText(weeklyContent.techniqueName);
       weeklyContent.quote = cleanSimpleText(weeklyContent.quote);
       weeklyContent.quoteAuthor = cleanSimpleText(weeklyContent.quoteAuthor);
