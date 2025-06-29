@@ -189,26 +189,39 @@ export class EmailService {
         html: emailHtml,
       });
 
-      // Update the weekly email count and variety tracking
+      if (error) {
+        throw new Error(`Resend API error: ${error.message}`);
+      }
+
+      // Update the weekly email count and variety tracking  
       await this.updateEmailVarietyTracking(user.id, emailContent, weekNumber);
 
-      // Log the email attempt
+      // Log the successful email
       await storage.createEmailLog({
         userId: user.id,
         emailType: 'weekly_coaching',
         emailSubject: emailContent.subjectLine,
         weekNumber: weekNumber.toString(),
         resendId: data?.id,
-        status: error ? 'failed' : 'sent',
-        errorMessage: error?.message,
+        status: 'sent',
+        errorMessage: null,
       });
 
-      if (error) {
-        console.error('Failed to send weekly coaching email:', error);
-        throw new Error(`Failed to send weekly coaching email: ${error.message}`);
-      }
     } catch (error) {
-      console.error('Error in sendWeeklyCoachingEmail:', error);
+      console.error(`Weekly email failed for user ${user.id}:`, error);
+      
+      // Log the failed attempt
+      await storage.createEmailLog({
+        userId: user.id,
+        emailType: 'weekly_coaching',
+        emailSubject: `Week ${weekNumber} Coaching Email - Failed`,
+        weekNumber: weekNumber.toString(),
+        resendId: null,
+        status: 'failed',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+
+      // Don't throw - continue processing other users
       throw error;
     }
   }
