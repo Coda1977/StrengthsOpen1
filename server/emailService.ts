@@ -45,19 +45,62 @@ export class EmailService {
         day: 'numeric' 
       });
 
-      // Generate AI-powered welcome email content
-      const welcomeContent = await generateWelcomeEmailContent(
-        user.firstName || undefined,
+      // Generate welcome email content using your exact template
+      const welcomeContent = {
+        subject: `Welcome to your strengths journey, ${user.firstName || 'Manager'}`,
+        greeting: `Hi ${user.firstName || 'Manager'},`,
+        dna: `${strength1} + ${strength2} = ${this.generateDNAInsight(strength1, strength2)}`,
+        challenge: this.generateChallenge(strength1),
+        challengeText: this.generateChallenge(strength1),
+        whatsNext: "Your first weekly coaching email arrives next Monday at 9 AM.",
+        cta: "Start Building Your Team →",
+        metrics: "12-week journey • Weekly insights • Personalized for your team"
+      };
+      
+      // Generate professional HTML using your exact welcome email template
+      const emailHtml = this.generateProfessionalWelcomeEmail(
+        welcomeContent.greeting,
         strength1,
         strength2,
+        welcomeContent.challengeText,
         nextMondayStr
       );
+
+      // Send welcome email
+      const { data, error } = await resend.emails.send({
+        from: this.fromEmail,
+        to: [user.email!],
+        subject: welcomeContent.subject,
+        html: emailHtml,
+      });
+
+      if (error) {
+        console.error('Welcome email failed to send:', error);
+        throw new Error('Failed to send welcome email');
+      }
+
+      // Log successful email delivery
+      await storage.createEmailLog({
+        userId: user.id,
+        emailType: 'welcome',
+        emailSubject: welcomeContent.subject,
+        resendId: data?.id,
+        status: 'sent',
+        metadata: {
+          strength1,
+          strength2,
+          dnaInsight: welcomeContent.dna,
+          challenge: welcomeContent.challengeText
+        }
+      });
+
+      console.log(`Welcome email sent to ${user.email}`);
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
       
-      // Handle error case
-      if ('error' in welcomeContent) {
-        console.error('Failed to generate welcome email content:', welcomeContent.error);
-        // Fall back to simple template
-        const { data, error } = await resend.emails.send({
+      // Handle error case with simple fallback
+      try {
+        const { data, error: fallbackError } = await resend.emails.send({
           from: this.fromEmail,
           to: [user.email!],
           subject: 'Welcome to Strengths Manager! 🎯',
@@ -69,49 +112,17 @@ export class EmailService {
           emailType: 'welcome',
           emailSubject: 'Welcome to Strengths Manager! 🎯',
           resendId: data?.id,
-          status: error ? 'failed' : 'sent',
-          errorMessage: error?.message,
+          status: fallbackError ? 'failed' : 'sent',
+          errorMessage: fallbackError?.message,
         });
         
-        if (error) {
-          throw new Error(`Failed to send welcome email: ${error.message}`);
+        if (fallbackError) {
+          throw new Error(`Failed to send welcome email: ${fallbackError.message}`);
         }
-        return;
+      } catch (fallbackError) {
+        console.error('Error in welcome email fallback:', fallbackError);
+        throw fallbackError;
       }
-      
-      // Generate professional welcome email HTML using your exact design template
-      const welcomeHtml = this.generateProfessionalWelcomeEmail(
-        welcomeContent,
-        user.firstName || 'there',
-        strength1 || 'Strategic',
-        strength2 || 'Achiever'
-      );
-      
-      // Direct email delivery to recipient
-      const { data, error } = await resend.emails.send({
-        from: this.fromEmail,
-        to: [user.email!],
-        subject: welcomeContent.subject,
-        html: welcomeHtml,
-      });
-
-      // Log the email attempt
-      await storage.createEmailLog({
-        userId: user.id,
-        emailType: 'welcome',
-        emailSubject: welcomeContent.subject,
-        resendId: data?.id,
-        status: error ? 'failed' : 'sent',
-        errorMessage: error?.message,
-      });
-
-      if (error) {
-        console.error('Failed to send welcome email:', error);
-        throw new Error(`Failed to send welcome email: ${error.message}`);
-      }
-    } catch (error) {
-      console.error('Error in sendWelcomeEmail:', error);
-      throw error;
     }
   }
 
@@ -576,7 +587,7 @@ export class EmailService {
     teamTip: string,
     weekNumber: number
   ): string {
-    // Use your exact weekly email template design
+    // Use your exact weekly email template design with proper structure
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -592,63 +603,77 @@ export class EmailService {
         }
     </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #F5F0E8; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #F5F0E8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0F172A;">
     
     <!-- Hidden pre-header -->
     <span style="display:none; font-size:1px; color:#F5F0E8; line-height:1px; max-height:0px; max-width:0px; opacity:0; overflow:hidden;">
         ${weeklyContent.preHeader}
     </span>
     
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #F5F0E8;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #F5F0E8; min-height: 100vh;">
         <tr>
-            <td align="center" style="padding: 32px 20px;">
-                <table class="email-container" width="100%" style="max-width: 520px;" cellpadding="0" cellspacing="0">
+            <td align="center" style="padding: 40px 20px;">
+                <table class="email-container" width="100%" style="max-width: 540px;" cellpadding="0" cellspacing="0">
                     
-                    <!-- Minimal Header -->
+                    <!-- Header -->
                     <tr>
-                        <td style="margin-bottom: 24px;">
-                            <p style="color: #003566; font-size: 15px; font-weight: 600; margin: 0; text-align: center;">
+                        <td style="padding-bottom: 24px; text-align: center;">
+                            <h1 style="color: #003566; font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.25px;">
                                 ${weeklyContent.header}
-                            </p>
+                            </h1>
                         </td>
                     </tr>
                     
                     <!-- Primary Card - Personal Insight -->
                     <tr>
-                        <td style="margin-bottom: 20px;">
-                            <div style="background-color: #FFFFFF; border-radius: 16px; padding: 32px 28px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); position: relative; overflow: hidden;">
-                                <div style="background-color: #FFD60A; color: #1A1A1A; font-size: 12px; font-weight: 700; letter-spacing: 1px; padding: 6px 12px; border-radius: 20px; display: inline-block; margin-bottom: 16px;">
-                                    ${personalStrength.toUpperCase()}
+                        <td style="padding-bottom: 20px;">
+                            <div style="background-color: #FFFFFF; border-radius: 12px; padding: 32px 28px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);">
+                                <div style="background-color: #CC9B00; color: #0F172A; font-size: 12px; font-weight: 700; letter-spacing: 1px; padding: 6px 12px; border-radius: 20px; display: inline-block; margin-bottom: 16px; text-transform: uppercase;">
+                                    ${personalStrength}
                                 </div>
-                                <p style="color: #1A1A1A; font-size: 17px; line-height: 1.6; margin: 0 0 20px 0; font-weight: 400;">
+                                <div style="color: #0F172A; font-size: 17px; line-height: 1.6; margin: 0 0 20px 0; font-weight: 400;">
                                     ${weeklyContent.personalInsight}
-                                </p>
+                                </div>
                                 <div style="height: 1px; background-color: #E5E7EB; margin: 20px 0;"></div>
-                                <p style="color: #4A4A4A; font-size: 16px; line-height: 1.5; margin: 0;">
-                                    <span style="color: #003566; font-weight: 600;">This week, try:</span> ${specificAction}
-                                </p>
+                                <div style="color: #4A4A4A; font-size: 16px; line-height: 1.5; margin: 0;">
+                                    <span style="color: #003566; font-weight: 600;" role="img" aria-label="technique">►</span> <strong>${weeklyContent.techniqueName}:</strong> ${weeklyContent.techniqueContent}
+                                </div>
                             </div>
                         </td>
                     </tr>
                     
-                    <!-- Secondary - Team Quick Tip -->
+                    <!-- Team Section -->
                     <tr>
-                        <td style="margin-bottom: 32px;">
-                            <div style="background-color: #FFFFFF; border-radius: 12px; padding: 16px 20px; border: 1px solid rgba(0, 0, 0, 0.06);">
-                                <p style="color: #003566; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px; text-transform: uppercase;">
-                                    Team insight
-                                </p>
-                                <p style="color: #1A1A1A; font-size: 15px; line-height: 1.5; margin: 0;">
-                                    <strong>${teamMemberName}</strong>'s ${teamMemberStrength}: ${teamTip}
-                                </p>
+                        <td style="padding-bottom: 32px;">
+                            <div style="background-color: #FFFFFF; border-radius: 12px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);">
+                                <div style="color: #003566; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 12px; text-transform: uppercase;">
+                                    <span role="img" aria-label="team insight">▶</span> Team Insight
+                                </div>
+                                <div style="color: #0F172A; font-size: 15px; line-height: 1.5; margin: 0;">
+                                    ${weeklyContent.teamSection}
+                                </div>
                             </div>
                         </td>
                     </tr>
                     
-                    <!-- CTA Buttons -->
+                    <!-- Quote Section -->
                     <tr>
-                        <td style="text-align: center; margin-bottom: 40px;">
-                            <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/dashboard" style="background-color: #1A1A1A; border-radius: 24px; color: #F5F0E8; font-size: 16px; font-weight: 600; text-decoration: none; text-align: center; display: inline-block; padding: 14px 32px;">
+                        <td style="padding-bottom: 32px;">
+                            <div style="background-color: rgba(204, 155, 0, 0.1); border-radius: 12px; padding: 20px 24px; border-left: 4px solid #CC9B00;">
+                                <div style="color: #0F172A; font-size: 16px; line-height: 1.5; font-style: italic; margin-bottom: 8px;">
+                                    "${weeklyContent.quote}"
+                                </div>
+                                <div style="color: #6B7280; font-size: 14px; font-weight: 500;">
+                                    — ${weeklyContent.quoteAuthor}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- CTA Button -->
+                    <tr>
+                        <td style="text-align: center; padding-bottom: 40px;">
+                            <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/dashboard" style="background-color: #003566; border-radius: 8px; color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; text-align: center; display: inline-block; padding: 14px 32px;">
                                 View Dashboard →
                             </a>
                             <p style="margin-top: 16px; text-align: center;">
@@ -659,7 +684,7 @@ export class EmailService {
                         </td>
                     </tr>
                     
-                    <!-- Minimal Footer -->
+                    <!-- Footer -->
                     <tr>
                         <td style="text-align: center; padding-top: 20px; border-top: 1px solid #E5E7EB;">
                             <p style="color: #9CA3AF; font-size: 13px; margin: 0; font-weight: 500;">
@@ -674,6 +699,44 @@ export class EmailService {
     </table>
 </body>
 </html>`;
+  }
+
+  // Add helper methods for welcome email content generation
+  private generateDNAInsight(s1: string, s2: string): string {
+    const combinations: { [key: string]: string } = {
+      'Strategic_Achiever': 'spot opportunities others miss, then actually follow through',
+      'Strategic_Responsibility': 'create long-term plans you can fully commit to',
+      'Strategic_Analytical': 'see patterns in data that reveal future possibilities',
+      'Achiever_Responsibility': 'complete important work others can depend on',
+      'Achiever_Focus': 'drive projects to completion without getting distracted',
+      'Relator_Developer': 'build trust while growing people simultaneously',
+      'Developer_Responsibility': 'invest in people with unwavering commitment',
+      'Analytical_Responsibility': 'make data-driven decisions you can stand behind',
+      'Communication_Relator': 'explain complex ideas in ways that build connection',
+      'Ideation_Strategic': 'generate creative solutions with practical pathways'
+    };
+    
+    const key1 = `${s1}_${s2}`;
+    const key2 = `${s2}_${s1}`;
+    
+    return combinations[key1] || combinations[key2] || `combine ${s1.toLowerCase()} thinking with ${s2.toLowerCase()} execution in unique ways`;
+  }
+
+  private generateChallenge(strength: string): string {
+    const challenges: { [key: string]: string } = {
+      'Strategic': 'In your next meeting, notice how you naturally see 3 different approaches to any problem. That\'s your Strategic mind at work.',
+      'Achiever': 'Count how many small wins you create for your team in one day. Your drive creates momentum others feel.',
+      'Relator': 'Have one important conversation without checking your phone once. Notice how much deeper you connect.',
+      'Developer': 'Catch someone doing something well today and tell them specifically what growth you see in them.',
+      'Analytical': 'Question one assumption in your next project review. Your logical mind catches what others miss.',
+      'Focus': 'Set one clear priority for tomorrow and protect it fiercely. Watch how your clarity creates team direction.',
+      'Responsibility': 'Make one promise to yourself today and keep it completely. Your reliability builds trust.',
+      'Communication': 'Explain one complex idea using a simple story. Your ability to clarify creates understanding.',
+      'Ideation': 'Generate three wild solutions to your current challenge. Your creativity unlocks possibilities.',
+      'Learner': 'Teach someone something you learned this week. Your curiosity becomes their growth.'
+    };
+    
+    return challenges[strength] || `Notice how your ${strength} strength shows up in unexpected moments today.`;
   }
 
   private generateWelcomeEmailHtml(user: User): string {

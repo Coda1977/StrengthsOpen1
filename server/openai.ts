@@ -362,77 +362,144 @@ export async function generateWeeklyEmailContent(
     throw new Error('OpenAI API key not configured');
   }
 
-  // Generate specific patterns based on week number following your instructions
-  const generateSubjectPattern = (week: number, strength: string, name: string): string => {
-    const patterns = [
-      `Unlock your ${strength}`, // Week 1-4 pattern
-      `Results with ${strength}`, // Week 5-8 pattern  
-      `${name}, ${strength} evolution`, // Week 9-12 pattern
-      `Ready for advanced ${strength}?` // Week 13+ pattern
-    ];
+  // Create AI prompt following your exact instructions
+  const prompt = `# AI Instructions - Weekly Nudge Email
+
+You are crafting personalized weekly strength insights for a manager using Strengths Manager.
+
+## CONTEXT
+- Manager Name: ${managerName}
+- Top 5 Strengths: ${topStrengths.join(', ')}
+- Week Number: ${weekNumber} of journey
+- Team Size: ${teamSize} members
+- This Week's Featured Strength: ${featuredStrength}
+- Featured Team Member: ${featuredTeamMember} with strengths: ${teamMemberStrengths.join(', ')}
+- Team Member's Featured Strength: ${teamMemberFeaturedStrength}
+- Previous Personal Tips (last 4 weeks): ${previousPersonalTips.join(', ')}
+- Previous Openers Used: ${previousOpeners.join(', ')}
+- Previous Team Members Featured: ${previousTeamMembers.join(', ')}
+
+## TECHNICAL REQUIREMENTS
+- Subject line: Maximum 45 characters
+- Pre-header: 40-50 characters describing the action/technique
+- Use dark mode compatible colors: #0F172A (text), #CC9B00 (yellow), #003566 (blue)
+- Include aria-labels for all symbols: role="img" aria-label="[description]"
+- Total email length: Under 400 words / 2-minute read
+
+## TONE & STYLE
+- Conversational without emoji
+- Vary energy levels by week (calm → energetic → thoughtful → bold)
+- Use typography symbols with aria-labels: ★ ► ▶ ✓ ✗
+- Bold sparingly (2-3 phrases max)
+- One clear action per email
+
+## GENERATE
+
+### 1. SUBJECT LINE (<45 chars)
+Rotate patterns to avoid repetition:
+- Week 1-4: "[Action] your [strength]" 
+- Week 5-8: "[Outcome] with [strength]"
+- Week 9-12: "[Name], [benefit statement]"
+- Week 13+: "[Question format]"
+
+### 2. PRE-HEADER (40-50 chars)
+Always include the technique name or specific action
+
+### 3. HEADER VARIATIONS
+Use: Week ${weekNumber}: Your ${featuredStrength} strength spotlight
+
+### 4. PERSONAL INSIGHT (45-60 words)
+**OPENER VARIETY (rotate these patterns):**
+- Question: "Know what separates good ${featuredStrength}s from great ones?"
+- Observation: "Your ${featuredStrength} does something unusual:"
+- Challenge: "Most ${featuredStrength}s stop at X. You're ready for Y."
+- Discovery: "Week ${weekNumber} revelation:"
+- Direct: "Time to upgrade your ${featuredStrength}."
+
+**STRUCTURE:**
+- One-line opener (varies by week)
+- Core insight showing strength combination
+- **Bolded revelation** (the "aha" moment)
+
+### 5. TECHNIQUE SECTION (60-80 words)
+► [Technique Name] - must be memorable and specific
+Must pass the "Monday Morning Test": Can they do this TODAY?
+
+### 6. TEAM SECTION (50-65 words)
+**OPENER:** "▶ This week: ${featuredTeamMember}'s ${teamMemberFeaturedStrength}"
+**STRUCTURE:**
+1. What the strength really needs (not surface level)
+2. Comparison:
+   - ✗ Common mistake
+   - ✓ Better approach
+3. ONE SPECIFIC ACTION the manager can take THIS WEEK
+
+### 7. QUOTE SELECTION
+Rotate sources by week:
+- Weeks 1-4: Business leaders
+- Weeks 5-8: Scientists/researchers
+- Weeks 9-12: Historical figures
+- Weeks 13-16: Movies/TV characters
+
+Generate the email content in JSON format with these exact fields:
+{
+  "subjectLine": "string (max 45 chars)",
+  "preHeader": "string (40-50 chars)",
+  "header": "string",
+  "personalInsight": "string (45-60 words)",
+  "techniqueName": "string (memorable name)",
+  "techniqueContent": "string (60-80 words)",
+  "teamSection": "string (50-65 words)",
+  "quote": "string",
+  "quoteAuthor": "string"
+}`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert CliftonStrengths coach who creates personalized weekly email content following exact instructions. Always respond with valid JSON that matches the specified format exactly."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      max_tokens: 600,
+      temperature: 0.7,
+      response_format: { type: "json_object" }
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error('No content generated');
+    }
+
+    const parsed = JSON.parse(content);
     
-    const patternIndex = Math.floor((week - 1) / 4) % patterns.length;
-    const subject = patterns[patternIndex];
-    
-    // Ensure ≤45 characters
-    return subject.length <= 45 ? subject : subject.substring(0, 42) + '...';
-  };
+    // Validate required fields
+    const requiredFields = ['subjectLine', 'preHeader', 'header', 'personalInsight', 'techniqueName', 'techniqueContent', 'teamSection', 'quote', 'quoteAuthor'];
+    for (const field of requiredFields) {
+      if (!parsed[field] || typeof parsed[field] !== 'string') {
+        throw new Error(`Missing or invalid field: ${field}`);
+      }
+    }
 
-  // Generate technique names based on strength
-  const generateTechniqueName = (strength: string, week: number): string => {
-    const techniques: { [key: string]: string[] } = {
-      'Achiever': ['Progress Mapping', '3-2-1 Closure', 'Win Stacking', 'Momentum Method'],
-      'Strategic': ['Three Scenarios', 'If-Then Mapping', 'Pattern Spotting', 'Future Backtrack'],
-      'Developer': ['SBI Feedback', 'Growth Spotting', 'Potential Radar', 'Strength Mirror'],
-      'Learner': ['Teach-Back', 'Learn-Do-Share', 'Curiosity Queue', 'Connect Framework'],
-      'Relator': ['Deep Dive Questions', 'Trust Deposits', 'Story Bridge', 'Connection Ritual'],
-      'Analytical': ['5-Why Investigation', 'Data-Decision Bridge', 'Evidence Filter', 'Logic Map'],
-      'Focus': ['Priority Pyramid', 'Distraction Shield', 'Single-Task Sprint', 'Goal Telescope'],
-      'Responsibility': ['Commitment Canvas', 'Promise Tracker', 'Follow-Through Formula', 'Accountability Anchor']
-    };
-    
-    const strengthTechniques = techniques[strength] || ['Focus Method', 'Strength Technique', 'Power Move', 'Core Practice'];
-    return strengthTechniques[(week - 1) % strengthTechniques.length];
-  };
+    // Validate character limits
+    if (parsed.subjectLine.length > 45) {
+      parsed.subjectLine = parsed.subjectLine.substring(0, 42) + '...';
+    }
+    if (parsed.preHeader.length < 40 || parsed.preHeader.length > 50) {
+      parsed.preHeader = parsed.preHeader.substring(0, 47) + '...';
+    }
 
-  // Generate opener patterns to ensure variety
-  const generateOpenerPattern = (week: number, strength: string, usedOpeners: string[]): string => {
-    const patterns = [
-      `Know what separates good ${strength}s from great ones?`,
-      `Your ${strength} does something unusual:`,
-      `Most ${strength}s stop at good. You're ready for great.`,
-      `Week ${week} revelation:`,
-      `Time to upgrade your ${strength}.`
-    ];
-    
-    // Filter out recently used patterns
-    const availablePatterns = patterns.filter(p => !usedOpeners.some(used => p.includes(used.split(' ')[0])));
-    return availablePatterns.length > 0 ? availablePatterns[0] : patterns[week % patterns.length];
-  };
-
-  const subjectLine = generateSubjectPattern(weekNumber, featuredStrength, managerName);
-  const techniqueName = generateTechniqueName(featuredStrength, weekNumber);
-  const openerPattern = generateOpenerPattern(weekNumber, featuredStrength, previousOpeners);
-
-  const content = {
-    subjectLine,
-    preHeader: `Try the ${techniqueName} technique`,
-    header: `Week ${weekNumber}: Your ${featuredStrength} strength spotlight`,
-    personalInsight: `${openerPattern} ${featuredStrength} + ${topStrengths[1] || 'leadership'} = unstoppable combination. This week, leverage this natural advantage to create breakthrough moments.`,
-    techniqueName,
-    techniqueContent: `When you're in ${featuredStrength} mode, use this ${techniqueName} approach. Start with your natural ${featuredStrength} instinct, then apply systematic follow-through. Works because it builds on your existing strength pattern.`,
-    teamSection: `${featuredTeamMember}'s ${teamMemberFeaturedStrength}: Give them space to operate in their strength zone. Not micromanaging - clear outcomes with freedom to execute.`,
-    quote: weekNumber <= 4 ? 'The way to get started is to quit talking and begin doing.' : 
-           weekNumber <= 8 ? 'Research is what I am doing when I do not know what I am doing.' :
-           weekNumber <= 12 ? 'It is during our darkest moments that we must focus to see the light.' :
-           'The greatest glory in living lies not in never falling, but in rising every time we fall.',
-    quoteAuthor: weekNumber <= 4 ? 'Walt Disney' : 
-                 weekNumber <= 8 ? 'Wernher von Braun' :
-                 weekNumber <= 12 ? 'Aristotle' :
-                 'Nelson Mandela'
-  };
-
-  return content;
+    return parsed;
+  } catch (error) {
+    console.error('Failed to generate weekly email content:', error);
+    throw new Error('Failed to generate weekly email content');
+  }
 }
 
 export async function generateWelcomeEmailContent(
