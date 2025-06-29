@@ -37,6 +37,11 @@
   padding-top: 0 !important;
 }
 
+/* Override for AI Coach page to prevent header overlap */
+.dashboard .main-container {
+  padding-top: 80px !important;
+}
+
 :root {
   /* Custom Strengths Manager Variables */
   --bg-primary: hsl(44, 60%, 94%);
