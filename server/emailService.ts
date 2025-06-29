@@ -124,7 +124,42 @@ export class EmailService {
         []  // previousTeamMembers - would track from email logs
       );
 
-      // Clean function to properly format AI content for email
+      // Function to add natural line breaks at appropriate points
+      const addIntelligentLineBreaks = (text: string): string => {
+        // Split into sentences
+        const sentences = text.split(/(?<=[.!?])\s+/);
+        
+        // Group sentences into logical paragraphs
+        const paragraphs: string[] = [];
+        let currentParagraph: string[] = [];
+        
+        sentences.forEach((sentence, index) => {
+          currentParagraph.push(sentence.trim());
+          
+          // Create paragraph breaks at natural transition points
+          const isTransition = 
+            sentence.includes('Instead of') ||
+            sentence.includes('Your action:') ||
+            sentence.includes('This week:') ||
+            sentence.includes('Combine it with') ||
+            sentence.includes('Harness this') ||
+            sentence.includes('Focus on') ||
+            sentence.includes('Notice how') ||
+            (currentParagraph.length >= 2 && index < sentences.length - 1);
+          
+          if (isTransition || index === sentences.length - 1) {
+            paragraphs.push(currentParagraph.join(' '));
+            currentParagraph = [];
+          }
+        });
+        
+        // Join paragraphs with line breaks
+        return paragraphs
+          .filter(p => p.trim().length > 0)
+          .join('<br><br>');
+      };
+
+      // Enhanced function to properly format AI content for email with natural line breaks
       const cleanContent = (content: string) => {
         if (!content) return '';
         
@@ -139,6 +174,9 @@ export class EmailService {
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
           .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
           .replace(/`(.*?)`/g, '<code>$1</code>'); // Code
+        
+        // Add intelligent paragraph breaks for better readability
+        cleaned = addIntelligentLineBreaks(cleaned);
         
         return cleaned;
       };
@@ -171,15 +209,23 @@ export class EmailService {
         weeklyContent.techniqueContent = `This week, consciously apply your ${featuredStrength} strength in one key decision or interaction. Notice how it changes the outcome.`;
       }
 
+      // Apply content formatting to AI-generated text for better readability
+      const formattedWeeklyContent = {
+        ...weeklyContent,
+        personalInsight: cleanContent(weeklyContent.personalInsight),
+        techniqueContent: cleanContent(weeklyContent.techniqueContent),
+        teamSection: cleanContent(weeklyContent.teamSection)
+      };
+
       // Generate professional HTML using your exact weekly email template
       const emailHtml = this.generateProfessionalWeeklyEmail(
-        weeklyContent,
+        formattedWeeklyContent,
         user.firstName || 'Manager',
         featuredStrength,
-        weeklyContent.techniqueContent || 'Apply your strength this week',
+        formattedWeeklyContent.techniqueContent || 'Apply your strength this week',
         featuredMember.name,
         teamMemberFeaturedStrength,
-        weeklyContent.teamSection,
+        formattedWeeklyContent.teamSection,
         weekNumber
       );
 
