@@ -83,7 +83,7 @@ export class EmailService {
       
       // Render the proper React email template
       const welcomeHtml = await render(WelcomeEmail({
-        firstName: user.firstName || undefined,
+        firstName: user.firstName ?? undefined,
         strength1: strength1 || 'Strengths',
         strength2: strength2 || 'Leadership',
         challengeText: welcomeContent.challengeText,
@@ -173,14 +173,24 @@ export class EmailService {
         userTeamMembers
       );
 
-      // Temporarily use simple HTML for stability testing
-      const emailHtml = `
-        <h2>Weekly Strengths Coaching - Week ${weekNumber}</h2>
-        <p>Hi ${user.firstName || 'Manager'},</p>
-        <p>Your personal strength focus: ${emailContent.personalStrength}</p>
-        <p>Weekly insight: ${emailContent.personalInsight}</p>
-        <p>Best regards,<br>Your Strengths Coach</p>
-      `;
+      // Get random team member for team insight
+      const randomTeamMember = userTeamMembers.length > 0 
+        ? userTeamMembers[Math.floor(Math.random() * userTeamMembers.length)]
+        : null;
+
+      // Render the proper React email template
+      const emailHtml = await render(WeeklyNudgeEmail({
+        managerName: user.firstName || 'Manager',
+        personalStrength: emailContent.personalStrength,
+        personalTip: emailContent.personalInsight,
+        specificAction: emailContent.techniqueContent || `Focus on leveraging your ${emailContent.personalStrength} strength this week`,
+        teamMemberName: randomTeamMember?.name || emailContent.teamMemberName || 'Team Member',
+        teamMemberStrength: randomTeamMember?.strengths?.[0] || emailContent.teamMemberStrength || 'Strategic Thinking',
+        teamTip: emailContent.teamSection || 'Continue building team collaboration',
+        weekNumber: weekNumber,
+        dashboardUrl: `${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/dashboard`,
+        unsubscribeUrl: `${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}/unsubscribe?token=${user.id}`
+      }));
 
       const { data, error } = await resend.emails.send({
         from: this.fromEmail,
