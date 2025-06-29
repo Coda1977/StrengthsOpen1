@@ -213,25 +213,25 @@ export async function generateCollaborationInsight(member1: string, member2: str
     return "Both team members need to have strengths assigned to generate collaboration insights.";
   }
 
-  const prompt = `You are an expert CliftonStrengths coach. Generate a collaboration insight for these two team members:
+  const prompt = `You are an expert CliftonStrengths coach. Generate a collaboration insight for these two specific team members. IMPORTANT: Use their exact names throughout your response.
 
-${member1}: ${member1Strengths.join(', ')}
-${member2}: ${member2Strengths.join(', ')}
+Team Member 1: ${member1} (Strengths: ${member1Strengths.join(', ')})
+Team Member 2: ${member2} (Strengths: ${member2Strengths.join(', ')})
 
-Provide a concise collaboration insight with these 3 sections:
+Provide a collaboration insight that uses their actual names (${member1} and ${member2}) in these sections:
 
 STRENGTHS SYNERGY:
-One sentence on how their strengths complement each other.
+One sentence explaining how ${member1}'s and ${member2}'s strengths complement each other.
 
 TOP 3 STRATEGIES:
-1. One specific action they can take together
-2. One communication approach that works for both
-3. One way to leverage their combined strengths
+1. One specific action ${member1} and ${member2} can take together
+2. One communication approach that works for both ${member1} and ${member2}
+3. One way ${member1} and ${member2} can leverage their combined strengths
 
 PARTNERSHIP ADVANTAGE:
-One sentence on their unique collaborative value.
+One sentence on ${member1} and ${member2}'s unique collaborative value.
 
-Keep each point to one sentence maximum. No markdown. Total response under 150 words.`;
+Remember: Always use their actual names (${member1} and ${member2}) instead of placeholders. Keep each point to one sentence maximum. No markdown. Total response under 150 words.`;
 
   try {
     const response = await openai.chat.completions.create({

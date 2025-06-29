@@ -97,6 +97,7 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Conversation Backups Table**: Handles data migration and corruption recovery
 
 ## Recent Changes
+- June 29, 2025: Fixed collaboration insight placeholder names issue by improving AI prompt to explicitly use actual team member names instead of generic placeholders like "bnm" and "jkl"
 - June 29, 2025: Fixed logout "invalid_request" error by implementing simplified logout flow that clears session and redirects to home page without relying on Replit Auth end session URL
 - June 29, 2025: Successfully tested and verified email delivery system - 4/4 production tests passed with 738ms delivery speed, ready for hundreds of users
 - June 29, 2025: Fixed email domain configuration to use verified resend.dev domain, ensuring reliable email delivery for welcome and coaching emails
