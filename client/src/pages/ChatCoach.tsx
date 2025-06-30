@@ -1032,10 +1032,9 @@ const ChatCoach = () => {
                       <Skeleton className="skeleton-message" />
                     </>
                   )}
-                  {messages.map((msg: Message, index: number) => {
-                    return (
+                  {messages.map((msg: Message, index: number) => (
+                    <React.Fragment key={`${msg.id}-${index}`}>
                       <div 
-                        key={`${msg.id}-${index}`}
                         className={`message ${msg.type}`}
                         tabIndex={0}
                         aria-label={`${msg.type === 'user' ? 'You' : 'AI'} message: ${msg.content}`}
@@ -1078,7 +1077,7 @@ const ChatCoach = () => {
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
-                              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1-2-2h2"/>
                             </svg>
                           </button>
                         </div>
@@ -1104,7 +1103,7 @@ const ChatCoach = () => {
                         </div>
                       )}
                     </React.Fragment>
-                  })}
+                  ))}
                   
                   {isTyping && (
                     <div className="typing-indicator" role="status" aria-live="polite">
