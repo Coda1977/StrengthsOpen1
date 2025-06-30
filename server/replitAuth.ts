@@ -59,9 +59,9 @@ export function getSession() {
     name: 'sessionId', // Custom session name for better security
     cookie: {
       httpOnly: true, // Prevent XSS attacks
-      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      secure: true, // Always use secure cookies for OAuth (required for SameSite: 'none')
       maxAge: sessionTtl,
-      sameSite: 'strict', // CSRF protection
+      sameSite: 'none', // Allow cross-site cookies for OAuth redirects (fixes mobile login loop)
     },
   });
 }
