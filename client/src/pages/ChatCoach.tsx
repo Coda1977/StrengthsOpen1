@@ -1082,6 +1082,7 @@ const ChatCoach = () => {
                             </svg>
                           </button>
                         </div>
+                        {/* Follow-up questions are now rendered outside the message-content bubble for better mobile layout */}
                         {msg.type === 'ai' && followUps[msg.id] && followUps[msg.id].length > 0 && (
                           <div className="starter-questions followup-block" style={{ marginTop: 8 }}>
                             {followUpLoading[msg.id] ? (

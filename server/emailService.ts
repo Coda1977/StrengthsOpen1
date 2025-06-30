@@ -771,20 +771,31 @@ export class EmailService {
           if (!user) continue;
 
           // Determine week number
-          const weekNumber = parseInt(sub.weeklyEmailCount || '0', 10) + 1;
+          const currentCount = parseInt(sub.weeklyEmailCount || '0', 10);
+          const weekNumber = currentCount + 1;
           if (weekNumber > 12) continue; // Only send up to 12 weeks
 
-          // Send email
-          await this.sendWeeklyCoachingEmail(user, weekNumber);
-
-          // Update subscription
-          await db.update(emailSubscriptions)
+          // ATOMIC UPDATE: Only update if weeklyEmailCount is still currentCount
+          const updateResult = await db.update(emailSubscriptions)
             .set({
               weeklyEmailCount: String(weekNumber),
               lastSentAt: new Date(),
               updatedAt: new Date(),
             })
-            .where(eq(emailSubscriptions.id, sub.id));
+            .where(and(
+              eq(emailSubscriptions.id, sub.id),
+              eq(emailSubscriptions.weeklyEmailCount, String(currentCount))
+            ))
+            .returning();
+
+          if (updateResult.length === 0) {
+            // Another process already updated this subscription; skip sending
+            if (process.env.NODE_ENV !== 'production') console.warn(`Skipped duplicate weekly email for user ${user.email}`);
+            continue;
+          }
+
+          // Send email
+          await this.sendWeeklyCoachingEmail(user, weekNumber);
 
           sent++;
         } catch (err) {

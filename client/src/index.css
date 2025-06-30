@@ -2684,3 +2684,27 @@ button, .starter-question, .send-button, .new-chat-button {
     min-height: 0 !important;
   }
 }
+
+@media (max-width: 768px) {
+  /* Fix vertical text and squished bubbles in chat on mobile */
+  .message-content {
+    white-space: pre-line !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    max-width: 95vw !important;
+    font-size: 15px;
+    line-height: 1.5;
+    padding: 12px 14px;
+  }
+  .followup-block {
+    width: 100%;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-start;
+    /* Visually separate from bubble */
+    padding-left: 48px;
+  }
+}
