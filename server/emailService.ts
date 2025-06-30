@@ -41,6 +41,74 @@ export class EmailService {
     }
   }
 
+  async sendAuthorizationWelcomeEmail(email: string, firstName: string, websiteUrl: string): Promise<void> {
+    try {
+      const authEmailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #F5F0E8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+            <div style="background-color: #FFFFFF; border-radius: 12px; padding: 40px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
+              <h1 style="color: #1A1A1A; font-size: 28px; font-weight: 700; margin: 0 0 24px 0; text-align: center;">
+                Welcome to Strengths Manager! 🎉
+              </h1>
+              
+              <p style="color: #4A4A4A; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+                Hi ${firstName},
+              </p>
+              
+              <p style="color: #4A4A4A; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+                Great news! Your account has been successfully authorized and you're now ready to unlock the power of CliftonStrengths for you and your team.
+              </p>
+              
+              <div style="background-color: #F8F6F0; border-radius: 8px; padding: 24px; margin: 24px 0;">
+                <h3 style="color: #1A1A1A; font-size: 18px; font-weight: 600; margin: 0 0 16px 0;">
+                  What's Next?
+                </h3>
+                <p style="color: #4A4A4A; font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">
+                  Complete your onboarding by selecting your top 5 CliftonStrengths to start receiving personalized AI coaching insights.
+                </p>
+                <a href="${websiteUrl}/onboarding" style="display: inline-block; background-color: #FFD60A; color: #1A1A1A; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                  Complete Your Profile
+                </a>
+              </div>
+              
+              <div style="border-top: 1px solid #E5E5E5; padding-top: 24px; margin-top: 32px;">
+                <p style="color: #8A8A8A; font-size: 12px; line-height: 1.4; margin: 0; text-align: center;">
+                  Visit our website: <a href="${websiteUrl}" style="color: #FFD60A; text-decoration: none;">${websiteUrl.replace('https://', '')}</a>
+                  <br>
+                  Questions? Reply to this email or contact us anytime.
+                </p>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const { data, error } = await this.resend.emails.send({
+        from: this.fromEmail,
+        to: email,
+        subject: 'Welcome to Strengths Manager - Let\'s Get Started!',
+        html: authEmailHtml,
+      });
+
+      if (error) {
+        console.error('Authorization welcome email failed to send:', error);
+        throw new Error('Failed to send authorization welcome email');
+      }
+
+      console.log(`Authorization welcome email sent to ${email}`);
+    } catch (error) {
+      console.error('Error sending authorization welcome email:', error);
+      throw error;
+    }
+  }
+
   async sendWelcomeEmail(user: User, timezone: string = 'America/New_York'): Promise<void> {
     try {
       const userStrengths = user.topStrengths || [];
