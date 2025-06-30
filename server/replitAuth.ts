@@ -170,31 +170,10 @@ export async function setupAuth(app: Express) {
     passport.authenticate(strategyName, async (err: any, user: any) => {
       if (err) {
         console.error('Authentication error:', err);
-        // For mobile, try a more explicit redirect with timeout
-        return res.send(`
-          <html>
-            <head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
-            <body>
-              <script>
-                setTimeout(() => window.location.href = "/api/login", 100);
-              </script>
-              <p>Redirecting...</p>
-            </body>
-          </html>
-        `);
+        return res.redirect("/api/login");
       }
       if (!user) {
-        return res.send(`
-          <html>
-            <head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
-            <body>
-              <script>
-                setTimeout(() => window.location.href = "/api/login", 100);
-              </script>
-              <p>Redirecting...</p>
-            </body>
-          </html>
-        `);
+        return res.redirect("/api/login");
       }
 
       // Log the user in
@@ -228,42 +207,12 @@ export async function setupAuth(app: Express) {
             }
           }
           
-          // Mobile-friendly redirect with JavaScript fallback
+          // Use proper HTTP redirect for better user experience
           const targetUrl = (dbUser && dbUser.hasCompletedOnboarding) ? "/dashboard" : "/onboarding";
-          return res.send(`
-            <html>
-              <head>
-                <meta name="viewport" content="width=device-width, initial-scale=1">
-                <title>Redirecting...</title>
-              </head>
-              <body>
-                <script>
-                  // Immediate redirect
-                  window.location.replace("${targetUrl}");
-                </script>
-                <noscript>
-                  <meta http-equiv="refresh" content="0;url=${targetUrl}">
-                </noscript>
-                <p>Redirecting to your dashboard...</p>
-              </body>
-            </html>
-          `);
+          return res.redirect(targetUrl);
         } catch (error) {
           console.error('Error checking user status:', error);
-          return res.send(`
-            <html>
-              <head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
-              <body>
-                <script>
-                  window.location.replace("/onboarding");
-                </script>
-                <noscript>
-                  <meta http-equiv="refresh" content="0;url=/onboarding">
-                </noscript>
-                <p>Redirecting...</p>
-              </body>
-            </html>
-          `);
+          return res.redirect("/onboarding");
         }
       });
     })(req, res, next);
