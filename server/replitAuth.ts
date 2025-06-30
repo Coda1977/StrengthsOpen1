@@ -136,14 +136,22 @@ export async function setupAuth(app: Express) {
     const replitDomains = process.env.REPLIT_DOMAINS?.split(",") || [];
     const websiteUrl = replitDomains.length > 0 ? `https://${replitDomains[0]}` : `https://${hostname}`;
     
+    // Detect mobile devices
+    const userAgent = req.get('User-Agent') || '';
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    
+    // Use different prompt strategy for mobile vs desktop
+    const promptStrategy = isMobile ? "none" : "select_account";
+    
     passport.authenticate(strategyName, {
-      prompt: "login consent",
+      prompt: promptStrategy,
       scope: ["openid", "email", "profile", "offline_access"],
       // Add custom parameters to pass website info to authorization flow
       state: JSON.stringify({
         app_name: "Strengths Manager",
         website_url: websiteUrl,
-        return_url: `${websiteUrl}/dashboard`
+        return_url: `${websiteUrl}/dashboard`,
+        mobile: isMobile
       })
     })(req, res, next);
   });
@@ -152,13 +160,41 @@ export async function setupAuth(app: Express) {
     const hostname = req.hostname || req.get('host')?.split(':')[0] || 'localhost';
     const strategyName = `replitauth:${hostname}`;
     
+    // Add mobile-friendly headers
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
     passport.authenticate(strategyName, async (err: any, user: any) => {
       if (err) {
         console.error('Authentication error:', err);
-        return res.redirect("/api/login");
+        // For mobile, try a more explicit redirect with timeout
+        return res.send(`
+          <html>
+            <head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+            <body>
+              <script>
+                setTimeout(() => window.location.href = "/api/login", 100);
+              </script>
+              <p>Redirecting...</p>
+            </body>
+          </html>
+        `);
       }
       if (!user) {
-        return res.redirect("/api/login");
+        return res.send(`
+          <html>
+            <head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+            <body>
+              <script>
+                setTimeout(() => window.location.href = "/api/login", 100);
+              </script>
+              <p>Redirecting...</p>
+            </body>
+          </html>
+        `);
       }
 
       // Log the user in
@@ -192,14 +228,42 @@ export async function setupAuth(app: Express) {
             }
           }
           
-          if (dbUser && dbUser.hasCompletedOnboarding) {
-            return res.redirect("/dashboard");
-          } else {
-            return res.redirect("/onboarding");
-          }
+          // Mobile-friendly redirect with JavaScript fallback
+          const targetUrl = (dbUser && dbUser.hasCompletedOnboarding) ? "/dashboard" : "/onboarding";
+          return res.send(`
+            <html>
+              <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>Redirecting...</title>
+              </head>
+              <body>
+                <script>
+                  // Immediate redirect
+                  window.location.replace("${targetUrl}");
+                </script>
+                <noscript>
+                  <meta http-equiv="refresh" content="0;url=${targetUrl}">
+                </noscript>
+                <p>Redirecting to your dashboard...</p>
+              </body>
+            </html>
+          `);
         } catch (error) {
           console.error('Error checking user status:', error);
-          return res.redirect("/onboarding");
+          return res.send(`
+            <html>
+              <head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+              <body>
+                <script>
+                  window.location.replace("/onboarding");
+                </script>
+                <noscript>
+                  <meta http-equiv="refresh" content="0;url=/onboarding">
+                </noscript>
+                <p>Redirecting...</p>
+              </body>
+            </html>
+          `);
         }
       });
     })(req, res, next);
