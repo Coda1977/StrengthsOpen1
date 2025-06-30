@@ -934,38 +934,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // User analytics
-      const totalUsers = await db.select({ count: sql<number>`count(*)` }).from(users);
-      const onboardedUsers = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.hasCompletedOnboarding, true));
+      const totalUsers = await db.select().from(users);
+      const onboardedUsers = await db.select().from(users).where(eq(users.hasCompletedOnboarding, true));
 
       // Email analytics
-      const totalEmails = await db.select({ count: sql<number>`count(*)` }).from(emailLogs);
-      const sentEmails = await db.select({ count: sql<number>`count(*)` }).from(emailLogs).where(eq(emailLogs.status, 'sent'));
-      const failedEmails = await db.select({ count: sql<number>`count(*)` }).from(emailLogs).where(eq(emailLogs.status, 'failed'));
+      const totalEmails = await db.select().from(emailLogs);
+      const sentEmails = await db.select().from(emailLogs).where(eq(emailLogs.status, 'sent'));
+      const failedEmails = await db.select().from(emailLogs).where(eq(emailLogs.status, 'failed'));
 
       // Recent activity
       const recentUsers = await db
-        .select({ count: sql<number>`count(*)` })
+        .select()
         .from(users)
         .where(gte(users.createdAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)));
 
       const recentEmails = await db
-        .select({ count: sql<number>`count(*)` })
+        .select()
         .from(emailLogs)
         .where(gte(emailLogs.createdAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)));
 
       res.json({
         users: {
-          total: totalUsers[0]?.count || 0,
-          onboarded: onboardedUsers[0]?.count || 0,
-          recent: recentUsers[0]?.count || 0,
+          total: totalUsers.length,
+          onboarded: onboardedUsers.length,
+          recent: recentUsers.length,
         },
         emails: {
-          total: totalEmails[0]?.count || 0,
-          sent: sentEmails[0]?.count || 0,
-          failed: failedEmails[0]?.count || 0,
-          recent: recentEmails[0]?.count || 0,
+          total: totalEmails.length,
+          sent: sentEmails.length,
+          failed: failedEmails.length,
+          recent: recentEmails.length,
         },
-        deliveryRate: totalEmails[0]?.count ? Math.round((sentEmails[0]?.count || 0) / totalEmails[0].count * 100) : 0,
+        deliveryRate: totalEmails.length ? Math.round((sentEmails.length || 0) / totalEmails.length * 100) : 0,
       });
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch analytics' });
@@ -1005,15 +1005,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user || !user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
-      // Total spend
-      const totalResult = await db.select({ total: sql`COALESCE(SUM(cost_usd), 0)` }).from(openaiUsageLogs);
+      // Total spend - use simple select and calculate in memory
+      const allUsageLogs = await db.select().from(openaiUsageLogs);
+      const totalSpend = allUsageLogs.reduce((sum, log) => sum + (log.costUsd || 0), 0);
+      
       // Per-user spend
-      const perUserResult = await db
-        .select({ userId: openaiUsageLogs.userId, total: sql`COALESCE(SUM(cost_usd), 0)` })
-        .from(openaiUsageLogs)
-        .groupBy(openaiUsageLogs.userId);
+      const userSpendMap = new Map<string, number>();
+      allUsageLogs.forEach(log => {
+        const currentSpend = userSpendMap.get(log.userId) || 0;
+        userSpendMap.set(log.userId, currentSpend + (log.costUsd || 0));
+      });
+      const perUserResult = Array.from(userSpendMap.entries()).map(([userId, total]) => ({ userId, total }));
       res.json({
-        total: totalResult[0]?.total || 0,
+        total: totalSpend,
         perUser: perUserResult || []
       });
     } catch (error) {
@@ -1037,8 +1041,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(unsubscribeTokens)
         .where(and(
           eq(unsubscribeTokens.token, token),
-          sql`${unsubscribeTokens.usedAt} IS NULL`, // Not used yet
-          sql`${unsubscribeTokens.expiresAt} > NOW()` // Not expired
+          eq(unsubscribeTokens.usedAt, null), // Not used yet
+          gte(unsubscribeTokens.expiresAt, new Date()) // Not expired
         ));
 
       if (!unsubscribeToken) {
