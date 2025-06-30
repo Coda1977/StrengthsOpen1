@@ -108,17 +108,32 @@ export async function setupAuth(app: Express) {
 
   // Register strategies for both Replit domains and localhost
   const replitDomains = process.env.REPLIT_DOMAINS?.split(",") || [];
-  const domains = [...replitDomains, 'localhost', '127.0.0.1'];
+  
+  // For deployed apps, also check for common deployment domain patterns
+  const deploymentDomains = [];
+  if (process.env.REPL_ID) {
+    // Add common Replit deployment patterns
+    deploymentDomains.push(`${process.env.REPL_ID}.replit.app`);
+    deploymentDomains.push(`${process.env.REPL_ID}-00-${process.env.REPL_SLUG || 'workspace'}.replit.dev`);
+  }
+  
+  const domains = [...replitDomains, ...deploymentDomains, 'localhost', '127.0.0.1'];
+  
+  console.log('Registering authentication strategies for domains:', domains);
   
   for (const domain of domains) {
-    // Use the actual Replit domain for callback URL, even for localhost requests
+    // Use the actual domain for callback URL
     const callbackDomain = domain === 'localhost' || domain === '127.0.0.1' ? replitDomains[0] || domain : domain;
+    const callbackURL = `https://${callbackDomain}/api/callback`;
+    
+    console.log(`Registering strategy: replitauth:${domain} with callback: ${callbackURL}`);
+    
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
         config,
         scope: "openid email profile offline_access",
-        callbackURL: `https://${callbackDomain}/api/callback`,
+        callbackURL,
       },
       verify,
     );
@@ -131,6 +146,26 @@ export async function setupAuth(app: Express) {
   app.get("/api/login", (req, res, next) => {
     const hostname = req.hostname || req.get('host')?.split(':')[0] || 'localhost';
     const strategyName = `replitauth:${hostname}`;
+    
+    console.log(`Login attempt - hostname: ${hostname}`);
+    
+    // Check if strategy exists using passport's internal method
+    try {
+      const strategy = (passport as any)._strategy(strategyName);
+      if (!strategy) {
+        console.error(`Strategy ${strategyName} not found for hostname ${hostname}`);
+        return res.status(500).json({ 
+          error: 'Authentication strategy not configured', 
+          hostname
+        });
+      }
+    } catch (error) {
+      console.error(`Error checking strategy ${strategyName}:`, error);
+      return res.status(500).json({ 
+        error: 'Authentication configuration error', 
+        hostname
+      });
+    }
     
     // Use the actual Replit domain for URLs in state
     const replitDomains = process.env.REPLIT_DOMAINS?.split(",") || [];
