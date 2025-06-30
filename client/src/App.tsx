@@ -6,13 +6,15 @@ import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute, PublicRoute } from "@/components/ProtectedRoute";
-import LandingPage from "@/pages/LandingPage";
-import Dashboard from "@/pages/Dashboard";
-import Encyclopedia from "@/pages/Encyclopedia";
-import ChatCoach from "@/pages/ChatCoach";
-import Onboarding from "@/pages/Onboarding";
-import Admin from "@/pages/Admin";
-import NotFound from "@/pages/not-found";
+import React, { Suspense, lazy } from "react";
+
+const LandingPage = lazy(() => import("@/pages/LandingPage"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Encyclopedia = lazy(() => import("@/pages/Encyclopedia"));
+const ChatCoach = lazy(() => import("@/pages/ChatCoach"));
+const Onboarding = lazy(() => import("@/pages/Onboarding"));
+const Admin = lazy(() => import("@/pages/Admin"));
+const NotFound = lazy(() => import("@/pages/not-found"));
 
 function Router() {
   const { isAuthenticated, isLoading, user, hasCompletedOnboarding } = useAuth();
@@ -30,82 +32,84 @@ function Router() {
   }
 
   return (
-    <Switch>
-      {/* Protected routes - require authentication */}
-      <Route path="/dashboard">
-        <ProtectedRoute routeName="Dashboard" requireOnboarding>
-          <Dashboard />
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/encyclopedia">
-        <ProtectedRoute routeName="Encyclopedia" requireOnboarding>
-          <Encyclopedia />
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/encyclopedia/:strength">
-        <ProtectedRoute routeName="Encyclopedia" requireOnboarding>
-          <Encyclopedia />
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/ai-coach">
-        <ProtectedRoute routeName="AI Coach" requireOnboarding>
-          <ChatCoach />
-        </ProtectedRoute>
-      </Route>
-
-      {/* Admin route - only visible to admin user */}
-      {user?.email === 'tinymanagerai@gmail.com' && (
-        <Route path="/admin">
-          <ProtectedRoute routeName="Admin">
-            <Admin />
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <Switch>
+        {/* Protected routes - require authentication */}
+        <Route path="/dashboard">
+          <ProtectedRoute routeName="Dashboard" requireOnboarding>
+            <Dashboard />
           </ProtectedRoute>
         </Route>
-      )}
 
-      {/* Special onboarding route - requires auth but not completed onboarding */}
-      <Route path="/onboarding">
-        <ProtectedRoute routeName="Onboarding">
-          <Onboarding />
-        </ProtectedRoute>
-      </Route>
+        <Route path="/encyclopedia">
+          <ProtectedRoute routeName="Encyclopedia" requireOnboarding>
+            <Encyclopedia />
+          </ProtectedRoute>
+        </Route>
 
-      {/* Public landing page route - must come after specific routes */}
-      <Route path="/">
-        {() => {
-          // If authenticated, check onboarding status and redirect accordingly
-          if (isAuthenticated) {
-            if (!hasCompletedOnboarding) {
+        <Route path="/encyclopedia/:strength">
+          <ProtectedRoute routeName="Encyclopedia" requireOnboarding>
+            <Encyclopedia />
+          </ProtectedRoute>
+        </Route>
+
+        <Route path="/ai-coach">
+          <ProtectedRoute routeName="AI Coach" requireOnboarding>
+            <ChatCoach />
+          </ProtectedRoute>
+        </Route>
+
+        {/* Admin route - only visible to admin user */}
+        {user?.email === 'tinymanagerai@gmail.com' && (
+          <Route path="/admin">
+            <ProtectedRoute routeName="Admin">
+              <Admin />
+            </ProtectedRoute>
+          </Route>
+        )}
+
+        {/* Special onboarding route - requires auth but not completed onboarding */}
+        <Route path="/onboarding">
+          <ProtectedRoute routeName="Onboarding">
+            <Onboarding />
+          </ProtectedRoute>
+        </Route>
+
+        {/* Public landing page route - must come after specific routes */}
+        <Route path="/">
+          {() => {
+            // If authenticated, check onboarding status and redirect accordingly
+            if (isAuthenticated) {
+              if (!hasCompletedOnboarding) {
+                return (
+                  <ProtectedRoute routeName="Onboarding">
+                    <Onboarding />
+                  </ProtectedRoute>
+                );
+              }
               return (
-                <ProtectedRoute routeName="Onboarding">
-                  <Onboarding />
+                <ProtectedRoute routeName="Dashboard" requireOnboarding>
+                  <Dashboard />
                 </ProtectedRoute>
               );
             }
+            // Show public landing page for unauthenticated users
             return (
-              <ProtectedRoute routeName="Dashboard" requireOnboarding>
-                <Dashboard />
-              </ProtectedRoute>
+              <PublicRoute routeName="Landing Page">
+                <LandingPage />
+              </PublicRoute>
             );
-          }
-          // Show public landing page for unauthenticated users
-          return (
-            <PublicRoute routeName="Landing Page">
-              <LandingPage />
-            </PublicRoute>
-          );
-        }}
-      </Route>
+          }}
+        </Route>
 
-      {/* 404 route - public */}
-      <Route>
-        <PublicRoute routeName="404 Page">
-          <NotFound />
-        </PublicRoute>
-      </Route>
-    </Switch>
+        {/* 404 route - public */}
+        <Route>
+          <PublicRoute routeName="404 Page">
+            <NotFound />
+          </PublicRoute>
+        </Route>
+      </Switch>
+    </Suspense>
   );
 }
 

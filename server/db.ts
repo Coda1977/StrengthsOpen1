@@ -19,7 +19,7 @@ const isDev = process.env.NODE_ENV === 'development';
 // Create pool with optimized settings for Neon serverless
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 1, // Single connection for serverless to avoid conflicts
+  max: 5, // Increased from 1 to 5 for better concurrency
   idleTimeoutMillis: 30000, // 30 seconds idle timeout for Neon
   connectionTimeoutMillis: 20000, // Increased timeout
   maxUses: 7500, // Limit reuse to prevent stale connections

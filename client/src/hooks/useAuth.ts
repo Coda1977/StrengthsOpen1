@@ -19,7 +19,7 @@ export function useAuth() {
     refetchOnWindowFocus: false,
     refetchOnMount: true,
     refetchInterval: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 60 * 60 * 1000, // 1 hour
   });
 
   return {

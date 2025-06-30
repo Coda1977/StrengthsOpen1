@@ -838,6 +838,17 @@ const ChatCoach = () => {
     setTimeout(() => handleSendMessage(), 100);
   };
 
+  // Memoized parsed markdown for AI messages
+  const parsedMarkdownMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const msg of messages) {
+      if (msg.type === 'ai') {
+        map[msg.id] = formatMarkdown(msg.content);
+      }
+    }
+    return map;
+  }, [messages]);
+
   return (
     <ErrorBoundary>
       <div className="dashboard" style={{ background: 'var(--bg-primary)', minHeight: '100vh' }}>
@@ -1057,7 +1068,7 @@ const ChatCoach = () => {
                               }}
                             />
                           ) : (
-                            <div dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }} />
+                            <div dangerouslySetInnerHTML={{ __html: parsedMarkdownMap[msg.id] || '' }} />
                           )}
                           <button 
                             className="copy-message-button copy-button"

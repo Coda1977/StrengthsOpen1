@@ -73,7 +73,9 @@ export const teamMembers = pgTable("team_members", {
   strengths: jsonb("strengths").$type<string[]>().notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_team_members_manager_id").on(table.managerId),
+]);
 
 export const conversations = pgTable("conversations", {
   id: varchar("id").primaryKey().notNull().$defaultFn(() => {
@@ -97,7 +99,9 @@ export const conversations = pgTable("conversations", {
   updatedAt: timestamp("updated_at").defaultNow(),
   isArchived: boolean("is_archived").default(false),
   metadata: jsonb("metadata"),
-});
+}, (table) => [
+  index("IDX_conversations_user_id").on(table.userId),
+]);
 
 export const messages = pgTable("messages", {
   id: varchar("id").primaryKey().notNull().$defaultFn(() => {
@@ -118,7 +122,9 @@ export const messages = pgTable("messages", {
   type: text("type", { enum: ["user", "ai"] }).notNull(),
   timestamp: timestamp("timestamp").defaultNow(),
   metadata: jsonb("metadata"),
-});
+}, (table) => [
+  index("IDX_messages_conversation_id").on(table.conversationId),
+]);
 
 export const conversationBackups = pgTable("conversation_backups", {
   id: varchar("id").primaryKey().notNull().$defaultFn(() => {
@@ -160,7 +166,9 @@ export const emailSubscriptions = pgTable("email_subscriptions", {
   previousQuoteSources: jsonb("previous_quote_sources").$type<string[]>().default([]), // Track last 4 quote source types
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_email_subscriptions_user_id").on(table.userId),
+]);
 
 export const emailLogs = pgTable("email_logs", {
   id: varchar("id").primaryKey().notNull().$defaultFn(() => randomUUID()),
@@ -174,7 +182,9 @@ export const emailLogs = pgTable("email_logs", {
   errorMessage: text("error_message"),
   sentAt: timestamp("sent_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_email_logs_user_id").on(table.userId),
+]);
 
 // New table for email metrics
 export const emailMetrics = pgTable("email_metrics", {
