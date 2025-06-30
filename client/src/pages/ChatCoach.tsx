@@ -549,8 +549,9 @@ const ChatCoach = () => {
       };
       
       setMessages((prev: Message[]) => {
-        const updatedMessages = [...prev, ...[aiMessage]];
-        // Auto-save new conversation after AI response
+        const updatedMessages = [...prev, aiMessage];
+        
+        // Auto-save conversation after AI response
         createTimeout(async () => {
           if (!currentChatId) {
             try {
@@ -580,8 +581,16 @@ const ChatCoach = () => {
               console.error('Failed to save conversation:', error);
             }
           } else {
-            // Add AI message to existing conversation
+            // Add both user and AI messages to existing conversation
             try {
+              await addMessage({
+                conversationId: currentChatId,
+                data: {
+                  content: userMessage.content,
+                  type: 'user'
+                }
+              });
+              
               await addMessage({
                 conversationId: currentChatId,
                 data: {
@@ -594,6 +603,7 @@ const ChatCoach = () => {
             }
           }
         }, 100);
+        
         return updatedMessages;
       });
     } catch (error) {
