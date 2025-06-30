@@ -189,23 +189,7 @@ export const emailMetrics = pgTable("email_metrics", {
 
 // OpenAI usage logs table
 export const openaiUsageLogs = pgTable("openai_usage_logs", {
-  id: varchar("id").primaryKey().notNull().$defaultFn(() => {
-    try {
-      const crypto = require('crypto');
-      return crypto.randomUUID();
-    } catch (e) {
-      try {
-        const crypto = require('crypto');
-        const bytes = crypto.randomBytes(16);
-        bytes[6] = (bytes[6] & 0x0f) | 0x40;
-        bytes[8] = (bytes[8] & 0x3f) | 0x80;
-        const hex = bytes.toString('hex');
-        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
-      } catch (cryptoError) {
-        throw new Error('Cryptographically secure UUID generation is not available.');
-      }
-    }
-  }),
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => randomUUID()),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   requestType: text("request_type").notNull(), // 'insight', 'coaching_response', 'collaboration_insight', 'email_content'
   promptTokens: integer("prompt_tokens").notNull(),
@@ -217,29 +201,12 @@ export const openaiUsageLogs = pgTable("openai_usage_logs", {
 
 // Unsubscribe tokens table for secure email unsubscription
 export const unsubscribeTokens = pgTable("unsubscribe_tokens", {
-  id: varchar("id").primaryKey().notNull().$defaultFn(() => {
-    try {
-      const crypto = require('crypto');
-      return crypto.randomUUID();
-    } catch (e) {
-      try {
-        const crypto = require('crypto');
-        const bytes = crypto.randomBytes(16);
-        bytes[6] = (bytes[6] & 0x0f) | 0x40;
-        bytes[8] = (bytes[8] & 0x3f) | 0x80;
-        const hex = bytes.toString('hex');
-        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
-      } catch (cryptoError) {
-        throw new Error('Cryptographically secure UUID generation is not available.');
-      }
-    }
-  }),
+  id: varchar("id").primaryKey().notNull().$defaultFn(() => randomUUID()),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  token: varchar("token").notNull().unique(), // Cryptographically secure token
-  emailType: text("email_type", { enum: ["welcome", "weekly_coaching", "all"] }).notNull(), // What type of emails to unsubscribe from
-  expiresAt: timestamp("expires_at").notNull(), // Token expiration (30 days from creation)
-  usedAt: timestamp("used_at"), // When the token was used (null if not used yet)
+  token: varchar("token").notNull(),
+  emailType: text("email_type", { enum: ["welcome", "weekly_coaching", "all"] }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  usedAt: timestamp("used_at"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -328,7 +295,6 @@ export const insertUnsubscribeTokenSchema = createInsertSchema(unsubscribeTokens
   userId: true,
   token: true,
   emailType: true,
-  expiresAt: true,
 });
 
 export const updateUnsubscribeTokenSchema = createInsertSchema(unsubscribeTokens).pick({
