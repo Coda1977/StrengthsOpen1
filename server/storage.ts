@@ -70,6 +70,7 @@ export interface IStorage {
 
   // Email operations
   getEmailSubscriptions(userId: string): Promise<EmailSubscription[]>;
+  ensureEmailSubscription(userId: string, emailType: 'welcome' | 'weekly_coaching', timezone?: string): Promise<EmailSubscription>;
   updateEmailSubscription(userId: string, emailType: 'welcome' | 'weekly_coaching', data: UpdateEmailSubscription): Promise<EmailSubscription | undefined>;
   getEmailLogs(userId: string): Promise<EmailLog[]>;
   createEmailLog(data: InsertEmailLog): Promise<EmailLog>;
@@ -491,6 +492,55 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       if (isDev) console.error('Error fetching email subscriptions:', error);
       throw new Error('Failed to fetch email subscriptions');
+    }
+  }
+
+  async ensureEmailSubscription(userId: string, emailType: 'welcome' | 'weekly_coaching', timezone: string = 'America/New_York'): Promise<EmailSubscription> {
+    if (!userId || !emailType) {
+      throw new Error('User ID and email type are required');
+    }
+
+    try {
+      // First, check if an active subscription already exists
+      const existingSubscriptions = await db.select()
+        .from(emailSubscriptions)
+        .where(and(
+          eq(emailSubscriptions.userId, userId),
+          eq(emailSubscriptions.emailType, emailType),
+          eq(emailSubscriptions.isActive, true)
+        ));
+
+      if (existingSubscriptions.length > 0) {
+        // Return the first active subscription found
+        return existingSubscriptions[0];
+      }
+
+      // Deactivate any inactive duplicates to clean up
+      await db.update(emailSubscriptions)
+        .set({ isActive: false })
+        .where(and(
+          eq(emailSubscriptions.userId, userId),
+          eq(emailSubscriptions.emailType, emailType)
+        ));
+
+      // Create new subscription
+      const id = this.generateSecureId();
+      const [subscription] = await db.insert(emailSubscriptions)
+        .values({
+          id,
+          userId,
+          emailType,
+          isActive: true,
+          timezone,
+          weeklyEmailCount: '0',
+          startDate: new Date(),
+        })
+        .returning();
+
+      return subscription;
+    } catch (error) {
+      if (isDev) console.error('Error ensuring email subscription:', error);
+      throw new Error('Failed to ensure email subscription');
     }
   }
 

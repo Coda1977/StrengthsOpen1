@@ -97,6 +97,7 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Conversation Backups Table**: Handles data migration and corruption recovery
 
 ## Recent Changes
+- June 30, 2025: CRITICAL FIX - Resolved email duplication issue where user received 26 weekly nudge emails due to 10 duplicate subscriptions, implemented deduplication logic with database constraints to prevent future occurrences
 - June 30, 2025: Removed admin's personal top strengths card from admin dashboard for cleaner, more focused system metrics display
 - June 30, 2025: Fixed AI chat saving functionality by removing placeholder conversation IDs and implementing proper database conversation creation on first message
 - June 30, 2025: Fixed AI insights generation by adding missing created_at column to openai_usage_logs table, restoring team and collaboration insights functionality

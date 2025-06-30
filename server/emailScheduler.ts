@@ -64,6 +64,11 @@ export class EmailScheduler {
 
   async sendWelcomeEmail(userId: string, userEmail: string, firstName?: string, timezone: string = 'America/New_York'): Promise<void> {
     try {
+      // Ensure email subscriptions exist with proper deduplication
+      const { storage } = await import('./storage');
+      await storage.ensureEmailSubscription(userId, 'welcome', timezone);
+      await storage.ensureEmailSubscription(userId, 'weekly_coaching', timezone);
+
       // Create a user object for the email service
       const user = {
         id: userId,
