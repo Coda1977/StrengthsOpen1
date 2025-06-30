@@ -112,9 +112,13 @@ export async function setupAuth(app: Express) {
   // For deployed apps, also check for common deployment domain patterns
   const deploymentDomains = [];
   if (process.env.REPL_ID) {
-    // Add common Replit deployment patterns
+    // Add all common Replit deployment patterns
     deploymentDomains.push(`${process.env.REPL_ID}.replit.app`);
     deploymentDomains.push(`${process.env.REPL_ID}-00-${process.env.REPL_SLUG || 'workspace'}.replit.dev`);
+    // Add additional deployment patterns that might be used
+    deploymentDomains.push(`${process.env.REPL_ID}.replit.dev`);
+    deploymentDomains.push(`${process.env.REPL_ID}-production.replit.app`);
+    deploymentDomains.push(`${process.env.REPL_ID}-main.replit.app`);
   }
   
   const domains = [...replitDomains, ...deploymentDomains, 'localhost', '127.0.0.1'];
@@ -145,19 +149,57 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/login", (req, res, next) => {
     const hostname = req.hostname || req.get('host')?.split(':')[0] || 'localhost';
-    const strategyName = `replitauth:${hostname}`;
+    let strategyName = `replitauth:${hostname}`;
     
     console.log(`Login attempt - hostname: ${hostname}`);
     
-    // Check if strategy exists using passport's internal method
+    // Check if strategy exists, if not, try to find a matching one
     try {
       const strategy = (passport as any)._strategy(strategyName);
       if (!strategy) {
-        console.error(`Strategy ${strategyName} not found for hostname ${hostname}`);
-        return res.status(500).json({ 
-          error: 'Authentication strategy not configured', 
-          hostname
-        });
+        console.log(`Strategy ${strategyName} not found, looking for alternatives...`);
+        
+        // Try to find a strategy that matches deployment patterns
+        const availableStrategies = Object.keys((passport as any)._strategies || {});
+        console.log('Available strategies:', availableStrategies);
+        
+        // Look for .replit.app domain strategy
+        const replitAppStrategy = availableStrategies.find(s => s.includes('.replit.app'));
+        if (replitAppStrategy) {
+          console.log(`Using fallback strategy: ${replitAppStrategy}`);
+          strategyName = replitAppStrategy;
+        } else {
+          // Use the first available replit strategy
+          const replitStrategy = availableStrategies.find(s => s.startsWith('replitauth:') && s.includes('replit'));
+          if (replitStrategy) {
+            console.log(`Using fallback strategy: ${replitStrategy}`);
+            strategyName = replitStrategy;
+          } else {
+            // Last resort: dynamically create a strategy for this hostname if it looks like a Replit domain
+            if (hostname.includes('replit.app') || hostname.includes('replit.dev')) {
+              console.log(`Creating dynamic strategy for hostname: ${hostname}`);
+              
+              const dynamicStrategy = new Strategy(
+                {
+                  name: `replitauth:${hostname}`,
+                  config,
+                  scope: "openid email profile offline_access",
+                  callbackURL: `https://${hostname}/api/callback`,
+                },
+                verify,
+              );
+              passport.use(dynamicStrategy);
+              strategyName = `replitauth:${hostname}`;
+            } else {
+              console.error(`No suitable strategy found for hostname ${hostname}`);
+              return res.status(500).json({ 
+                error: 'No authentication strategy available', 
+                hostname,
+                availableStrategies
+              });
+            }
+          }
+        }
       }
     } catch (error) {
       console.error(`Error checking strategy ${strategyName}:`, error);
