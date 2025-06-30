@@ -49,7 +49,7 @@ const Onboarding = () => {
   );
 
   const onboardingMutation = useMutation({
-    mutationFn: async (data: { hasCompletedOnboarding: boolean; topStrengths: string[] }) => {
+    mutationFn: async (data: { hasCompletedOnboarding: boolean; topStrengths: string[]; firstName?: string; lastName?: string }) => {
       return await apiRequest('POST', '/api/onboarding', data);
     },
     onSuccess: () => {
@@ -70,9 +70,16 @@ const Onboarding = () => {
 
   const handleContinue = () => {
     if (canContinue) {
+      // Parse the name into first and last name
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+      
       onboardingMutation.mutate({
         hasCompletedOnboarding: true,
         topStrengths: selectedStrengths,
+        firstName: firstName,
+        lastName: lastName,
       });
     }
   };

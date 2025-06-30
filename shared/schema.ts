@@ -238,6 +238,8 @@ export const upsertUserSchema = createInsertSchema(users).pick({
 export const updateUserOnboardingSchema = createInsertSchema(users).pick({
   hasCompletedOnboarding: true,
   topStrengths: true,
+  firstName: true,
+  lastName: true,
 });
 
 export const insertTeamMemberSchema = createInsertSchema(teamMembers).pick({
