@@ -457,35 +457,43 @@ const ChatCoach = () => {
   };
 
   const startNewChat = async () => {
-    // Save current chat if it exists
-    if (messages.length > 0 && currentChatId) {
-      await saveCurrentChat();
+    try {
+      // Save current chat if it exists
+      if (messages.length > 0 && currentChatId && currentChatId !== 'new-chat-active') {
+        await saveCurrentChat();
+      }
+      
+      // Clear current state
+      setMessages([]);
+      setMessage('');
+      setChatError(null);
+      setInputHeight(44);
+      setChatStarted(true); // Mark that a new chat has been started
+      setCurrentChatId(null); // Reset to null - will be set when first message is sent
+      
+      // Clear textarea value
+      if (textareaRef.current) {
+        textareaRef.current.value = '';
+      }
+      
+      // Hide sidebar on mobile after starting new chat
+      if (isMobile) {
+        setSidebarOpen(false);
+      }
+      
+      // Show notification
+      toast({
+        title: "New Chat Started",
+        description: "You can now start asking questions about your strengths",
+        duration: 2000
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to start new chat. Please try again.",
+        variant: "destructive"
+      });
     }
-    
-    // Clear current state
-    setMessages([]);
-    setMessage('');
-    setChatError(null);
-    setInputHeight(44);
-    setChatStarted(true); // Mark that a new chat has been started
-    setCurrentChatId('new-chat-active'); // Set a temporary ID to indicate active chat
-    
-    // Clear textarea value
-    if (textareaRef.current) {
-      textareaRef.current.value = '';
-    }
-    
-    // Hide sidebar on mobile after starting new chat
-    if (isMobile) {
-      setSidebarOpen(false);
-    }
-    
-    // Show notification
-    toast({
-      title: "New Chat Started",
-      description: "You can now start asking questions about your strengths",
-      duration: 2000
-    });
   };
 
   const handleSendMessage = async () => {
@@ -498,8 +506,7 @@ const ChatCoach = () => {
       timestamp: new Date()
     };
 
-    const newMessages = [...messages, userMessage];
-    setMessages((prev: Message[]) => [...prev, ...newMessages]);
+    setMessages((prev: Message[]) => [...prev, userMessage]);
     setMessage('');
     setIsTyping(true);
 
@@ -519,7 +526,7 @@ const ChatCoach = () => {
         body: JSON.stringify({
           message: userMessage.content,
           mode: currentMode,
-          conversationHistory: newMessages.slice(-10) // Send last 10 messages for context
+          conversationHistory: [...messages, userMessage].slice(-10) // Send last 10 messages for context
         }),
       });
 
