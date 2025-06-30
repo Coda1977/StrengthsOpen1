@@ -57,6 +57,8 @@ const Navigation = ({ simplified = false }: NavigationProps) => {
               href={item.path}
               className={`nav-item ${location === item.path ? 'active' : ''}`}
               onClick={() => setMobileMenuOpen(false)}
+              tabIndex={0}
+              aria-label={item.label}
             >
               {item.label}
             </Link>
@@ -66,7 +68,9 @@ const Navigation = ({ simplified = false }: NavigationProps) => {
             <button 
               onClick={() => window.location.href = '/api/logout'}
               className="nav-item"
-              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', minWidth: 44, minHeight: 44 }}
+              tabIndex={0}
+              aria-label="Logout"
             >
               Logout
             </button>

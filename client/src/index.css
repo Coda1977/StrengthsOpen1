@@ -2298,13 +2298,13 @@ footer {
 
   /* Welcome Message Mobile */
   .welcome-message {
-    padding: 2rem 1rem;
-    text-align: center;
+    padding: 12px 8px;
+    height: auto;
   }
 
   .welcome-content h2 {
-    font-size: 24px;
-    margin-bottom: 1rem;
+    font-size: 20px;
+    margin-bottom: 10px;
   }
 
   .welcome-content p {
@@ -2317,10 +2317,10 @@ footer {
   }
 
   .starter-question {
-    padding: 12px 16px;
-    font-size: 14px;
+    padding: 12px 10px;
+    font-size: 15px;
     text-align: left;
-    border-radius: 12px;
+    border-radius: 16px;
   }
 }
 
@@ -2636,4 +2636,51 @@ footer {
 @keyframes starterPulse {
   0% { box-shadow: 0 0 0 0 rgba(255, 230, 0, 0.25); }
   100% { box-shadow: 0 0 0 8px rgba(255, 230, 0, 0); }
+}
+
+/* Chat bubble improvements */
+.message.user {
+  background: #e3f0ff;
+  border-radius: 18px 18px 4px 18px;
+  margin-bottom: 8px;
+  align-self: flex-end;
+  max-width: 80vw;
+  padding: 12px 16px;
+}
+.message.ai {
+  background: #f5f5f5;
+  border-radius: 18px 18px 18px 4px;
+  margin-bottom: 8px;
+  align-self: flex-start;
+  max-width: 80vw;
+  padding: 12px 16px;
+}
+.message-content {
+  word-break: break-word;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.followup-block {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+/* Ensure all buttons and inputs are at least 44x44px for touch */
+button, .starter-question, .send-button, .new-chat-button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+@media (max-width: 768px) {
+  /* Dashboard Top Strengths Pills */
+  .dashboard-container > div > div > span,
+  .dashboard-container > div > div > .strength-pill {
+    font-size: 13px !important;
+    padding: 0.25rem 0.75rem !important;
+    border-radius: 14px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
 }

@@ -1033,7 +1033,6 @@ const ChatCoach = () => {
                     </>
                   )}
                   {messages.map((msg: Message, index: number) => {
-
                     return (
                       <div 
                         key={`${msg.id}-${index}`}
@@ -1084,7 +1083,7 @@ const ChatCoach = () => {
                           </button>
                         </div>
                         {msg.type === 'ai' && followUps[msg.id] && followUps[msg.id].length > 0 && (
-                          <div className="starter-questions" style={{ marginTop: 8 }}>
+                          <div className="starter-questions followup-block" style={{ marginTop: 8 }}>
                             {followUpLoading[msg.id] ? (
                               <Skeleton className="skeleton-message" />
                             ) : followUps[msg.id].map((q, idx) => (
