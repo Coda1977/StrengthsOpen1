@@ -1082,28 +1082,28 @@ const ChatCoach = () => {
                             </svg>
                           </button>
                         </div>
-                        {/* Follow-up questions are now rendered outside the message-content bubble for better mobile layout */}
-                        {msg.type === 'ai' && followUps[msg.id] && followUps[msg.id].length > 0 && (
-                          <div className="starter-questions followup-block" style={{ marginTop: 8 }}>
-                            {followUpLoading[msg.id] ? (
-                              <Skeleton className="skeleton-message" />
-                            ) : followUps[msg.id].map((q, idx) => (
-                              <button
-                                key={idx}
-                                className="starter-question"
-                                onClick={() => handleFollowUpClick(q)}
-                                aria-label={`Ask: ${q}`}
-                                tabIndex={0}
-                                disabled={isTyping}
-                                style={{ fontSize: 14, marginBottom: 4 }}
-                              >
-                                {q}
-                              </button>
-                            ))}
-                          </div>
-                        )}
                       </div>
-                    );
+                      {/* Follow-up questions rendered completely outside the message bubble */}
+                      {msg.type === 'ai' && followUps[msg.id] && followUps[msg.id].length > 0 && (
+                        <div className="starter-questions followup-block" style={{ marginTop: 8, marginLeft: 52 }}>
+                          {followUpLoading[msg.id] ? (
+                            <Skeleton className="skeleton-message" />
+                          ) : followUps[msg.id].map((q, idx) => (
+                            <button
+                              key={idx}
+                              className="starter-question"
+                              onClick={() => handleFollowUpClick(q)}
+                              aria-label={`Ask: ${q}`}
+                              tabIndex={0}
+                              disabled={isTyping}
+                              style={{ fontSize: 14, marginBottom: 4 }}
+                            >
+                              {q}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </React.Fragment>
                   })}
                   
                   {isTyping && (
