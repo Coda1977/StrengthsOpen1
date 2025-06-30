@@ -1,5 +1,6 @@
 import * as cron from 'node-cron';
 import { emailService } from './emailService';
+import { storage } from './storage';
 
 export class EmailScheduler {
   private scheduledJobs: Map<string, cron.ScheduledTask> = new Map();
@@ -74,6 +75,22 @@ export class EmailScheduler {
       if (process.env.NODE_ENV !== 'production') console.log(`Welcome email scheduled for ${userEmail}`);
     } catch (error) {
       if (process.env.NODE_ENV !== 'production') console.error('Error sending welcome email:', error);
+    }
+  }
+
+  async sendWeeklyCoachingEmail(userId: string, weekNumber: number): Promise<void> {
+    try {
+      // Always fetch the latest user data from the database
+      const user = await storage.getUser(userId);
+      if (!user) {
+        if (process.env.NODE_ENV !== 'production') console.error(`User not found for weekly email: ${userId}`);
+        return;
+      }
+
+      await emailService.sendWeeklyCoachingEmail(user, weekNumber);
+      if (process.env.NODE_ENV !== 'production') console.log(`Weekly coaching email scheduled for ${user.email}, week ${weekNumber}`);
+    } catch (error) {
+      if (process.env.NODE_ENV !== 'production') console.error('Error sending weekly coaching email:', error);
     }
   }
 

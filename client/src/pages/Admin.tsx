@@ -266,7 +266,7 @@ export default function Admin() {
 
       {/* Analytics Cards */}
       {analytics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -325,21 +325,7 @@ export default function Admin() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Your Top 5 Strengths</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg font-bold">
-                {adminProfile && adminProfile.topStrengths && adminProfile.topStrengths.length > 0
-                  ? adminProfile.topStrengths.slice(0, 5).join(', ')
-                  : 'Not set'}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                As set in your profile
-              </p>
-            </CardContent>
-          </Card>
+
         </div>
       )}
 

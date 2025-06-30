@@ -97,6 +97,9 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Conversation Backups Table**: Handles data migration and corruption recovery
 
 ## Recent Changes
+- June 30, 2025: Removed admin's personal top strengths card from admin dashboard for cleaner, more focused system metrics display
+- June 30, 2025: Fixed AI chat saving functionality by removing placeholder conversation IDs and implementing proper database conversation creation on first message
+- June 30, 2025: Fixed AI insights generation by adding missing created_at column to openai_usage_logs table, restoring team and collaboration insights functionality
 - June 29, 2025: Completed weekly email system debugging and validation - fixed AI content generation to follow exact user specifications including 40-50 character pre-headers, proper typography symbols with aria-labels, team insights with structured format, and ensured all generated content integrates perfectly with the beige background card-based HTML template design
 - June 29, 2025: Fixed welcome email system to follow exact AI instructions and design template - implemented precise word count limits, strength-specific DNA insights and challenges, subject lines ≤40 characters, proper beige background styling, and personalized content generation matching user specifications exactly
 - June 29, 2025: Resolved React email template server-side rendering issues by creating professional HTML email templates that replicate the original React component designs - fixed React import errors, maintained beautiful styling and AI-generated content, ensured reliable production email delivery from tinymanager.ai domain
