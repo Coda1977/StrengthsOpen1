@@ -137,6 +137,12 @@ export async function setupAuth(app: Express) {
     passport.authenticate(strategyName, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
+      // Add custom parameters to pass website info to authorization flow
+      state: JSON.stringify({
+        app_name: "Strengths Manager",
+        website_url: `https://${hostname}`,
+        return_url: `https://${hostname}/dashboard`
+      })
     })(req, res, next);
   });
 
@@ -163,6 +169,23 @@ export async function setupAuth(app: Express) {
         try {
           // Check if user has completed onboarding
           const dbUser = await storage.getUser(user.claims.sub);
+          
+          // Send welcome email with website link for new users
+          if (dbUser && !dbUser.hasCompletedOnboarding) {
+            try {
+              // Import emailService dynamically to avoid circular dependencies
+              const { emailService } = await import('./emailService');
+              await emailService.sendAuthorizationWelcomeEmail(
+                user.claims.email,
+                user.claims.first_name || 'there',
+                `https://${req.hostname}`
+              );
+            } catch (emailError) {
+              console.error('Failed to send authorization welcome email:', emailError);
+              // Don't fail the auth flow if email fails
+            }
+          }
+          
           if (dbUser && dbUser.hasCompletedOnboarding) {
             return res.redirect("/dashboard");
           } else {
