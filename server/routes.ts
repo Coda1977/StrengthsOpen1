@@ -17,7 +17,7 @@ import {
   insertConversationBackupSchema,
   unsubscribeTokens
 } from '../shared/schema';
-import { OpenAI } from 'openai';
+import OpenAI from 'openai';
 import { Resend } from 'resend';
 import { sql, desc, eq, gte, and, lt } from 'drizzle-orm';
 import { db } from './db';
@@ -56,7 +56,7 @@ const requireOnboarding = async (req: Request, res: Response, next: NextFunction
   try {
     const userId = (req as AuthenticatedRequest).user.claims.sub;
     const user = await storage.getUser(userId);
-    
+
     if (!user || !user.hasCompletedOnboarding) {
       return res.status(403).json({
         message: "Onboarding required",
@@ -64,7 +64,7 @@ const requireOnboarding = async (req: Request, res: Response, next: NextFunction
         redirect: "/onboarding"
       });
     }
-    
+
     next();
   } catch (error) {
     console.error('Onboarding check error:', error);
@@ -75,7 +75,7 @@ const requireOnboarding = async (req: Request, res: Response, next: NextFunction
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
-  
+
   // Initialize email scheduler
   emailScheduler.init();
 
@@ -97,13 +97,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'image/png',
         'image/jpeg'
       ];
-      
+
       // Check MIME type
       if (!allowedMimeTypes.includes(file.mimetype)) {
         // Log or handle error as needed
         return cb(null, false);
       }
-      
+
       // Validate file extension matches MIME type
       const fileExtension = file.originalname.toLowerCase().split('.').pop();
       const mimeToExtension: Record<string, string[]> = {
@@ -114,19 +114,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'image/png': ['png'],
         'image/jpeg': ['jpg', 'jpeg']
       };
-      
+
       const allowedExtensions = mimeToExtension[file.mimetype as keyof typeof mimeToExtension] || [];
       if (!allowedExtensions.includes(fileExtension ?? '')) {
         // Log or handle error as needed
         return cb(null, false);
       }
-      
+
       // Validate filename for security
       if (!/^[a-zA-Z0-9._-]+$/.test(file.originalname)) {
         // Log or handle error as needed
         return cb(null, false);
       }
-      
+
       cb(null, true);
     }
   });
@@ -149,16 +149,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const userClaims = (req as AuthenticatedRequest).user.claims;
       console.log('Onboarding request:', { userId, body: req.body });
-      
+
       // Validate the request body
       const validatedData = updateUserOnboardingSchema.parse(req.body);
       console.log('Validated data:', validatedData);
-      
+
       const user = await storage.updateUserOnboarding(userId, validatedData);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       // Send welcome email after successful onboarding
       try {
         const timezone = req.body.timezone || 'America/New_York';
@@ -173,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Failed to send welcome email:', emailError);
         // Don't fail the onboarding if email fails
       }
-      
+
       console.log('Updated user:', user);
       res.json(user);
     } catch (error) {
@@ -314,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const conversations = await storage.getConversations(userId);
-      
+
       res.json(createSuccessResponse(conversations));
     } catch (error) {
       next(error);
@@ -324,22 +324,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/conversations/:id', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      
+
       const authReq = req as AuthenticatedRequest;
       if (!authReq.user || !authReq.user.claims || !authReq.user.claims.sub) {
         console.error('Authentication failed - no user or claims found');
         return res.status(401).json(createErrorResponse(req, new AppError(ERROR_CODES.VALIDATION_ERROR, 'Authentication required', 401)));
       }
-      
+
       const userId = authReq.user.claims.sub;
       console.log(`Loading conversation ${id} for user ${userId}`);
-      
+
       const result = await storage.getConversationWithMessages(id, userId);
       if (!result) {
         console.log('Conversation not found or access denied');
         return res.status(404).json(createErrorResponse(req, new AppError(ERROR_CODES.VALIDATION_ERROR, 'Conversation not found', 404)));
       }
-      
+
       console.log('Successfully loaded conversation with', result.messages.length, 'messages');
       res.json(createSuccessResponse(result));
     } catch (error) {
@@ -352,9 +352,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const validatedData = insertConversationSchema.parse(req.body);
-      
+
       const conversation = await storage.createConversation(userId, validatedData);
-      
+
       res.json(createSuccessResponse(conversation));
     } catch (error) {
       next(error);
@@ -365,17 +365,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const userId = (req as AuthenticatedRequest).user.claims.sub;
-      
+
       // Log the incoming data for debugging
       console.log('Update conversation request body:', JSON.stringify(req.body, null, 2));
-      
+
       const validatedData = updateConversationSchema.parse(req.body);
-      
+
       const conversation = await storage.updateConversation(id, userId, validatedData);
       if (!conversation) {
         return res.status(404).json(createErrorResponse(req, new AppError(ERROR_CODES.VALIDATION_ERROR, 'Conversation not found', 404)));
       }
-      
+
       res.json(createSuccessResponse(conversation));
     } catch (error) {
       console.error('Conversation update error:', error);
@@ -387,9 +387,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const userId = (req as AuthenticatedRequest).user.claims.sub;
-      
+
       await storage.deleteConversation(id, userId);
-      
+
       res.json(createSuccessResponse({ deleted: true }));
     } catch (error) {
       next(error);
@@ -400,9 +400,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const userId = (req as AuthenticatedRequest).user.claims.sub;
-      
+
       await storage.archiveConversation(id, userId);
-      
+
       res.json(createSuccessResponse({ archived: true }));
     } catch (error) {
       next(error);
@@ -414,20 +414,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const userId = (req as AuthenticatedRequest).user.claims.sub;
-      
+
       // Verify conversation ownership
       const conversation = await storage.getConversation(id, userId);
       if (!conversation) {
         return res.status(404).json(createErrorResponse(req, new AppError(ERROR_CODES.VALIDATION_ERROR, 'Conversation not found', 404)));
       }
-      
+
       const validatedData = insertMessageSchema.parse({
         ...req.body,
         conversationId: id
       });
-      
+
       const message = await storage.createMessage(validatedData);
-      
+
       res.json(createSuccessResponse(message));
     } catch (error) {
       next(error);
@@ -436,40 +436,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Migration and backup routes
   // TODO: Implement migration/export/recover logic
-
+  
+  // Chat with AI coach
   app.post('/api/chat-with-coach', isAuthenticated, requireOnboarding, async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const authReq = req as AuthenticatedRequest;
+      const userId = authReq.user.claims.sub;
       const { message, mode, conversationHistory } = req.body;
-      
+
+      console.log('Chat request received:', { userId, mode, messageLength: message?.length });
+
       if (!message || typeof message !== 'string') {
-        throw new AppError('Message is required', ERROR_CODES.VALIDATION_ERROR, 400);
+        throw errors.validation('Message is required');
       }
 
       if (!mode || !['personal', 'team'].includes(mode)) {
-        throw new AppError('Valid mode (personal or team) is required', ERROR_CODES.VALIDATION_ERROR, 400);
+        throw errors.validation('Invalid mode. Must be "personal" or "team"');
       }
 
-      // Get user data for context
-      const authReq = req as AuthenticatedRequest;
-      const user = await storage.getUser(authReq.user.claims.sub);
+      const user = await storage.getUser(userId);
+      const teamMembers = await storage.getTeamMembers(userId);
+
       if (!user) {
-        throw new AppError('User not found', ERROR_CODES.VALIDATION_ERROR, 404);
+        throw errors.validation('User not found');
       }
 
-      const teamMembers = await storage.getTeamMembers(authReq.user.claims.sub);
-      
-      // Generate AI response using the coaching system prompt
-      const response = await generateCoachResponse(message, mode, user, teamMembers, conversationHistory, authReq.user.claims.sub);
-      
-      res.json(createSuccessResponse({ response }));
+      console.log('Generating AI response...');
+      const response = await generateCoachResponse(
+        message,
+        mode,
+        user,
+        teamMembers,
+        conversationHistory || [],
+        userId
+      );
+
+      console.log('AI response generated successfully');
+      res.json(createSuccessResponse(
+        { response },
+        req.headers['x-request-id'] as string
+      ));
     } catch (error) {
+      console.error('Chat endpoint error:', error);
       next(error);
     }
   });
 
   app.post('/api/upload-team-members', isAuthenticated, requireOnboarding, upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();
-    
+
     try {
       if (!req.file) {
         throw errors.validation('No file uploaded', { field: 'file' });
@@ -478,18 +493,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const { buffer, mimetype, originalname } = req.file;
       const requestId = req.headers['x-request-id'] as string;
-      
+
       // Log upload attempt for security monitoring
       console.log(`File upload attempt: ${originalname} (${mimetype}) by user ${userId} [${requestId}]`);
-      
+
       // Rate limiting: max 50 team members per upload
       const maxMembers = 50;
       const maxFileSize = 5 * 1024 * 1024; // 5MB
-      
+
       if (buffer.length > maxFileSize) {
         throw errors.fileTooLarge('5MB');
       }
-      
+
       const teamMembers = await parseTeamMembersFile(buffer, mimetype, originalname);
 
       if (teamMembers.length === 0) {
@@ -537,7 +552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: memberData.name.trim(),
             strengths: memberData.strengths
           }));
-          
+
           const bulkCreated = await storage.createMultipleTeamMembers(userId, validMembersData);
           createdMembers.push(...bulkCreated);
         } catch (bulkError) {
@@ -565,14 +580,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       const processingTime = Date.now() - startTime;
       console.error("File upload error:", error);
-      
+
       // Add processing time to error context
       if (error instanceof AppError) {
         if (error.context && typeof error.context === 'object') {
           (error.context as any).processing_time_ms = processingTime;
         }
       }
-      
+
       next(error);
     }
   });
@@ -610,7 +625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const subscriptions = await storage.getEmailSubscriptions(userId);
-      
+
       res.json(createSuccessResponse(subscriptions));
     } catch (error) {
       next(error);
@@ -642,7 +657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const logs = await storage.getEmailLogs(userId);
-      
+
       res.json(createSuccessResponse(logs));
     } catch (error) {
       next(error);
@@ -654,7 +669,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || !user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
@@ -711,7 +726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || !user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
@@ -741,16 +756,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const currentUserId = (req as AuthenticatedRequest).user.claims.sub;
       const currentUser = await storage.getUser(currentUserId);
-      
+
       if (!currentUser || !currentUser.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
       const { userId } = req.params;
-      
+
       // Delete user and all related data (cascade)
       await db.delete(users).where(eq(users.id, userId));
-      
+
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete user' });
@@ -761,7 +776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || !user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
@@ -782,13 +797,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || !user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
       const { emailType, userId: targetUserId } = req.body;
-      
+
       const targetUser = await db
         .select()
         .from(users)
@@ -822,13 +837,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || !user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
       await emailService.processWeeklyEmails();
-      
+
       res.json({ success: true, message: 'Weekly emails processed' });
     } catch (error) {
       res.status(500).json({ error: 'Failed to process weekly emails' });
@@ -840,22 +855,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || !user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
       const { targetUserId, weekNumber = 1 } = req.body;
       const targetUser = await storage.getUser(targetUserId);
-      
+
       if (!targetUser) {
         return res.status(404).json({ error: 'Target user not found' });
       }
 
+```text
       // Get user's team members for AI context
       const teamMembers = await storage.getTeamMembers(targetUser.id);
       const userStrengths = targetUser.topStrengths || [];
-      
+
       if (teamMembers.length === 0) {
         return res.json({ 
           error: 'No team members found for user',
@@ -912,7 +928,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || !user.isAdmin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
@@ -920,7 +936,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // User analytics
       const totalUsers = await db.select({ count: sql<number>`count(*)` }).from(users);
       const onboardedUsers = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.hasCompletedOnboarding, true));
-      
+
       // Email analytics
       const totalEmails = await db.select({ count: sql<number>`count(*)` }).from(emailLogs);
       const sentEmails = await db.select({ count: sql<number>`count(*)` }).from(emailLogs).where(eq(emailLogs.status, 'sent'));
@@ -960,21 +976,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/setup', async (req, res) => {
     try {
       const { email } = req.body;
-      
+
       if (email !== 'tinymanagerai@gmail.com') {
         return res.status(403).json({ error: 'Invalid admin email' });
       }
 
       // Find user by email
       const [user] = await db.select().from(users).where(eq(users.email, email));
-      
+
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
 
       // Update user to admin
       await storage.updateUserAdminStatus(user.id, true);
-      
+
       res.json({ success: true, message: 'Admin privileges granted' });
     } catch (error) {
       res.status(500).json({ error: 'Failed to setup admin' });
@@ -1009,7 +1025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/unsubscribe', async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { token } = req.query;
-      
+
       if (!token || typeof token !== 'string') {
         return res.status(400).json({ 
           message: 'Invalid unsubscribe link. Please contact support if you need to unsubscribe.' 
@@ -1079,7 +1095,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const { token } = req.body;
-      
+
       if (!token) {
         throw errors.validation('Unsubscribe token is required');
       }
@@ -1095,7 +1111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.unsubscribeFromEmails(userId);
-      
+
       res.json(createSuccessResponse({ message: 'Unsubscribed successfully' }));
     } catch (error) {
       next(error);

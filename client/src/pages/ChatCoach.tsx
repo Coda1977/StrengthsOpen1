@@ -509,11 +509,13 @@ const ChatCoach = () => {
     }
 
     try {
+      console.log('Sending message to AI coach...');
       const response = await fetch('/api/chat-with-coach', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           message: userMessage.content,
           mode: currentMode,
@@ -521,11 +523,16 @@ const ChatCoach = () => {
         }),
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to get AI response');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API error response:', errorData);
+        throw new Error(errorData.error?.message || `Request failed: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('AI response received successfully');
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -563,7 +570,7 @@ const ChatCoach = () => {
                 }
               });
             } catch (error) {
-
+              console.error('Failed to save conversation:', error);
             }
           } else {
             // Add AI message to existing conversation
@@ -576,17 +583,56 @@ const ChatCoach = () => {
                 }
               });
             } catch (error) {
-
+              console.error('Failed to save message:', error);
             }
           }
         }, 100);
         return updatedMessages;
       });
     } catch (error) {
+      console.error('Chat error:', error);
+      
+      // Add error message to chat
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        content: `ERROR: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
+        type: 'ai',
+        timestamp: new Date()
+      };
+      
+      setMessages((prev: Message[]) => [...prev, errorMessage]);
+      
       toast({
-        title: "Error",
+        title: "AI Chat Error",
         description: error instanceof Error ? error.message : String(error),
-        variant: "destructive"
+        variant: "destructive",
+        action: (
+          <button 
+            onClick={async () => {
+              // Test OpenAI connection
+              try {
+                const testResponse = await fetch('/api/test-openai', {
+                  credentials: 'include'
+                });
+                const testData = await testResponse.json();
+                toast({
+                  title: testData.success ? "OpenAI Connection Test" : "OpenAI Connection Failed",
+                  description: testData.success ? "OpenAI is working correctly" : testData.error,
+                  variant: testData.success ? "default" : "destructive"
+                });
+              } catch (testError) {
+                toast({
+                  title: "Connection Test Failed",
+                  description: "Could not test OpenAI connection",
+                  variant: "destructive"
+                });
+              }
+            }}
+            className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
+          >
+            Test AI
+          </button>
+        )
       });
     } finally {
       setIsTyping(false);

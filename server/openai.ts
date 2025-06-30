@@ -146,10 +146,12 @@ export async function generateCoachResponse(
   userId?: string
 ): Promise<string> {
   if (!process.env.OPENAI_API_KEY) {
+    console.error('OpenAI API key not found in environment variables');
     throw new Error('OpenAI API key not configured');
   }
 
-  const openai = new OpenAI({
+  console.log('Initializing OpenAI client...');
+  const openaiClient = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
 
@@ -214,12 +216,15 @@ Team Members: ${teamMembers.map(m => `${m.name} (${m.strengths.join(', ')})`).jo
   ];
 
   try {
-    const completion = await openai.chat.completions.create({
+    console.log('Making OpenAI API request...');
+    const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
       messages: messages as any,
       max_tokens: 600,
       temperature: 0.7,
     });
+
+    console.log('OpenAI API request successful');
 
     if (completion.usage && userId) {
       await logOpenAIUsage({
@@ -231,16 +236,33 @@ Team Members: ${teamMembers.map(m => `${m.name} (${m.strengths.join(', ')})`).jo
       });
     }
 
-    return completion.choices[0]?.message?.content || 'I apologize, but I encountered an issue generating a response. Please try again.';
+    const responseContent = completion.choices[0]?.message?.content;
+    if (!responseContent) {
+      console.error('OpenAI returned empty response');
+      return 'I apologize, but I encountered an issue generating a response. Please try again.';
+    }
+
+    return responseContent;
   } catch (error) {
-    if (error instanceof Error && error.message?.includes('API key')) {
-      return "OpenAI API key is invalid or expired. Please check your API key configuration.";
+    console.error('OpenAI API error details:', error);
+    
+    if (error instanceof Error) {
+      if (error.message?.includes('API key') || error.message?.includes('authentication')) {
+        console.error('OpenAI API key error:', error.message);
+        return "OpenAI API key is invalid or expired. Please check your API key configuration.";
+      }
+      if (error.message?.includes('rate limit') || error.message?.includes('quota')) {
+        console.error('OpenAI rate limit error:', error.message);
+        return "AI service is temporarily unavailable due to rate limits. Please try again in a few minutes.";
+      }
+      if (error.message?.includes('model')) {
+        console.error('OpenAI model error:', error.message);
+        return "AI model is temporarily unavailable. Please try again in a few minutes.";
+      }
     }
-    if (error instanceof Error && (error.message?.includes('rate limit') || error.message?.includes('quota'))) {
-      return "AI service is temporarily unavailable due to rate limits. Please try again in a few minutes.";
-    }
-    if (isDev) console.error('OpenAI API error:', error);
-    throw new Error('Failed to generate coaching response');
+    
+    console.error('Unexpected OpenAI error:', error);
+    throw new Error('Failed to generate coaching response: ' + (error instanceof Error ? error.message : 'Unknown error'));
   }
 }
 
