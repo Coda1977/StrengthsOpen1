@@ -97,6 +97,7 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Conversation Backups Table**: Handles data migration and corruption recovery
 
 ## Recent Changes
+- June 30, 2025: Fixed authorization welcome email localhost issue - now uses proper Replit domain so email links work correctly for users
 - June 30, 2025: Added branded authorization welcome email with website link that sends immediately after user sign-up authorization, enhancing user onboarding flow with direct website promotion
 - June 30, 2025: Fixed missing user names in admin dashboard by updating onboarding schema to capture firstName/lastName fields and manually restored names for affected users
 - June 30, 2025: CRITICAL FIX - Resolved email duplication issue where user received 26 weekly nudge emails due to 10 duplicate subscriptions, implemented deduplication logic with database constraints to prevent future occurrences

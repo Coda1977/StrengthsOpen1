@@ -132,7 +132,9 @@ export async function setupAuth(app: Express) {
     const hostname = req.hostname || req.get('host')?.split(':')[0] || 'localhost';
     const strategyName = `replitauth:${hostname}`;
     
-
+    // Use the actual Replit domain for URLs in state
+    const replitDomains = process.env.REPLIT_DOMAINS?.split(",") || [];
+    const websiteUrl = replitDomains.length > 0 ? `https://${replitDomains[0]}` : `https://${hostname}`;
     
     passport.authenticate(strategyName, {
       prompt: "login consent",
@@ -140,8 +142,8 @@ export async function setupAuth(app: Express) {
       // Add custom parameters to pass website info to authorization flow
       state: JSON.stringify({
         app_name: "Strengths Manager",
-        website_url: `https://${hostname}`,
-        return_url: `https://${hostname}/dashboard`
+        website_url: websiteUrl,
+        return_url: `${websiteUrl}/dashboard`
       })
     })(req, res, next);
   });
@@ -175,10 +177,14 @@ export async function setupAuth(app: Express) {
             try {
               // Import emailService dynamically to avoid circular dependencies
               const { emailService } = await import('./emailService');
+              // Use the actual Replit domain instead of localhost
+              const replitDomains = process.env.REPLIT_DOMAINS?.split(",") || [];
+              const websiteUrl = replitDomains.length > 0 ? `https://${replitDomains[0]}` : `https://${req.hostname}`;
+              
               await emailService.sendAuthorizationWelcomeEmail(
                 user.claims.email,
                 user.claims.first_name || 'there',
-                `https://${req.hostname}`
+                websiteUrl
               );
             } catch (emailError) {
               console.error('Failed to send authorization welcome email:', emailError);
