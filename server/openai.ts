@@ -15,6 +15,28 @@ interface TeamStrengthsData {
 
 const isDev = process.env.NODE_ENV === 'development';
 
+// Simple in-memory cache for AI responses
+const responseCache = new Map<string, { response: string; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedResponse(key: string): string | null {
+  const cached = responseCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.response;
+  }
+  responseCache.delete(key);
+  return null;
+}
+
+function setCachedResponse(key: string, response: string): void {
+  responseCache.set(key, { response, timestamp: Date.now() });
+  // Cleanup old entries
+  if (responseCache.size > 100) {
+    const entries = Array.from(responseCache.entries());
+    entries.slice(0, 20).forEach(([key]) => responseCache.delete(key));
+  }
+}
+
 // Helper to log OpenAI usage
 async function logOpenAIUsage({ userId, requestType, promptTokens, completionTokens, totalTokens }: {
   userId: string,
@@ -43,6 +65,11 @@ export async function generateTeamInsight(data: TeamStrengthsData, userId?: stri
   }
 
   const { managerStrengths, teamMembers } = data;
+  
+  // Create cache key from team composition
+  const cacheKey = `team_insight_${JSON.stringify({ managerStrengths, teamMembers: teamMembers.map(m => ({ name: m.name, strengths: m.strengths })) })}`;
+  const cached = getCachedResponse(cacheKey);
+  if (cached) return cached;
   
   // Validate input data
   if (!managerStrengths || managerStrengths.length === 0) {
@@ -124,7 +151,9 @@ Keep the response to 2-3 sentences maximum. No fluff. Be nuanced - acknowledge b
       });
     }
 
-    return response.choices[0].message.content || "Unable to generate insight at this time.";
+    const content = response.choices[0].message.content || "Unable to generate insight at this time.";
+    setCachedResponse(cacheKey, content);
+    return content;
   } catch (error) {
     if (error instanceof Error && error.message?.includes('API key')) {
       return "OpenAI API key is invalid or expired. Please check your API key configuration.";
