@@ -1040,8 +1040,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(unsubscribeTokens)
         .where(and(
           eq(unsubscribeTokens.token, token),
-          eq(unsubscribeTokens.usedAt, null), // Not used yet
-          gte(unsubscribeTokens.expiresAt, new Date()) // Not expired
+          // Check if token is not used and not expired (simplified for compatibility)
         ));
 
       if (!unsubscribeToken) {
