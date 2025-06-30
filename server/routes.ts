@@ -867,7 +867,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Target user not found' });
       }
 
-```text
       // Get user's team members for AI context
       const teamMembers = await storage.getTeamMembers(targetUser.id);
       const userStrengths = targetUser.topStrengths || [];
@@ -920,7 +919,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error previewing weekly email:', error);
-      res.status(500).json({ error: 'Failed to preview weekly email', details: String(error) });
+      res.status(500).json({ error: 'Failed to preview weekly email', details: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -1062,30 +1061,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(emailSubscriptions.userId, unsubscribeToken.userId));
 
       // Return success page
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Unsubscribed Successfully</title>
-          <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-            .success { color: #28a745; font-size: 24px; margin-bottom: 20px; }
-            .message { color: #666; margin-bottom: 30px; }
-            .link { color: #007bff; text-decoration: none; }
-          </style>
-        </head>
-        <body>
-          <div class="success">✓ Unsubscribed Successfully</div>
-          <div class="message">
-            You have been unsubscribed from our email campaigns.<br>
-            You will no longer receive weekly coaching emails or other promotional content.
-          </div>
-          <a href="${process.env.REPLIT_DOMAINS || 'https://your-app.replit.app'}" class="link">
-            Return to Strengths Manager
-          </a>
-        </body>
-        </html>
-      `);
+      const htmlContent = '<!DOCTYPE html><html><head><title>Unsubscribed Successfully</title><style>body { font-family: Arial, sans-serif; text-align: center; padding: 50px; } .success { color: #28a745; font-size: 24px; margin-bottom: 20px; } .message { color: #666; margin-bottom: 30px; } .link { color: #007bff; text-decoration: none; }</style></head><body><div class="success">✓ Unsubscribed Successfully</div><div class="message">You have been unsubscribed from our email campaigns.<br>You will no longer receive weekly coaching emails or other promotional content.</div><a href="' + (process.env.REPLIT_DOMAINS || 'https://your-app.replit.app') + '" class="link">Return to Strengths Manager</a></body></html>';
+      res.send(htmlContent);
     } catch (error) {
       console.error('Error processing unsubscribe:', error);
       res.status(500).json({ 

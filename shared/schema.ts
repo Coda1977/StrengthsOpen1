@@ -205,6 +205,7 @@ export const unsubscribeTokens = pgTable("unsubscribe_tokens", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   token: varchar("token").notNull(),
   emailType: text("email_type", { enum: ["welcome", "weekly_coaching", "all"] }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   usedAt: timestamp("used_at"),
 });
