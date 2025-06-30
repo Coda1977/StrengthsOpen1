@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback, createRef } from "react";
 import Navigation from "@/components/Navigation";
 import { useCleanup } from "@/hooks/useCleanup";
 import { useConversations, useMigration } from "@/hooks/useConversations";
@@ -48,12 +48,10 @@ interface ChatHistory {
 
 const ChatCoach = () => {
   const isMobile = useIsMobile();
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [currentMode, setCurrentMode] = useState<'personal' | 'team'>('personal');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
-  const [displayedMessages, setDisplayedMessages] = useState<Message[]>([]);
-  const [messageLimit, setMessageLimit] = useState(50);
   const [isTyping, setIsTyping] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [migrationNeeded, setMigrationNeeded] = useState(false);
@@ -82,13 +80,22 @@ const ChatCoach = () => {
   
   // Use database-backed conversation management
   const { 
-    conversations, 
+    conversations: hookConversations,
     isLoading: conversationsLoading,
     createConversation,
     getConversation,
     addMessage,
-    updateConversation
+    updateConversation,
   } = useConversations();
+  const [conversations, setConversations] = useState(hookConversations);
+  useEffect(() => {
+    if (
+      hookConversations.length !== conversations.length ||
+      hookConversations.some((c, i) => c.id !== conversations[i]?.id)
+    ) {
+      setConversations(hookConversations);
+    }
+  }, [hookConversations]);
   
   const { 
     migrate, 
@@ -172,8 +179,6 @@ const ChatCoach = () => {
     { id: 'team', label: 'Team' }
   ];
 
-
-
   // Auto-resize textarea
   const autoResizeTextarea = useCallback(() => {
     if (textareaRef.current) {
@@ -191,27 +196,12 @@ const ChatCoach = () => {
     checkMigrationNeeds();
   }, []);
 
-  // Handle mobile sidebar behavior
-  useEffect(() => {
-    setSidebarOpen(!isMobile);
-  }, [isMobile]);
-
-  // Manage displayed messages for performance
-  useEffect(() => {
-    if (messages.length <= messageLimit) {
-      setDisplayedMessages(messages);
-    } else {
-      // Show most recent messages
-      setDisplayedMessages(messages.slice(-messageLimit));
-    }
-  }, [messages, messageLimit]);
-
   // Auto-scroll to bottom when displayed messages change
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [displayedMessages]);
+  }, [messages]);
 
   // Handle focus when new chat starts
   useEffect(() => {
@@ -394,8 +384,6 @@ const ChatCoach = () => {
 
   const loadChat = async (conversationId: string) => {
     try {
-
-      
       const response = await fetch(`/api/conversations/${conversationId}`, {
         credentials: 'include',
         headers: {
@@ -403,11 +391,8 @@ const ChatCoach = () => {
         }
       });
       
-
-      
       if (!response.ok) {
         const errorText = await response.text();
-
         throw new Error(`Failed to load conversation: ${response.status}`);
       }
       
@@ -415,8 +400,6 @@ const ChatCoach = () => {
       const data = result.data;
       
       if (data && data.conversation && data.messages) {
-
-        
         // Sort messages by timestamp to ensure proper order
         const sortedMessages = data.messages.sort((a: Message, b: Message) => 
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -429,17 +412,10 @@ const ChatCoach = () => {
           timestamp: new Date(msg.timestamp || Date.now())
         }));
         
-
-        
         setMessages((prev: Message[]) => [...prev, ...loadedMessages]);
         setCurrentMode(data.conversation.mode as 'personal' | 'team');
         setCurrentChatId(conversationId);
         setChatStarted(true); // Mark that chat is active when loading conversation
-        
-        // Hide sidebar on mobile after loading chat
-        if (isMobile) {
-          setSidebarOpen(false);
-        }
         
         toast({
           title: "Chat Loaded",
@@ -474,11 +450,6 @@ const ChatCoach = () => {
       // Clear textarea value
       if (textareaRef.current) {
         textareaRef.current.value = '';
-      }
-      
-      // Hide sidebar on mobile after starting new chat
-      if (isMobile) {
-        setSidebarOpen(false);
       }
       
       // Show notification
@@ -714,10 +685,6 @@ const ChatCoach = () => {
     }
   };
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   // Handle conversation deletion
   const handleDeleteConversation = async (conversationId: string, conversationTitle: string) => {
     setDeleteConfirm({
@@ -729,25 +696,23 @@ const ChatCoach = () => {
 
   const confirmDelete = async () => {
     if (!deleteConfirm.conversationId) return;
-    
     try {
       const response = await fetch(`/api/conversations/${deleteConfirm.conversationId}`, {
         method: 'DELETE',
         credentials: 'include'
       });
-
       if (!response.ok) {
         throw new Error('Failed to delete conversation');
       }
-
+      // Remove the deleted conversation from the list
+      const updatedConversations = conversations.filter(c => c.id !== deleteConfirm.conversationId);
+      setConversations(updatedConversations);
+      // If the deleted conversation is the current one, clear chat
       if (currentChatId === deleteConfirm.conversationId) {
         setCurrentChatId(null);
         setMessages([]);
       }
-
       setDeleteConfirm({ show: false, conversationId: null, conversationTitle: '' });
-      window.location.reload();
-      
       toast({
         title: "Conversation Deleted",
         description: "The conversation has been permanently removed",
@@ -849,36 +814,39 @@ const ChatCoach = () => {
     return map;
   }, [messages]);
 
+  // Add refs for AI messages
+  const aiMessageRefs = useRef<{ [id: string]: HTMLDivElement | null }>({});
+
+  // Add a ref to the messages container
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // useEffect to scroll to the top of the new AI answer if user is near the bottom
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.type !== 'ai') return;
+    const container = messagesContainerRef.current;
+    const aiDiv = aiMessageRefs.current[lastMsg.id];
+    if (!container || !aiDiv) return;
+    // Check if user is near the bottom (within 80px)
+    const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+    if (nearBottom) {
+      // Scroll so the top of the new AI answer is visible
+      const top = aiDiv.offsetTop;
+      container.scrollTo({ top, behavior: 'smooth' });
+    }
+  }, [messages]);
+
   return (
     <ErrorBoundary>
-      <div className="dashboard" style={{ background: 'var(--bg-primary)', minHeight: '100vh' }}>
-        <Navigation />
+      <div className="dashboard" style={{ background: 'var(--bg-primary)', minHeight: '100vh', display: 'flex', flexDirection: 'column', height: '100vh' }}>
+        <Navigation onChatHamburgerClick={() => setDrawerOpen(true)} />
         <div className="main-container">
-          {/* Sidebar Toggle Button */}
-          {!sidebarOpen && (
-            <button 
-              className="sidebar-toggle"
-              onClick={toggleSidebar}
-              aria-label="Open chat history"
-              tabIndex={0}
-            >
-              ☰
-            </button>
+          {/* Drawer/Modal for chat history and controls */}
+          {drawerOpen && (
+            <div className="chat-drawer-overlay" onClick={() => setDrawerOpen(false)} tabIndex={0} aria-label="Close menu" role="button" />
           )}
-
-          {/* Mobile Overlay */}
-          {isMobile && sidebarOpen && (
-            <div 
-              className="sidebar-overlay"
-              onClick={() => setSidebarOpen(false)}
-              tabIndex={0}
-              aria-label="Close sidebar"
-              role="button"
-            />
-          )}
-
-          {/* Sidebar */}
-          <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+          <div className={`chat-drawer${drawerOpen ? ' open' : ''}`}> {/* Drawer content */}
             <div className="sidebar-header">
               <div className="mode-toggle">
                 {modes.map((mode) => (
@@ -903,7 +871,6 @@ const ChatCoach = () => {
                 New Chat
               </button>
             </div>
-
             <div className="chat-history">
               {conversationsLoading ? (
                 <>
@@ -930,7 +897,7 @@ const ChatCoach = () => {
                     >
                       <div 
                         className="history-content"
-                        onClick={() => loadChat(conversation.id)}
+                        onClick={() => { loadChat(conversation.id); setDrawerOpen(false); }}
                         tabIndex={0}
                         aria-label={`Load conversation: ${conversation.title}`}
                       >
@@ -963,24 +930,28 @@ const ChatCoach = () => {
               )}
             </div>
           </div>
-
-          {/* Chat Container */}
-          <div className="chat-container">
+          {/* Chat Container (full width) */}
+          <div className="chat-container" style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}>
             <div className="chat-header">
               <button 
-                className="mobile-sidebar-toggle"
-                onClick={toggleSidebar}
-                aria-label="Toggle sidebar"
-                tabIndex={0}
+                className="chat-hamburger-btn"
+                onClick={() => setDrawerOpen(true)}
+                aria-label="Open chat history"
+                style={{ marginRight: 16, background: '#e0e7ff', color: '#1e40af', borderRadius: '50%', border: 'none', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                ☰
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>
               </button>
-              <h1 className="chat-title">
-                AI Strengths Coach
-              </h1>
+              <h1 className="chat-title">AI Strengths Coach</h1>
+              <button 
+                className="new-chat-button"
+                onClick={startNewChat}
+                aria-label="Start new chat"
+                style={{ marginLeft: 'auto', background: '#e0e7ff', color: '#1e40af', borderRadius: '20px', border: 'none', padding: '8px 16px', fontWeight: 600 }}
+              >
+                + New Chat
+              </button>
             </div>
-
-            <div className="messages-container" role="log" aria-live="polite">
+            <div className="messages-container" ref={messagesContainerRef} role="log" aria-live="polite">
               {messages.length === 0 && !chatStarted ? (
                 <div className="welcome-message">
                   <div className="welcome-content">
@@ -1033,9 +1004,11 @@ const ChatCoach = () => {
                     </>
                   )}
                   {messages.map((msg: Message, index: number) => (
-                    <React.Fragment key={`${msg.id}-${index}`}>
-                      <div 
-                        className={`message ${msg.type}`}
+                    <div
+                      key={`${msg.id}-${index}`}
+                      ref={msg.type === 'ai' ? (el) => { aiMessageRefs.current[msg.id] = el; } : undefined}
+                    >
+                      <div className={`message ${msg.type}`}
                         tabIndex={0}
                         aria-label={`${msg.type === 'user' ? 'You' : 'AI'} message: ${msg.content}`}
                       >
@@ -1068,23 +1041,30 @@ const ChatCoach = () => {
                           ) : (
                             <div dangerouslySetInnerHTML={{ __html: parsedMarkdownMap[msg.id] || '' }} />
                           )}
+                        </div>
+                      </div>
+                      {/* Copy button for AI messages, always visible, below the message bubble */}
+                      {msg.type === 'ai' && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '4px 0 12px 0' }}>
                           <button 
                             className="copy-message-button copy-button"
                             onClick={() => copyToClipboard(msg.content)}
                             title="Copy message"
                             aria-label="Copy message to clipboard"
                             tabIndex={0}
+                            style={{ background: '#f1f5f9', color: '#1e293b', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 14, display: 'flex', alignItems: 'center', gap: 4 }}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
                               <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1-2-2h2"/>
                             </svg>
+                            Copy
                           </button>
                         </div>
-                      </div>
-                      {/* Follow-up questions rendered completely outside the message bubble */}
+                      )}
+                      {/* Follow-up questions directly under the AI answer, full width, no marginLeft */}
                       {msg.type === 'ai' && followUps[msg.id] && followUps[msg.id].length > 0 && (
-                        <div className="starter-questions followup-block" style={{ marginTop: 8, marginLeft: 52 }}>
+                        <div className="starter-questions followup-block" style={{ marginTop: 8, marginLeft: 0, width: '100%' }}>
                           {followUpLoading[msg.id] ? (
                             <Skeleton className="skeleton-message" />
                           ) : followUps[msg.id].map((q, idx) => (
@@ -1095,14 +1075,14 @@ const ChatCoach = () => {
                               aria-label={`Ask: ${q}`}
                               tabIndex={0}
                               disabled={isTyping}
-                              style={{ fontSize: 14, marginBottom: 4 }}
+                              style={{ fontSize: 14, marginBottom: 4, width: '100%', textAlign: 'left' }}
                             >
                               {q}
                             </button>
                           ))}
                         </div>
                       )}
-                    </React.Fragment>
+                    </div>
                   ))}
                   
                   {isTyping && (
@@ -1118,14 +1098,12 @@ const ChatCoach = () => {
                       </div>
                     </div>
                   )}
-                  
-                  <div ref={messagesEndRef} />
                 </>
               )}
             </div>
 
-            {/* Input Area */}
-            <div className="input-container" style={{ position: 'relative' }}>
+            {/* Always render input area at the bottom */}
+            <div className="input-container" style={{ position: 'sticky', bottom: 0, background: 'var(--bg-primary)', zIndex: 10, marginBottom: 0, paddingBottom: 0 }}>
               <div className="chat-input-wrapper">
                 <textarea
                   ref={textareaRef}
@@ -1136,7 +1114,7 @@ const ChatCoach = () => {
                   onKeyDown={handleKeyPress}
                   rows={1}
                   aria-label="Type your message"
-                  disabled={isTyping}
+                  disabled={isTyping /* or add logic to disable if chat not started, if desired */}
                   tabIndex={0}
                   style={{ resize: 'none', overflow: 'hidden' }}
                 />

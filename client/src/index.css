@@ -1701,16 +1701,31 @@ footer {
 }
 
 .chat-container {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--bg-primary);
-  min-width: 0;
-  height: 100%;
-  width: 100%;
-  transition: all 0.3s ease;
-  margin-top: 0 !important;
+  flex: 1 1 auto;
+  min-height: 0;
   padding-top: 0 !important;
+  margin-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.messages-container {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.input-container {
+  flex-shrink: 0;
+  background: var(--bg-primary);
+  margin-bottom: 0;
+  padding: 0;
 }
 
 .chat-header {
@@ -1792,19 +1807,6 @@ footer {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.messages-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  scroll-behavior: smooth;
-  background: var(--bg-primary);
-  min-height: 0;
-  height: 100%;
 }
 
 .welcome-message {
@@ -2707,4 +2709,138 @@ button, .starter-question, .send-button, .new-chat-button {
     /* Visually separate from bubble */
     padding-left: 48px;
   }
+}
+
+/* Remove sidebar-specific styles */
+.sidebar, .sidebar-header, .sidebar-overlay, .sidebar.open, .sidebar:not(.open), .sidebar:not(.hidden), .chat-sidebar, .chat-sidebar.open, .main-container:not(.sidebar-hidden) .edge-swipe-handle, .main-container:not(.sidebar-hidden) .swipe-overlay, .edge-swipe-handle, .swipe-overlay {
+  display: none !important;
+}
+
+/* New chat drawer/modal styles */
+.chat-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 1001;
+}
+
+.chat-drawer {
+  position: fixed;
+  top: 0;
+  left: -320px;
+  width: 90vw;
+  max-width: 320px;
+  height: 100vh;
+  background: var(--white);
+  z-index: 1002;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+  transition: left 0.3s cubic-bezier(0.4,0,0.2,1);
+  overflow-y: auto;
+  padding-bottom: 32px;
+}
+
+.chat-drawer.open {
+  left: 0;
+}
+
+@media (min-width: 769px) {
+  .chat-drawer, .chat-drawer.open {
+    top: 80px;
+    height: calc(100vh - 80px);
+  }
+}
+
+/* Ensure chat container uses full width */
+.chat-container {
+  width: 100% !important;
+  max-width: 100vw;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Hamburger always visible on mobile */
+.mobile-menu-btn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  margin-right: 12px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  font-size: 18px;
+  min-width: 44px;
+  min-height: 44px;
+  z-index: 100;
+  position: relative;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mobile-menu-btn:hover, .mobile-menu-btn:focus {
+  background-color: var(--border-light);
+  outline: 2px solid var(--accent-blue);
+}
+
+/* Touch targets for accessibility */
+button, .starter-question, .send-button, .new-chat-button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Drawer header and history styles (reuse sidebar styles) */
+.chat-drawer .sidebar-header {
+  padding: 24px 16px 16px 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+.chat-drawer .mode-toggle {
+  margin-bottom: 16px;
+  padding: 2px;
+  border-radius: 20px;
+}
+.chat-drawer .mode-button {
+  padding: 8px 12px;
+  font-size: 13px;
+  border-radius: 18px;
+  min-height: 36px;
+}
+.chat-drawer .new-chat-button {
+  padding: 12px;
+  font-size: 14px;
+  border-radius: 20px;
+  min-height: 44px;
+}
+.chat-drawer .chat-history {
+  padding: 12px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.chat-drawer .history-item {
+  padding: 12px;
+  border-radius: 8px;
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.chat-drawer .history-title {
+  font-size: 14px;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.chat-drawer .history-meta {
+  font-size: 12px;
+}
+.chat-drawer .history-mode {
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+/* Remove any remaining sidebar toggle styles */
+.sidebar-toggle, .mobile-sidebar-toggle, .desktop-sidebar-toggle {
+  display: none !important;
 }

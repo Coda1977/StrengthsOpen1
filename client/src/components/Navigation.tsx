@@ -5,9 +5,10 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface NavigationProps {
   simplified?: boolean;
+  onChatHamburgerClick?: () => void;
 }
 
-const Navigation = ({ simplified = false }: NavigationProps) => {
+const Navigation = ({ simplified = false, onChatHamburgerClick }: NavigationProps) => {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isAuthenticated, user } = useAuth();
@@ -43,6 +44,17 @@ const Navigation = ({ simplified = false }: NavigationProps) => {
   return (
     <nav className="app-nav">
       <div className="nav-container">
+        {/* Left hamburger for chat/history (only on chat/coach pages) */}
+        {(location.includes('/coach') || location.includes('/chat')) && (
+          <button
+            className="chat-hamburger-btn"
+            onClick={onChatHamburgerClick}
+            aria-label="Open chat history"
+            style={{ marginRight: 16, background: '#e0e7ff', color: '#1e40af', borderRadius: '50%', border: 'none', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>
+          </button>
+        )}
         <Link 
           href={isAuthenticated && (user as any)?.hasCompletedOnboarding ? "/dashboard" : "/"} 
           className="logo"
@@ -77,15 +89,13 @@ const Navigation = ({ simplified = false }: NavigationProps) => {
           )}
         </div>
         
-        {/* Hide mobile menu button on chat page to avoid duplicate hamburgers */}
-        {!location.includes('/coach') && !location.includes('/chat') && (
-          <button 
-            className="mobile-menu-btn"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            ☰
-          </button>
-        )}
+        <button 
+          className="mobile-menu-btn"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Open app menu"
+        >
+          ☰
+        </button>
       </div>
     </nav>
   );
