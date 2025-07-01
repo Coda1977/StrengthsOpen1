@@ -69,15 +69,14 @@ export class EmailScheduler {
       await storage.ensureEmailSubscription(userId, 'welcome', timezone);
       await storage.ensureEmailSubscription(userId, 'weekly_coaching', timezone);
 
-      // Create a user object for the email service
-      const user = {
-        id: userId,
-        email: userEmail,
-        firstName: firstName || 'there',
-      };
+      // Fetch the full, updated user from the database
+      const user = await storage.getUser(userId);
+      if (!user) {
+        throw new Error(`User not found for welcome email: ${userId}`);
+      }
 
-      await emailService.sendWelcomeEmail(user as any, timezone);
-      if (process.env.NODE_ENV !== 'production') console.log(`Welcome email scheduled for ${userEmail}`);
+      await emailService.sendWelcomeEmail(user, timezone);
+      if (process.env.NODE_ENV !== 'production') console.log(`Welcome email scheduled for ${user.email}`);
     } catch (error) {
       if (process.env.NODE_ENV !== 'production') console.error('Error sending welcome email:', error);
     }
