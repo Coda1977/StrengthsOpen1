@@ -3,7 +3,7 @@ import { User } from '../shared/schema';
 import { storage } from './storage';
 import { generateWeeklyEmailContent, generateWelcomeEmailContent } from './openai';
 import crypto from 'crypto';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull, lt, or } from 'drizzle-orm';
 // marked removed - using custom content cleaning instead
 
 export class EmailService {
@@ -770,26 +770,42 @@ export class EmailService {
           const [user] = await db.select().from(users).where(eq(users.id, sub.userId));
           if (!user) continue;
 
+          // Check if we already sent an email today (daily limit protection)
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); // Reset to start of day
+          
+          if (sub.lastEmailDate && sub.lastEmailDate >= today) {
+            // Already sent today, skip
+            if (process.env.NODE_ENV !== 'production') console.log(`Skipped daily limit: already sent email today for user ${user.email}`);
+            continue;
+          }
+
           // Determine week number
           const currentCount = parseInt(sub.weeklyEmailCount || '0', 10);
           const weekNumber = currentCount + 1;
           if (weekNumber > 12) continue; // Only send up to 12 weeks
 
-          // ATOMIC UPDATE: Only update if weeklyEmailCount is still currentCount
+          // ATOMIC UPDATE: Only update if weeklyEmailCount is still currentCount AND no email sent today
           const updateResult = await db.update(emailSubscriptions)
             .set({
               weeklyEmailCount: String(weekNumber),
               lastSentAt: new Date(),
+              lastEmailDate: today,
               updatedAt: new Date(),
             })
             .where(and(
               eq(emailSubscriptions.id, sub.id),
-              eq(emailSubscriptions.weeklyEmailCount, String(currentCount))
+              eq(emailSubscriptions.weeklyEmailCount, String(currentCount)),
+              // Additional check: ensure lastEmailDate is not today
+              or(
+                isNull(emailSubscriptions.lastEmailDate),
+                lt(emailSubscriptions.lastEmailDate, today)
+              )
             ))
             .returning();
 
           if (updateResult.length === 0) {
-            // Another process already updated this subscription; skip sending
+            // Another process already updated this subscription or email already sent today; skip sending
             if (process.env.NODE_ENV !== 'production') console.warn(`Skipped duplicate weekly email for user ${user.email}`);
             continue;
           }
