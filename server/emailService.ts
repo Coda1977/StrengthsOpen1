@@ -785,7 +785,29 @@ export class EmailService {
           const weekNumber = currentCount + 1;
           if (weekNumber > 12) continue; // Only send up to 12 weeks
 
-          // ATOMIC UPDATE: Only update if weeklyEmailCount is still currentCount AND no email sent today
+          // PRE-CHECK: Verify this user should receive an email (no double processing)
+          const preCheck = await db.select()
+            .from(emailSubscriptions)
+            .where(and(
+              eq(emailSubscriptions.id, sub.id),
+              eq(emailSubscriptions.weeklyEmailCount, String(currentCount)),
+              // Ensure lastEmailDate is not today
+              or(
+                isNull(emailSubscriptions.lastEmailDate),
+                lt(emailSubscriptions.lastEmailDate, today)
+              )
+            ));
+
+          if (preCheck.length === 0) {
+            // Another process already updated this subscription or email already sent today; skip sending
+            if (process.env.NODE_ENV !== 'production') console.warn(`Skipped duplicate weekly email for user ${user.email}`);
+            continue;
+          }
+
+          // SEND EMAIL FIRST - only update database if successful
+          await this.sendWeeklyCoachingEmail(user, weekNumber);
+
+          // ATOMIC UPDATE: Only update if email was successfully sent AND conditions still valid
           const updateResult = await db.update(emailSubscriptions)
             .set({
               weeklyEmailCount: String(weekNumber),
@@ -796,7 +818,7 @@ export class EmailService {
             .where(and(
               eq(emailSubscriptions.id, sub.id),
               eq(emailSubscriptions.weeklyEmailCount, String(currentCount)),
-              // Additional check: ensure lastEmailDate is not today
+              // Additional check: ensure lastEmailDate is still not today
               or(
                 isNull(emailSubscriptions.lastEmailDate),
                 lt(emailSubscriptions.lastEmailDate, today)
@@ -805,13 +827,9 @@ export class EmailService {
             .returning();
 
           if (updateResult.length === 0) {
-            // Another process already updated this subscription or email already sent today; skip sending
-            if (process.env.NODE_ENV !== 'production') console.warn(`Skipped duplicate weekly email for user ${user.email}`);
-            continue;
+            // Race condition: another process updated while we were sending email
+            if (process.env.NODE_ENV !== 'production') console.warn(`Race condition detected for user ${user.email} - email sent but not tracked`);
           }
-
-          // Send email
-          await this.sendWeeklyCoachingEmail(user, weekNumber);
 
           sent++;
         } catch (err) {

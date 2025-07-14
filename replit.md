@@ -97,6 +97,7 @@ The Strengths Manager is a full-stack web application designed to help managers 
 - **Conversation Backups Table**: Handles data migration and corruption recovery
 
 ## Recent Changes
+- July 14, 2025: CRITICAL BUG FIX - Fixed email processing logic where database was updated before email sending, causing users to miss emails while system thought they were sent. Moved database update to occur after successful email delivery and reset incorrect database states for affected users.
 - July 14, 2025: Resolved "AI not available due to rate limit" error by user purchasing additional OpenAI API tokens - confirmed application error handling was working correctly and issue was resolved by increasing OpenAI account quota
 - July 14, 2025: Implemented and tested daily email limit system to prevent multiple weekly coaching emails per day - added last_email_date column and atomic database updates to resolve timezone-based duplicate email issue affecting users like Hadas
 - June 30, 2025: Fixed critical mobile authentication infinite loop issue by implementing mobile-aware OAuth prompt strategies and enhanced redirect handling for mobile browsers - eliminated "page isn't working" errors with dynamic domain detection and proper HTTP redirects
