@@ -95,13 +95,17 @@ const Dashboard = () => {
 
   const updateMemberMutation = useMutation({
     mutationFn: (data: { id: string; name: string; strengths: string[] }) => 
-      apiRequest('PATCH', `/api/team-members/${data.id}`, {
+      apiRequest('PUT', `/api/team-members/${data.id}`, {
         name: data.name,
         strengths: data.strengths
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
       resetModal();
+    },
+    onError: (error: Error) => {
+      console.error('Failed to update team member:', error);
+      alert('Failed to update team member. Please try again.');
     }
   });
 
