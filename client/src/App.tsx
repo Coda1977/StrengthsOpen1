@@ -76,10 +76,7 @@ function Router() {
           </ProtectedRoute>
         </Route>
 
-        {/* Emergency admin login route */}
-        <Route path="/admin-login">
-          <AdminLogin />
-        </Route>
+
 
         {/* Public landing page route - must come after specific routes */}
         <Route path="/">
