@@ -59,9 +59,9 @@ export function getSession() {
     name: 'sessionId', // Custom session name for better security
     cookie: {
       httpOnly: true, // Prevent XSS attacks
-      secure: true, // Always use secure cookies for OAuth (required for SameSite: 'none')
+      secure: process.env.NODE_ENV === 'production', // Secure only in production
       maxAge: sessionTtl,
-      sameSite: 'none', // Allow cross-site cookies for OAuth redirects (fixes mobile login loop)
+      sameSite: 'lax', // More permissive for auth issues
     },
   });
 }
@@ -160,8 +160,11 @@ export async function setupAuth(app: Express) {
     const hostname = req.hostname || req.get('host')?.split(':')[0] || 'localhost';
     const strategyName = `replitauth:${hostname}`;
     
+    console.log('Login attempt for hostname:', hostname, 'using strategy:', strategyName);
+    
     passport.authenticate(strategyName, {
-      scope: ["openid", "email", "profile", "offline_access"]
+      scope: ["openid", "email", "profile", "offline_access"],
+      prompt: 'consent' // Force fresh consent to bypass cached auth state
     })(req, res, next);
   });
 
