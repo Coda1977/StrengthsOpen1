@@ -14,6 +14,7 @@ const Encyclopedia = lazy(() => import("@/pages/Encyclopedia"));
 const ChatCoach = lazy(() => import("@/pages/ChatCoach"));
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
 const Admin = lazy(() => import("@/pages/Admin"));
+const AdminLogin = lazy(() => import("@/pages/AdminLogin"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function Router() {
@@ -73,6 +74,11 @@ function Router() {
           <ProtectedRoute routeName="Onboarding">
             <Onboarding />
           </ProtectedRoute>
+        </Route>
+
+        {/* Emergency admin login route */}
+        <Route path="/admin-login">
+          <AdminLogin />
         </Route>
 
         {/* Public landing page route - must come after specific routes */}

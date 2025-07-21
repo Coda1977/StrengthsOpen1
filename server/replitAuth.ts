@@ -200,6 +200,45 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
+  // Emergency admin login bypass (for Replit Auth issues)
+  app.post("/api/admin-login", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email || email !== 'codanudge@gmail.com') {
+        return res.status(403).json({ message: 'Unauthorized admin access' });
+      }
+
+      const { storage } = await import('./storage');
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ message: 'Admin user not found' });
+      }
+
+      // Create a mock session for admin
+      const sessionUser = {
+        claims: {
+          sub: user.id,
+          email: user.email,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
+        },
+        expires_at: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
+      };
+
+      req.login(sessionUser, (err) => {
+        if (err) {
+          return res.status(500).json({ message: 'Login failed', error: err.message });
+        }
+        res.json({ message: 'Admin login successful', redirectTo: '/dashboard' });
+      });
+
+    } catch (error) {
+      console.error('Admin login error:', error);
+      res.status(500).json({ message: 'Admin login failed' });
+    }
+  });
+
   app.get("/api/logout", (req, res) => {
     req.logout(() => {
       // Clear the session and redirect to home page
