@@ -66,10 +66,9 @@ export function getSession() {
     name: 'sessionId', // Custom session name for better security
     cookie: {
       httpOnly: true, // Prevent XSS attacks
-      secure: true, // Always secure for OAuth
+      secure: process.env.NODE_ENV === 'production', // Secure only in production
       maxAge: sessionTtl,
-      sameSite: 'none', // Required for cross-domain OAuth
-      domain: undefined // Let browser handle domain automatically
+      sameSite: 'lax', // More compatible setting
     },
   });
 }
@@ -173,17 +172,10 @@ export async function setupAuth(app: Express) {
     
     console.log('Login attempt for hostname:', hostname, 'using strategy:', strategyName);
     
-    // Try direct URL construction with prompt parameter
-    const authenticateOptions: any = {
+    // Standard authentication without prompt parameter
+    passport.authenticate(strategyName, {
       scope: ["openid", "email", "profile", "offline_access"]
-    };
-    
-    // Add prompt as a direct property
-    authenticateOptions.prompt = 'none';
-    
-    console.log('Authentication options:', authenticateOptions);
-    
-    passport.authenticate(strategyName, authenticateOptions)(req, res, next);
+    })(req, res, next);
   });
 
   app.get("/api/callback", async (req, res, next) => {
