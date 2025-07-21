@@ -94,13 +94,15 @@ if (process.env.NODE_ENV !== 'test') {
       // ALWAYS serve the app on port 5000
       // this serves both the API and the client.
       // It is the only port that is not firewalled.
-      const port = 5000;
+      const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
       server.listen({
         port,
         host: "0.0.0.0",
-        reusePort: true,
       }, () => {
         log(`serving on port ${port}`);
+        console.log(`Server accessible at:`);
+        console.log(`- Local: http://localhost:${port}`);
+        console.log(`- Network: http://0.0.0.0:${port}`);
       });
 
       // Graceful shutdown logic
