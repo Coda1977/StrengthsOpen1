@@ -59,9 +59,10 @@ export function getSession() {
     name: 'sessionId', // Custom session name for better security
     cookie: {
       httpOnly: true, // Prevent XSS attacks
-      secure: process.env.NODE_ENV === 'production', // Secure only in production
+      secure: true, // Always secure for OAuth
       maxAge: sessionTtl,
-      sameSite: 'lax', // More permissive for auth issues
+      sameSite: 'none', // Required for cross-domain OAuth
+      domain: undefined // Let browser handle domain automatically
     },
   });
 }
@@ -156,64 +157,16 @@ export async function setupAuth(app: Express) {
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
-  app.get("/api/login", async (req, res, next) => {
-    // EMERGENCY BYPASS: Direct admin access
-    const directAuth = req.query.directAuth as string;
-    if (directAuth === 'codanudge@gmail.com') {
-      try {
-        let user = await storage.getUserByEmail(directAuth);
-        
-        if (!user) {
-          const adminId = 'admin-' + Date.now();
-          user = await storage.upsertUser({
-            id: adminId,
-            email: directAuth,
-            firstName: 'Admin',
-            lastName: 'User',
-          });
-          
-          await storage.updateUserOnboarding(adminId, {
-            hasCompletedOnboarding: true,
-            topStrengths: ['Strategic', 'Achiever', 'Developer', 'Analytical', 'Focus']
-          });
-          
-          user = await storage.getUser(adminId);
-        }
-        
-        const sessionUser = {
-          claims: {
-            sub: user!.id,
-            email: user!.email,
-            first_name: user!.firstName,
-            last_name: user!.lastName,
-            exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
-          },
-          expires_at: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
-        };
-        
-        return req.login(sessionUser, (err) => {
-          if (err) {
-            console.error('Direct auth error:', err);
-            return res.redirect('/api/login');
-          }
-          return res.redirect('/dashboard');
-        });
-        
-      } catch (error) {
-        console.error('Direct auth failed:', error);
-        return res.redirect('/api/login');
-      }
-    }
-    
-    // Normal Replit Auth flow
+  app.get("/api/login", (req, res, next) => {
     const hostname = req.hostname || req.get('host')?.split(':')[0] || 'localhost';
     const strategyName = `replitauth:${hostname}`;
     
     console.log('Login attempt for hostname:', hostname, 'using strategy:', strategyName);
     
+    // Remove prompt parameter that was forcing email verification
     passport.authenticate(strategyName, {
-      scope: ["openid", "email", "profile", "offline_access"],
-      prompt: 'consent'
+      scope: ["openid", "email", "profile", "offline_access"]
+      // Removed prompt: 'consent' - this was forcing email verification
     })(req, res, next);
   });
 
