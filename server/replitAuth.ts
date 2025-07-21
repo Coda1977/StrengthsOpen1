@@ -14,10 +14,17 @@ if (!process.env.REPLIT_DOMAINS) {
 
 const getOidcConfig = memoize(
   async () => {
-    return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
-    );
+    try {
+      const config = await client.discovery(
+        new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
+        process.env.REPL_ID!
+      );
+      console.log('OIDC Config loaded successfully');
+      return config;
+    } catch (error) {
+      console.error('OIDC Config error:', error);
+      throw error;
+    }
   },
   { maxAge: 3600 * 1000 }
 );
@@ -142,6 +149,9 @@ export async function setupAuth(app: Express) {
   for (const domain of domains) {
     // Use the actual Replit domain for callback URL, even for localhost requests
     const callbackDomain = domain === 'localhost' || domain === '127.0.0.1' ? replitDomains[0] || domain : domain;
+    
+    console.log(`Registering auth strategy for domain: ${domain}, callback: https://${callbackDomain}/api/callback`);
+    
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -163,11 +173,17 @@ export async function setupAuth(app: Express) {
     
     console.log('Login attempt for hostname:', hostname, 'using strategy:', strategyName);
     
-    // Remove prompt parameter that was forcing email verification
-    passport.authenticate(strategyName, {
+    // Try direct URL construction with prompt parameter
+    const authenticateOptions: any = {
       scope: ["openid", "email", "profile", "offline_access"]
-      // Removed prompt: 'consent' - this was forcing email verification
-    })(req, res, next);
+    };
+    
+    // Add prompt as a direct property
+    authenticateOptions.prompt = 'none';
+    
+    console.log('Authentication options:', authenticateOptions);
+    
+    passport.authenticate(strategyName, authenticateOptions)(req, res, next);
   });
 
   app.get("/api/callback", async (req, res, next) => {
