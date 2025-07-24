@@ -2,6 +2,9 @@ modules = ["nodejs-20", "web", "postgresql-16"]
 run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
+[env]
+DATABASE_URL = "postgresql://postgres:password@localhost:5432/postgres"
+
 [nix]
 channel = "stable-24_05"
 packages = ["openssh"]
