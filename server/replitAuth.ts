@@ -105,36 +105,42 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
-  // Check if this is a new user
-  const existingUser = await storage.getUser(claims["sub"]);
-  const isNewUser = !existingUser;
-  
-  await storage.upsertUser({
-    id: claims["sub"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
-  });
+  try {
+    // Check if this is a new user
+    const existingUser = await storage.getUser(claims["sub"]);
+    const isNewUser = !existingUser;
+    
+    await storage.upsertUser({
+      id: claims["sub"],
+      email: claims["email"],
+      firstName: claims["first_name"],
+      lastName: claims["last_name"],
+      profileImageUrl: claims["profile_image_url"],
+    });
 
-  // Send authorization welcome email for new users
-  if (isNewUser && claims["email"] && claims["first_name"]) {
-    try {
-      const { emailService } = await import('./emailService');
-      const websiteUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
-        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-        : 'https://your-app.replit.app';
-      
-      await emailService.sendAuthorizationWelcomeEmail(
-        claims["email"], 
-        claims["first_name"], 
-        websiteUrl
-      );
-      console.log(`Authorization welcome email sent to new user: ${claims["email"]}`);
-    } catch (error) {
-      console.error('Failed to send authorization welcome email:', error);
-      // Don't fail the authentication flow if email fails
+    // Send authorization welcome email for new users
+    if (isNewUser && claims["email"] && claims["first_name"]) {
+      try {
+        const { emailService } = await import('./emailService');
+        const websiteUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
+          ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+          : 'https://your-app.replit.app';
+        
+        await emailService.sendAuthorizationWelcomeEmail(
+          claims["email"], 
+          claims["first_name"], 
+          websiteUrl
+        );
+        console.log(`Authorization welcome email sent to new user: ${claims["email"]}`);
+      } catch (error) {
+        console.error('Failed to send authorization welcome email:', error);
+        // Don't fail the authentication flow if email fails
+      }
     }
+  } catch (error) {
+    console.error('Failed to upsert user during authentication:', error);
+    // Re-throw the error so authentication can handle it properly
+    throw new Error('User account setup failed');
   }
 }
 
