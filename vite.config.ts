@@ -34,6 +34,11 @@ export default defineConfig({
       deny: ["**/.*"],
     },
     host: "0.0.0.0",
-    allowedHosts: "all"
-  },
+  allowedHosts: [
+    "localhost",
+    "127.0.0.1", 
+    "ff8b1166-0c16-4d23-90ea-b3614ac801fb-00-1suxl2i0jsba0.pike.replit.dev",
+    "ff8b1166-0c16-4d23-90ea-b3614ac801fb.replit.app",
+    "workspace.tinymanagerai.repl.co"
+  ],
 });
