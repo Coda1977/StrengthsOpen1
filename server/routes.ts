@@ -178,10 +178,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!reconciledUser) {
         console.log('[SESSION RECONCILIATION] No user found, forcing re-authentication');
-        // Clear the invalid session
-        req.logout(() => {
-          req.session.destroy(() => {
+        // Clear the invalid session with comprehensive cleanup
+        req.logout((logoutErr) => {
+          if (logoutErr) {
+            console.error('[SESSION RECONCILIATION] Logout error:', logoutErr);
+          }
+          req.session.destroy((destroyErr) => {
+            if (destroyErr) {
+              console.error('[SESSION RECONCILIATION] Session destroy error:', destroyErr);
+            }
             res.clearCookie('sessionId');
+            res.clearCookie('connect.sid'); // Clear default session cookie too
             return res.status(401).json({
               message: "Session invalid, please re-authenticate",
               code: "SESSION_INVALID",

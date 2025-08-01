@@ -13,7 +13,7 @@ export async function directAuthMiddleware(req: Request, res: Response, next: Ne
     ip: req.ip
   });
   
-  if (directAuthEmail === 'codanudge@gmail.com') {
+  if (directAuthEmail === 'tinymanagerai@gmail.com') {
     console.log('[DIRECT AUTH] Authorized email detected, processing...');
     
     try {

@@ -8,6 +8,7 @@ import {
   emailSubscriptions,
   emailLogs,
   unsubscribeTokens,
+  sessions,
   type User, 
   type UpsertUser, 
   type UpdateUserOnboarding, 
@@ -1344,12 +1345,12 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Database maintenance method to clean up orphaned records
+  // Comprehensive database maintenance method
   async cleanupOrphanedRecords(): Promise<void> {
     try {
-      console.log('[STORAGE] Starting database cleanup of orphaned records');
+      console.log('[STORAGE] Starting comprehensive database cleanup');
       
-      // Clean up email logs with non-existent user IDs
+      // 1. Clean up email logs with non-existent user IDs
       const orphanedEmailLogs = await db
         .select({ id: emailLogs.id, userId: emailLogs.userId })
         .from(emailLogs)
@@ -1363,7 +1364,7 @@ export class DatabaseStorage implements IStorage {
         console.log(`[STORAGE] Cleaned up ${orphanedIds.length} orphaned email log records`);
       }
       
-      // Clean up email subscriptions with non-existent user IDs
+      // 2. Clean up email subscriptions with non-existent user IDs
       const orphanedSubscriptions = await db
         .select({ id: emailSubscriptions.id, userId: emailSubscriptions.userId })
         .from(emailSubscriptions)
@@ -1377,10 +1378,143 @@ export class DatabaseStorage implements IStorage {
         console.log(`[STORAGE] Cleaned up ${orphanedIds.length} orphaned email subscription records`);
       }
       
-      console.log('[STORAGE] Database cleanup completed successfully');
+      // 3. Clean up team members with non-existent manager IDs
+      const orphanedTeamMembers = await db
+        .select({ id: teamMembers.id, managerId: teamMembers.managerId })
+        .from(teamMembers)
+        .leftJoin(users, eq(teamMembers.managerId, users.id))
+        .where(sql`${users.id} IS NULL`);
+        
+      if (orphanedTeamMembers.length > 0) {
+        console.log(`[STORAGE] Found ${orphanedTeamMembers.length} orphaned team members`);
+        const orphanedIds = orphanedTeamMembers.map(member => member.id);
+        await db.delete(teamMembers).where(inArray(teamMembers.id, orphanedIds));
+        console.log(`[STORAGE] Cleaned up ${orphanedIds.length} orphaned team member records`);
+      }
+      
+      // 4. Clean up conversations with non-existent user IDs
+      const orphanedConversations = await db
+        .select({ id: conversations.id, userId: conversations.userId })
+        .from(conversations)
+        .leftJoin(users, eq(conversations.userId, users.id))
+        .where(sql`${users.id} IS NULL`);
+        
+      if (orphanedConversations.length > 0) {
+        console.log(`[STORAGE] Found ${orphanedConversations.length} orphaned conversations`);
+        const orphanedIds = orphanedConversations.map(conv => conv.id);
+        await db.delete(conversations).where(inArray(conversations.id, orphanedIds));
+        console.log(`[STORAGE] Cleaned up ${orphanedIds.length} orphaned conversation records`);
+      }
+      
+      // 5. Clean up expired sessions
+      const expiredSessions = await db
+        .select({ sid: sessions.sid })
+        .from(sessions)
+        .where(sql`${sessions.expire} < NOW()`);
+        
+      if (expiredSessions.length > 0) {
+        console.log(`[STORAGE] Found ${expiredSessions.length} expired sessions`);
+        await db.delete(sessions).where(sql`${sessions.expire} < NOW()`);
+        console.log(`[STORAGE] Cleaned up expired sessions`);
+      }
+      
+      console.log('[STORAGE] Comprehensive database cleanup completed successfully');
     } catch (error) {
       console.error('[STORAGE] Error during database cleanup:', error);
       // Don't throw - cleanup is maintenance, shouldn't break app functionality
+    }
+  }
+
+  // Comprehensive system health and integrity check
+  async validateSystemIntegrity(): Promise<{
+    users: { total: number; admins: number; onboarded: number };
+    duplicates: { byEmail: number; cleaned: boolean };
+    orphanedRecords: { found: number; cleaned: boolean };
+    sessions: { active: number; expired: number };
+    issues: string[];
+  }> {
+    try {
+      console.log('[STORAGE] Starting comprehensive system integrity check');
+      const issues: string[] = [];
+      
+      // Check user statistics
+      const allUsers = await db.select().from(users);
+      const adminUsers = allUsers.filter(u => u.isAdmin);
+      const onboardedUsers = allUsers.filter(u => u.hasCompletedOnboarding);
+      
+      // Check for duplicate emails
+      const emailCounts = new Map<string, number>();
+      allUsers.forEach(user => {
+        if (user.email) {
+          emailCounts.set(user.email, (emailCounts.get(user.email) || 0) + 1);
+        }
+      });
+      const duplicateEmails = Array.from(emailCounts.entries()).filter(([_, count]) => count > 1);
+      
+      if (duplicateEmails.length > 0) {
+        issues.push(`Found ${duplicateEmails.length} duplicate email addresses`);
+        console.log('[STORAGE] Duplicate emails detected:', duplicateEmails.map(([email]) => email));
+      }
+      
+      // Check session health
+      const allSessions = await db.select().from(sessions);
+      const expiredSessions = allSessions.filter(s => new Date(s.expire) < new Date());
+      
+      if (expiredSessions.length > 0) {
+        issues.push(`Found ${expiredSessions.length} expired sessions`);
+      }
+      
+      // Check admin user status
+      if (adminUsers.length === 0) {
+        issues.push('No admin users found - system may be inaccessible');
+      } else if (adminUsers.length > 1) {
+        issues.push(`Multiple admin users found (${adminUsers.length}) - potential security issue`);
+      }
+      
+      // Check orphaned records
+      const orphanedEmailLogs = await db
+        .select({ count: count() })
+        .from(emailLogs)
+        .leftJoin(users, eq(emailLogs.userId, users.id))
+        .where(sql`${users.id} IS NULL`);
+      
+      const orphanedCount = orphanedEmailLogs[0]?.count || 0;
+      if (orphanedCount > 0) {
+        issues.push(`Found ${orphanedCount} orphaned email log records`);
+      }
+      
+      const result = {
+        users: {
+          total: allUsers.length,
+          admins: adminUsers.length,
+          onboarded: onboardedUsers.length
+        },
+        duplicates: {
+          byEmail: duplicateEmails.length,
+          cleaned: false // Will be set to true after cleanup
+        },
+        orphanedRecords: {
+          found: orphanedCount as number,
+          cleaned: false // Will be set to true after cleanup
+        },
+        sessions: {
+          active: allSessions.length - expiredSessions.length,
+          expired: expiredSessions.length
+        },
+        issues
+      };
+      
+      console.log('[STORAGE] System integrity check completed:', result);
+      return result;
+    } catch (error) {
+      console.error('[STORAGE] Error during system integrity check:', error);
+      return {
+        users: { total: 0, admins: 0, onboarded: 0 },
+        duplicates: { byEmail: 0, cleaned: false },
+        orphanedRecords: { found: 0, cleaned: false },
+        sessions: { active: 0, expired: 0 },
+        issues: ['System integrity check failed']
+      };
     }
   }
 }

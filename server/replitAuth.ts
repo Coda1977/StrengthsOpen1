@@ -278,8 +278,46 @@ export async function setupAuth(app: Express) {
     passport.use(strategy);
   }
 
-  passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+  // Enhanced session serialization with user ID validation
+  passport.serializeUser((user: Express.User, cb) => {
+    console.log('[PASSPORT] Serializing user:', (user as any)?.claims?.sub);
+    cb(null, user);
+  });
+  
+  passport.deserializeUser(async (user: Express.User, cb) => {
+    try {
+      const userId = (user as any)?.claims?.sub;
+      const userEmail = (user as any)?.claims?.email;
+      
+      console.log('[PASSPORT] Deserializing user:', { userId, userEmail });
+      
+      if (!userId || !userEmail) {
+        console.log('[PASSPORT] Invalid session data, clearing session');
+        return cb(null, false);
+      }
+      
+      // Verify user still exists in database during deserialization
+      const dbUser = await storage.reconcileUserSession(userId, userEmail);
+      if (!dbUser) {
+        console.log('[PASSPORT] User not found during deserialization, clearing session');
+        return cb(null, false);
+      }
+      
+      // Update session with reconciled user ID if needed
+      if (dbUser.id !== userId) {
+        console.log('[PASSPORT] Updating session with reconciled user ID:', {
+          oldId: userId,
+          newId: dbUser.id
+        });
+        (user as any).claims.sub = dbUser.id;
+      }
+      
+      cb(null, user);
+    } catch (error) {
+      console.error('[PASSPORT] Error during deserialization:', error);
+      cb(null, false);
+    }
+  });
 
   app.get("/api/login", (req, res, next) => {
     // Enhanced host resolution with fallbacks
@@ -435,7 +473,7 @@ export async function setupAuth(app: Express) {
   app.post("/api/admin-login", async (req, res) => {
     try {
       const { email } = req.body;
-      if (!email || email !== 'codanudge@gmail.com') {
+      if (!email || email !== 'tinymanagerai@gmail.com') {
         return res.status(403).json({ message: 'Unauthorized admin access' });
       }
 
