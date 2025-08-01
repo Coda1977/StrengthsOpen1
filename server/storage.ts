@@ -1304,7 +1304,7 @@ export class DatabaseStorage implements IStorage {
           primaryUser = user;
         } else if (user.hasCompletedOnboarding && !primaryUser.hasCompletedOnboarding) {
           primaryUser = user;
-        } else if (user.createdAt > primaryUser.createdAt) {
+        } else if ((user.createdAt || new Date(0)) > (primaryUser.createdAt || new Date(0))) {
           primaryUser = user;
         }
       }

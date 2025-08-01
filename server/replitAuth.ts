@@ -208,19 +208,17 @@ export async function setupAuth(app: Express) {
       const dbUser = await upsertUser(tokens.claims());
       
       // CRITICAL: Update session with the correct user ID from database
-      if (dbUser && dbUser.id !== tokens.claims()["sub"]) {
+      const claims = tokens.claims();
+      if (dbUser && claims && dbUser.id !== claims["sub"]) {
         console.log('[AUTH] Updating session with reconciled user ID:', {
-          tokenId: tokens.claims()["sub"],
+          tokenId: claims["sub"],
           dbId: dbUser.id
         });
         // Update the claims to use the database user ID
-        const claims = tokens.claims();
-        if (claims) {
-          (user as any).claims = {
-            ...claims,
-            sub: dbUser.id
-          };
-        }
+        (user as any).claims = {
+          ...claims,
+          sub: dbUser.id
+        };
       }
       
       verified(null, user);
@@ -439,7 +437,12 @@ export async function setupAuth(app: Express) {
 
         try {
           // Use the user ID from the session (which has been reconciled)
-          const sessionUserId = user.claims.sub;
+          const sessionUserId = user.claims?.sub;
+          if (!sessionUserId) {
+            console.error('[AUTH] No user ID in session claims');
+            return res.redirect("/api/login?error=invalid_session");
+          }
+          
           const dbUser = await storage.getUser(sessionUserId);
           
           if (!dbUser) {
