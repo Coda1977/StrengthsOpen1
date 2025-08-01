@@ -40,5 +40,5 @@ export default defineConfig({
     "ff8b1166-0c16-4d23-90ea-b3614ac801fb-00-1suxl2i0jsba0.pike.replit.dev",
     "ff8b1166-0c16-4d23-90ea-b3614ac801fb.replit.app",
     "workspace.tinymanagerai.repl.co"
-  ],
+  ]},
 });
