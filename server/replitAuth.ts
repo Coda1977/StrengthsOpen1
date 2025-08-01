@@ -33,29 +33,48 @@ export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
   
-  // Enhanced session store configuration to prevent corruption
+  // Enhanced session store configuration with health monitoring
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: false, // Table already exists in schema
+    createTableIfMissing: true, // Allow table creation if missing for robustness
     ttl: sessionTtl,
     tableName: "sessions",
     schemaName: 'public',
     pruneSessionInterval: 60 * 15, // 15 minutes
     disableTouch: false, // Enable session touch to prevent premature expiry
     errorLog: (err) => {
-      console.error('Session store error:', err);
-      // Log but don't crash - session middleware will handle gracefully
+      console.error('[SESSION] Store error:', err);
+      // Log detailed error information for debugging
+      if (err.code) {
+        console.error('[SESSION] Error code:', err.code);
+      }
+      if (err.detail) {
+        console.error('[SESSION] Error detail:', err.detail);
+      }
     },
   });
 
-  // Add session store event handlers for monitoring
+  // Add comprehensive session store event handlers
   sessionStore.on('connect', () => {
-    console.log('Session store connected to database');
+    console.log('[SESSION] Store successfully connected to database');
   });
 
   sessionStore.on('disconnect', () => {
-    console.log('Session store disconnected from database');
+    console.log('[SESSION] Store disconnected from database');
   });
+
+  // Test session store connectivity
+  try {
+    sessionStore.query('SELECT 1', [], (err, result) => {
+      if (err) {
+        console.error('[SESSION] Initial connectivity test failed:', err);
+      } else {
+        console.log('[SESSION] Initial connectivity test passed');
+      }
+    });
+  } catch (error) {
+    console.error('[SESSION] Failed to test session store connectivity:', error);
+  }
   
   return session({
     secret: process.env.SESSION_SECRET!,
@@ -125,6 +144,22 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Add comprehensive request logging middleware
+  app.use((req, res, next) => {
+    if (req.path.includes('/api/')) {
+      console.log(`[AUTH DEBUG] ${req.method} ${req.path}`, {
+        hostname: req.hostname,
+        host: req.get('host'),
+        'x-forwarded-host': req.get('x-forwarded-host'),
+        'x-forwarded-proto': req.get('x-forwarded-proto'),
+        origin: req.get('origin'),
+        referer: req.get('referer'),
+        userAgent: req.get('user-agent')?.substring(0, 100)
+      });
+    }
+    next();
+  });
+
   const config = await getOidcConfig();
 
   const verify: VerifyFunction = async (
@@ -137,12 +172,34 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  // Register strategies for both Replit domains and localhost
+  // Enhanced domain resolution with fallbacks
   const replitDomains = process.env.REPLIT_DOMAINS?.split(",") || [];
-  // Add the deployment domain pattern
   const deploymentDomain = process.env.REPL_ID ? `${process.env.REPL_ID}.replit.app` : null;
-  const domains = [...replitDomains, ...(deploymentDomain ? [deploymentDomain] : []), 'localhost', '127.0.0.1'];
   
+  // Dynamic domain detection from environment
+  const possibleDomains = [
+    ...replitDomains,
+    ...(deploymentDomain ? [deploymentDomain] : []),
+    'localhost',
+    '127.0.0.1'
+  ];
+  
+  // Add current Replit dev domain if available
+  const currentReplitDomain = process.env.REPL_SLUG && process.env.REPL_OWNER 
+    ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` 
+    : null;
+  if (currentReplitDomain) {
+    possibleDomains.push(currentReplitDomain);
+  }
+  
+  const domains = [...new Set(possibleDomains)]; // Remove duplicates
+  
+  console.log('Auth environment variables:', {
+    REPLIT_DOMAINS: process.env.REPLIT_DOMAINS,
+    REPL_ID: process.env.REPL_ID,
+    REPL_SLUG: process.env.REPL_SLUG,
+    REPL_OWNER: process.env.REPL_OWNER
+  });
   console.log('Auth domains being registered:', domains);
   
   for (const domain of domains) {
@@ -167,35 +224,117 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
+    // Enhanced host resolution with fallbacks
     const hostname = req.hostname || req.get('host')?.split(':')[0] || 'localhost';
-    const strategyName = `replitauth:${hostname}`;
+    const forwardedHost = req.get('x-forwarded-host');
     
-    console.log('Login attempt for hostname:', hostname, 'using strategy:', strategyName);
+    // Try multiple hostname resolution strategies
+    const possibleHosts = [
+      hostname,
+      forwardedHost,
+      req.get('host')?.split(':')[0],
+      'localhost'
+    ].filter(Boolean);
     
-    // Standard authentication without prompt parameter
-    passport.authenticate(strategyName, {
-      scope: ["openid", "email", "profile", "offline_access"]
-    })(req, res, next);
+    console.log('[AUTH] Login attempt:', {
+      hostname,
+      forwardedHost,
+      possibleHosts,
+      registeredStrategies: domains
+    });
+    
+    // Find matching strategy
+    let strategyName = null;
+    let matchedHost = null;
+    
+    for (const host of possibleHosts) {
+      if (domains.includes(host)) {
+        strategyName = `replitauth:${host}`;
+        matchedHost = host;
+        break;
+      }
+    }
+    
+    // Fallback to first registered domain if no match
+    if (!strategyName) {
+      matchedHost = domains[0];
+      strategyName = `replitauth:${matchedHost}`;
+      console.log('[AUTH] No exact match found, using fallback:', matchedHost);
+    }
+    
+    console.log('[AUTH] Using strategy:', strategyName, 'for host:', matchedHost);
+    
+    try {
+      passport.authenticate(strategyName, {
+        scope: ["openid", "email", "profile", "offline_access"]
+      })(req, res, next);
+    } catch (error) {
+      console.error('[AUTH] Login error:', error);
+      res.status(500).json({ 
+        message: "Authentication failed", 
+        error: "Unable to initiate login process",
+        debug: { hostname, forwardedHost, strategyName }
+      });
+    }
   });
 
   app.get("/api/callback", async (req, res, next) => {
+    // Enhanced host resolution for callback
     const hostname = req.hostname || req.get('host')?.split(':')[0] || 'localhost';
-    const strategyName = `replitauth:${hostname}`;
+    const forwardedHost = req.get('x-forwarded-host');
+    
+    const possibleHosts = [
+      hostname,
+      forwardedHost,
+      req.get('host')?.split(':')[0],
+      'localhost'
+    ].filter(Boolean);
+    
+    console.log('[AUTH] Callback attempt:', {
+      hostname,
+      forwardedHost,
+      possibleHosts,
+      query: req.query
+    });
+    
+    // Find matching strategy
+    let strategyName = null;
+    let matchedHost = null;
+    
+    for (const host of possibleHosts) {
+      if (domains.includes(host)) {
+        strategyName = `replitauth:${host}`;
+        matchedHost = host;
+        break;
+      }
+    }
+    
+    // Fallback to first registered domain if no match
+    if (!strategyName) {
+      matchedHost = domains[0];
+      strategyName = `replitauth:${matchedHost}`;
+      console.log('[AUTH] Callback fallback to:', matchedHost);
+    }
+    
+    console.log('[AUTH] Callback using strategy:', strategyName);
     
     passport.authenticate(strategyName, async (err: any, user: any) => {
       if (err) {
-        console.error('Authentication error:', err);
-        return res.redirect("/api/login");
+        console.error('[AUTH] Authentication error:', err);
+        return res.redirect("/api/login?error=auth_failed");
       }
       if (!user) {
-        return res.redirect("/api/login");
+        console.error('[AUTH] No user returned from authentication');
+        return res.redirect("/api/login?error=no_user");
       }
 
       req.logIn(user, async (loginErr: any) => {
         if (loginErr) {
-          console.error('Login error:', loginErr);
-          return res.redirect("/api/login");
+          console.error('[AUTH] Login error:', loginErr);
+          return res.redirect("/api/login?error=login_failed");
         }
+
+        console.log('[AUTH] Login successful for user:', user.claims?.sub);
 
         try {
           const dbUser = await storage.getUser(user.claims.sub);
@@ -206,7 +345,7 @@ export async function setupAuth(app: Express) {
             return res.redirect("/onboarding");
           }
         } catch (error) {
-          console.error('Error checking user status:', error);
+          console.error('[AUTH] Error checking user status:', error);
           return res.redirect("/onboarding");
         }
       });

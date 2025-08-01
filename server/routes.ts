@@ -36,17 +36,39 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-// Enhanced authentication middleware with better error handling
+// Enhanced authentication middleware with comprehensive error handling
 const authenticatedMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  console.log('[AUTH MIDDLEWARE] Checking authentication for:', req.path);
+  
   isAuthenticated(req, res, (err?: any) => {
     if (err) {
-      console.error('Authentication middleware error:', err);
+      console.error('[AUTH MIDDLEWARE] Authentication error:', {
+        error: err,
+        path: req.path,
+        hostname: req.hostname,
+        headers: {
+          host: req.get('host'),
+          'x-forwarded-host': req.get('x-forwarded-host'),
+          origin: req.get('origin')
+        },
+        sessionID: req.sessionID,
+        isAuthenticated: req.isAuthenticated?.(),
+        user: req.user ? 'present' : 'missing'
+      });
+      
       return res.status(401).json({ 
-        message: "Unauthorized",
+        message: "Authentication required",
         code: "AUTH_REQUIRED",
-        redirect: "/auth/login"
+        redirect: "/api/login",
+        debug: process.env.NODE_ENV === 'development' ? {
+          path: req.path,
+          sessionExists: !!req.session,
+          sessionID: req.sessionID
+        } : undefined
       });
     }
+    
+    console.log('[AUTH MIDDLEWARE] Authentication successful for:', req.path);
     next();
   });
 };
@@ -73,6 +95,10 @@ const requireOnboarding = async (req: Request, res: Response, next: NextFunction
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Import and add direct auth middleware
+  const { directAuthMiddleware } = await import('./directAuth');
+  app.use(directAuthMiddleware);
+  
   // Auth middleware
   await setupAuth(app);
 

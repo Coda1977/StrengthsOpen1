@@ -46,6 +46,63 @@ const isDev = process.env.NODE_ENV === 'development';
 if (process.env.NODE_ENV !== 'test') {
   (async () => {
     try {
+      const port = Number(process.env.PORT) || 5000;
+
+      // Environment variable verification function
+      function verifyEnvironmentVariables() {
+        const required = [
+          'DATABASE_URL',
+          'SESSION_SECRET',
+          'REPL_ID',
+          'REPLIT_DOMAINS',
+          'ISSUER_URL'
+        ];
+
+        const missing = required.filter(key => !process.env[key]);
+        const warnings = [];
+
+        if (missing.length > 0) {
+          console.error('[ENV] Missing required environment variables:', missing);
+          throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+        }
+
+        // Validate specific variables
+        if (process.env.REPLIT_DOMAINS) {
+          const domains = process.env.REPLIT_DOMAINS.split(',');
+          console.log('[ENV] REPLIT_DOMAINS configured with', domains.length, 'domains:', domains);
+
+          if (domains.length === 0) {
+            warnings.push('REPLIT_DOMAINS is empty');
+          }
+        }
+
+        if (process.env.REPL_ID) {
+          console.log('[ENV] REPL_ID:', process.env.REPL_ID);
+          const expectedDomain = `${process.env.REPL_ID}.replit.app`;
+          const domains = process.env.REPLIT_DOMAINS?.split(',') || [];
+          if (!domains.includes(expectedDomain)) {
+            warnings.push(`Expected domain ${expectedDomain} not found in REPLIT_DOMAINS`);
+          }
+        }
+
+        if (process.env.ISSUER_URL) {
+          console.log('[ENV] ISSUER_URL:', process.env.ISSUER_URL);
+        }
+
+        if (warnings.length > 0) {
+          console.warn('[ENV] Configuration warnings:', warnings);
+        }
+
+        console.log('[ENV] Environment verification completed successfully');
+      }
+      // Verify environment variables before starting
+      try {
+        verifyEnvironmentVariables();
+      } catch (error) {
+        console.error('[STARTUP] Environment verification failed:', error);
+        process.exit(1);
+      }
+
       const server = await registerRoutes(app);
 
       app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -94,8 +151,7 @@ if (process.env.NODE_ENV !== 'test') {
       // ALWAYS serve the app on port 5000
       // this serves both the API and the client.
       // It is the only port that is not firewalled.
-      const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
-      
+
       server.listen(port, "0.0.0.0", () => {
         log(`serving on port ${port}`);
         console.log(`Server accessible at:`);

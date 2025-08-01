@@ -1,15 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
 import { storage } from './storage';
 
-// Simple direct auth bypass for admin access
+// Enhanced direct auth bypass for admin access with comprehensive logging
 export async function directAuthMiddleware(req: Request, res: Response, next: NextFunction) {
   // Check if this is a direct auth request
   const directAuthEmail = req.query.directAuth as string;
   
+  console.log('[DIRECT AUTH] Request:', {
+    path: req.path,
+    directAuthEmail: directAuthEmail ? 'provided' : 'not provided',
+    hostname: req.hostname,
+    ip: req.ip
+  });
+  
   if (directAuthEmail === 'codanudge@gmail.com') {
+    console.log('[DIRECT AUTH] Authorized email detected, processing...');
+    
     try {
       // Get or create admin user
       let user = await storage.getUserByEmail(directAuthEmail);
+      
+      console.log('[DIRECT AUTH] User lookup:', user ? 'found' : 'not found');
       
       if (!user) {
         // Create admin user if doesn't exist
