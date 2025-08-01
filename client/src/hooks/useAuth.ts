@@ -15,17 +15,23 @@ export function useAuth() {
   const { data: user, isLoading, error } = useQuery<User | null>({
     queryKey: ["/api/auth/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
-    retry: false,
+    retry: (failureCount, error) => {
+      // Don't retry on 401 errors (unauthorized)
+      if (error && 'status' in error && error.status === 401) {
+        return false;
+      }
+      return failureCount < 2;
+    },
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
+    refetchOnMount: true, // Allow refetch to ensure fresh data
     refetchInterval: false,
-    staleTime: 60 * 60 * 1000, // 1 hour
+    staleTime: 5 * 60 * 1000, // 5 minutes (shorter for more responsive auth)
   });
 
   return {
     user,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && !isLoading,
     error,
     // Helper to check if user has completed onboarding
     hasCompletedOnboarding: !!user?.hasCompletedOnboarding,

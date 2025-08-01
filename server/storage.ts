@@ -168,13 +168,18 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     try {
-      // Check cache first
-      const cached = this.getCachedUser(id);
-      if (cached) {
-        return cached;
-      }
-
+      console.log('[STORAGE] Getting user by ID:', id);
+      
+      // Skip cache for debugging
       const [user] = await db.select().from(users).where(eq(users.id, id));
+      
+      console.log('[STORAGE] User query result:', {
+        found: !!user,
+        id: user?.id,
+        email: user?.email,
+        hasCompletedOnboarding: user?.hasCompletedOnboarding,
+        firstName: user?.firstName
+      });
       
       if (user) {
         this.setCachedUser(id, user);
@@ -182,7 +187,7 @@ export class DatabaseStorage implements IStorage {
       
       return user;
     } catch (error) {
-      if (isDev) console.error('Failed to get user:', error);
+      console.error('[STORAGE] Failed to get user:', error);
       throw new Error('Failed to fetch user');
     }
   }

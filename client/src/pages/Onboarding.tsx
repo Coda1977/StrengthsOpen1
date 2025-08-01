@@ -21,7 +21,7 @@ const Onboarding = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   // Initialize name from user data
   useEffect(() => {
@@ -30,19 +30,38 @@ const Onboarding = () => {
     }
   }, [user]);
 
-  // Redirect to login if not authenticated
+  // Redirect to login if explicitly not authenticated (but not while loading)
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
+      console.log('[ONBOARDING] Redirecting to login - not authenticated');
       window.location.href = '/api/login';
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isLoading]);
 
   // Redirect to dashboard if already completed onboarding
   useEffect(() => {
     if (user && user.hasCompletedOnboarding) {
+      console.log('[ONBOARDING] User has completed onboarding, redirecting to dashboard');
+      console.log('[ONBOARDING] User data:', { 
+        hasCompletedOnboarding: user.hasCompletedOnboarding,
+        firstName: user.firstName,
+        email: user.email 
+      });
       setLocation('/dashboard');
     }
   }, [user, setLocation]);
+
+  // Show loading state while authentication is being determined
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const filteredStrengths = allStrengths.filter(strength =>
     strength.toLowerCase().includes(searchTerm.toLowerCase())
