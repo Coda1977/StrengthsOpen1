@@ -244,18 +244,36 @@ export class DatabaseStorage implements IStorage {
         if (existingUserByEmail) {
           console.log('[STORAGE] Found existing user by email with different ID:', {
             existingId: existingUserByEmail.id,
-            newId: userData.id
+            newId: userData.id,
+            existingAdmin: existingUserByEmail.isAdmin,
+            existingOnboarding: existingUserByEmail.hasCompletedOnboarding
           });
           
-          // CRITICAL: Handle ID mismatch - this is the core fix
-          // Instead of creating a new user, return the existing one
-          // The session reconciliation will handle updating the session with correct ID
-          if (userData.email) {
-            return existingUserByEmail;
-          } else {
-            // Fallback if no email provided
-            throw new Error('Cannot reconcile user without email');
-          }
+          // CRITICAL FIX: Update the existing user with new authentication data
+          // while preserving important fields like admin status and onboarding
+          const [updatedUser] = await db
+            .update(users)
+            .set({
+              // Update profile information from OAuth provider
+              firstName: userData.firstName || existingUserByEmail.firstName,
+              lastName: userData.lastName || existingUserByEmail.lastName,
+              profileImageUrl: userData.profileImageUrl || existingUserByEmail.profileImageUrl,
+              updatedAt: new Date(),
+              // PRESERVE existing admin status and onboarding status!
+              // Do NOT override these critical fields
+            })
+            .where(eq(users.id, existingUserByEmail.id))
+            .returning();
+          
+          console.log('[STORAGE] Updated existing user with new auth data:', {
+            userId: updatedUser.id,
+            adminStatus: updatedUser.isAdmin,
+            onboardingStatus: updatedUser.hasCompletedOnboarding
+          });
+          
+          // Update cache
+          this.setCachedUser(updatedUser.id, updatedUser);
+          return updatedUser;
         } else {
           console.log('[STORAGE] Creating new user');
           // Create new user
@@ -309,9 +327,47 @@ export class DatabaseStorage implements IStorage {
       if (userByEmail) {
         console.log('[STORAGE] Found user by email with different ID:', {
           sessionId: sessionUserId,
-          databaseId: userByEmail.id
+          databaseId: userByEmail.id,
+          isAdmin: userByEmail.isAdmin,
+          hasCompletedOnboarding: userByEmail.hasCompletedOnboarding
         });
-        return userByEmail;
+        
+        // If session user exists but is different from email user, we have duplicates
+        if (userById && userById.id !== userByEmail.id) {
+          console.log('[STORAGE] DUPLICATE USER DETECTED - cleaning up:', {
+            sessionUser: userById.id,
+            emailUser: userByEmail.id
+          });
+          
+          // Check if session user has important data we need to preserve
+          const shouldMergeData = userById.hasCompletedOnboarding || userById.isAdmin;
+          
+          if (shouldMergeData) {
+            console.log('[STORAGE] Merging important data from session user to email user');
+            // Update the email user with any important data from session user
+            await db
+              .update(users)
+              .set({
+                hasCompletedOnboarding: userById.hasCompletedOnboarding || userByEmail.hasCompletedOnboarding,
+                isAdmin: userById.isAdmin || userByEmail.isAdmin,
+                topStrengths: userById.topStrengths || userByEmail.topStrengths,
+                updatedAt: new Date()
+              })
+              .where(eq(users.id, userByEmail.id));
+          }
+          
+          // Clean up the duplicate session user (this will cascade delete related records)
+          try {
+            await db.delete(users).where(eq(users.id, userById.id));
+            console.log('[STORAGE] Cleaned up duplicate user:', userById.id);
+          } catch (deleteError) {
+            console.error('[STORAGE] Could not delete duplicate user:', deleteError);
+          }
+        }
+        
+        // Return the updated email user
+        const finalUser = await this.getUser(userByEmail.id);
+        return finalUser;
       }
       
       console.log('[STORAGE] No user found for reconciliation');
@@ -1210,6 +1266,84 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Method to ensure admin user is properly set up and reconciled
+  async ensureAdminUser(email: string): Promise<User | null> {
+    try {
+      console.log('[STORAGE] Ensuring admin user exists for:', email);
+      
+      // Find all users with this email (in case of duplicates)
+      const allUsers = await db.select().from(users).where(eq(users.email, email));
+      
+      if (allUsers.length === 0) {
+        console.log('[STORAGE] No admin user found with email:', email);
+        return null;
+      }
+      
+      if (allUsers.length === 1) {
+        const user = allUsers[0];
+        if (!user.isAdmin) {
+          console.log('[STORAGE] Setting admin status for user:', user.id);
+          const [updatedUser] = await db
+            .update(users)
+            .set({ isAdmin: true, updatedAt: new Date() })
+            .where(eq(users.id, user.id))
+            .returning();
+          return updatedUser;
+        }
+        return user;
+      }
+      
+      // Handle multiple users with same email (duplicates)
+      console.log(`[STORAGE] Found ${allUsers.length} users with email ${email}, merging duplicates`);
+      
+      // Find the best user to keep (prefer one with admin status, then onboarding completed, then most recent)
+      let primaryUser = allUsers[0];
+      for (const user of allUsers) {
+        if (user.isAdmin && !primaryUser.isAdmin) {
+          primaryUser = user;
+        } else if (user.hasCompletedOnboarding && !primaryUser.hasCompletedOnboarding) {
+          primaryUser = user;
+        } else if (user.createdAt > primaryUser.createdAt) {
+          primaryUser = user;
+        }
+      }
+      
+      // Merge data from all users into the primary user
+      const [mergedUser] = await db
+        .update(users)
+        .set({
+          isAdmin: true, // Definitely make them admin
+          hasCompletedOnboarding: allUsers.some(u => u.hasCompletedOnboarding),
+          topStrengths: allUsers.find(u => u.topStrengths)?.topStrengths || primaryUser.topStrengths,
+          firstName: allUsers.find(u => u.firstName)?.firstName || primaryUser.firstName,
+          lastName: allUsers.find(u => u.lastName)?.lastName || primaryUser.lastName,
+          profileImageUrl: allUsers.find(u => u.profileImageUrl)?.profileImageUrl || primaryUser.profileImageUrl,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, primaryUser.id))
+        .returning();
+      
+      // Delete duplicate users
+      const duplicateIds = allUsers.filter(u => u.id !== primaryUser.id).map(u => u.id);
+      if (duplicateIds.length > 0) {
+        console.log('[STORAGE] Cleaning up duplicate admin users:', duplicateIds);
+        await db.delete(users).where(inArray(users.id, duplicateIds));
+      }
+      
+      console.log('[STORAGE] Admin user reconciled successfully:', {
+        userId: mergedUser.id,
+        email: mergedUser.email,
+        isAdmin: mergedUser.isAdmin,
+        hasCompletedOnboarding: mergedUser.hasCompletedOnboarding
+      });
+      
+      return mergedUser;
+    } catch (error) {
+      console.error('[STORAGE] Error ensuring admin user:', error);
+      return null;
+    }
+  }
+
   // Database maintenance method to clean up orphaned records
   async cleanupOrphanedRecords(): Promise<void> {
     try {
@@ -1260,5 +1394,10 @@ storage.startCacheCleanup();
 setTimeout(() => {
   storage.cleanupOrphanedRecords().catch(error => {
     console.error('[STORAGE] Background database cleanup failed:', error);
+  });
+  
+  // Also ensure admin user is properly set up
+  storage.ensureAdminUser('tinymanagerai@gmail.com').catch(error => {
+    console.error('[STORAGE] Background admin setup failed:', error);
   });
 }, 5000); // Wait 5 seconds after startup

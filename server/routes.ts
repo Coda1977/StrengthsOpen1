@@ -1088,7 +1088,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Setup admin user endpoint (one-time use)
+  // Setup admin user endpoint (handles duplicates and reconciliation)
   app.post('/api/admin/setup', async (req, res) => {
     try {
       const { email } = req.body;
@@ -1097,18 +1097,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: 'Invalid admin email' });
       }
 
-      // Find user by email
-      const [user] = await db.select().from(users).where(eq(users.email, email));
+      // Use the enhanced admin setup that handles duplicates
+      const adminUser = await storage.ensureAdminUser(email);
 
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
+      if (!adminUser) {
+        return res.status(404).json({ error: 'User not found. Please log in first to create your account.' });
       }
 
-      // Update user to admin
-      await storage.updateUserAdminStatus(user.id, true);
-
-      res.json({ success: true, message: 'Admin privileges granted' });
+      res.json({ 
+        success: true, 
+        message: 'Admin privileges granted and duplicates cleaned up',
+        user: {
+          id: adminUser.id,
+          email: adminUser.email,
+          isAdmin: adminUser.isAdmin,
+          hasCompletedOnboarding: adminUser.hasCompletedOnboarding
+        }
+      });
     } catch (error) {
+      console.error('Admin setup error:', error);
       res.status(500).json({ error: 'Failed to setup admin' });
     }
   });
