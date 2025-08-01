@@ -54,8 +54,7 @@ if (process.env.NODE_ENV !== 'test') {
           'DATABASE_URL',
           'SESSION_SECRET',
           'REPL_ID',
-          'REPLIT_DOMAINS',
-          'ISSUER_URL'
+          'REPLIT_DOMAINS'
         ];
 
         const missing = required.filter(key => !process.env[key]);
@@ -85,9 +84,9 @@ if (process.env.NODE_ENV !== 'test') {
           }
         }
 
-        if (process.env.ISSUER_URL) {
-          console.log('[ENV] ISSUER_URL:', process.env.ISSUER_URL);
-        }
+        // ISSUER_URL has a default value in replitAuth.ts
+        const issuerUrl = process.env.ISSUER_URL || 'https://replit.com/oidc';
+        console.log('[ENV] ISSUER_URL:', issuerUrl);
 
         if (warnings.length > 0) {
           console.warn('[ENV] Configuration warnings:', warnings);
