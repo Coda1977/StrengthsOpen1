@@ -38,9 +38,6 @@ export async function setupVite(app: Express, server: Server) {
     server: {
       ...serverOptions,
       host: "0.0.0.0",
-      allowedHosts: "all",
-      disableHostCheck: true,
-      origin: false,
       hmr: {
         ...serverOptions.hmr,
         clientPort: 443
