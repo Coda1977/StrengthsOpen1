@@ -34,17 +34,6 @@ export default defineConfig({
       deny: ["**/.*"],
     },
     host: "0.0.0.0",
-    allowedHosts: [
-      "localhost",
-      "127.0.0.1",
-      "*.replit.dev",
-      "*.pike.replit.dev", 
-      "*.replit.app",
-      "*.repl.co",
-      ".replit.dev",
-      ".pike.replit.dev",
-      ".replit.app", 
-      ".repl.co"
-    ]
+    allowedHosts: "all"  // This allows all hosts
   },
 });
