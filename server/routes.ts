@@ -176,6 +176,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Logout route to clear invalid sessions
+  app.post('/api/logout', (req: Request, res: Response) => {
+    console.log('[LOGOUT] Clearing session for user session:', req.sessionID);
+    req.logout((err) => {
+      if (err) {
+        console.error('[LOGOUT] Error during logout:', err);
+        return res.status(500).json({ message: 'Logout failed' });
+      }
+      
+      req.session.destroy((err) => {
+        if (err) {
+          console.error('[LOGOUT] Error destroying session:', err);
+          return res.status(500).json({ message: 'Session cleanup failed' });
+        }
+        
+        res.clearCookie('sessionId');
+        console.log('[LOGOUT] Session cleared successfully');
+        res.json({ message: 'Logged out successfully', redirect: '/' });
+      });
+    });
+  });
+
   // Onboarding route
   app.post('/api/onboarding', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
     try {

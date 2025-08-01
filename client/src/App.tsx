@@ -13,6 +13,7 @@ const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Encyclopedia = lazy(() => import("@/pages/Encyclopedia"));
 const ChatCoach = lazy(() => import("@/pages/ChatCoach"));
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
+const Logout = lazy(() => import("@/pages/Logout"));
 const Admin = lazy(() => import("@/pages/Admin"));
 const AdminLogin = lazy(() => import("@/pages/AdminLogin"));
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -74,6 +75,11 @@ function Router() {
           <ProtectedRoute routeName="Onboarding">
             <Onboarding />
           </ProtectedRoute>
+        </Route>
+
+        {/* Logout route - clears corrupted sessions */}
+        <Route path="/logout">
+          <Logout />
         </Route>
 
 
