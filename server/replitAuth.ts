@@ -327,7 +327,12 @@ export async function setupAuth(app: Express) {
     passport.authenticate(strategyName, async (err: any, user: any) => {
       if (err) {
         console.error('[AUTH] Authentication error:', err);
-        return res.redirect("/api/login?error=auth_failed");
+        // Don't redirect on authentication errors, let them retry
+        return res.status(500).json({ 
+          message: "Authentication failed", 
+          error: err.message || 'Unknown authentication error',
+          code: 'AUTH_ERROR'
+        });
       }
       if (!user) {
         console.error('[AUTH] No user returned from authentication');

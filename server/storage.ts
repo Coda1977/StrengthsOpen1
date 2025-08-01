@@ -204,10 +204,10 @@ export class DatabaseStorage implements IStorage {
 
   async upsertUser(userData: UpsertUser): Promise<User> {
     try {
-      // First try to find existing user
-      const existingUser = await this.getUser(userData.id);
+      // First try to find existing user by ID
+      const existingUserById = await this.getUser(userData.id);
       
-      if (existingUser) {
+      if (existingUserById) {
         // Update existing user
         const [user] = await db
           .update(users)
@@ -225,15 +225,54 @@ export class DatabaseStorage implements IStorage {
         this.setCachedUser(user.id, user);
         return user;
       } else {
-        // Create new user
-        const [user] = await db.insert(users).values(userData).returning();
+        // Check if user exists by email (for edge cases)
+        const existingUserByEmail = await this.getUserByEmail(userData.email);
         
-        // Update cache
-        this.setCachedUser(user.id, user);
-        return user;
+        if (existingUserByEmail) {
+          // User exists with same email but different ID - update the existing record
+          const [user] = await db
+            .update(users)
+            .set({
+              id: userData.id, // Update ID to match the auth provider
+              firstName: userData.firstName,
+              lastName: userData.lastName,
+              profileImageUrl: userData.profileImageUrl,
+              updatedAt: new Date(),
+            })
+            .where(eq(users.email, userData.email))
+            .returning();
+          
+          // Update cache
+          this.setCachedUser(user.id, user);
+          return user;
+        } else {
+          // Create new user
+          const [user] = await db.insert(users).values(userData).returning();
+          
+          // Update cache
+          this.setCachedUser(user.id, user);
+          return user;
+        }
       }
     } catch (error) {
       if (isDev) console.error('Failed to upsert user:', error);
+      
+      // Handle specific database constraint errors
+      if (error instanceof Error) {
+        if (error.message.includes('duplicate key value violates unique constraint')) {
+          // Try to find and return the existing user
+          try {
+            const existingUser = await this.getUserByEmail(userData.email);
+            if (existingUser) {
+              console.log('[AUTH] Returning existing user due to constraint violation');
+              return existingUser;
+            }
+          } catch (findError) {
+            console.error('Error finding existing user:', findError);
+          }
+        }
+      }
+      
       throw new Error('Failed to save user');
     }
   }
