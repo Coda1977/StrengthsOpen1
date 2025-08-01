@@ -1517,6 +1517,151 @@ export class DatabaseStorage implements IStorage {
       };
     }
   }
+
+  // Direct fix for the current admin account issue
+  async fixAdminAccountIssue(email: string): Promise<boolean> {
+    try {
+      console.log('[STORAGE] Fixing admin account issue for:', email);
+      
+      // 1. Get current user state
+      const currentUser = await this.getUserByEmail(email);
+      if (!currentUser) {
+        console.log('[STORAGE] Admin user not found:', email);
+        return false;
+      }
+      
+      console.log('[STORAGE] Current admin status:', {
+        id: currentUser.id,
+        email: currentUser.email,
+        isAdmin: currentUser.isAdmin,
+        hasCompletedOnboarding: currentUser.hasCompletedOnboarding
+      });
+      
+      // 2. If already admin, we're good
+      if (currentUser.isAdmin) {
+        console.log('[STORAGE] User is already admin, no fix needed');
+        return true;
+      }
+      
+      // 3. Set admin flag directly
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          isAdmin: true,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, currentUser.id))
+        .returning();
+      
+      if (updatedUser) {
+        console.log('[STORAGE] ✅ Admin flag set successfully:', {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          isAdmin: updatedUser.isAdmin,
+          updatedAt: updatedUser.updatedAt
+        });
+        
+        // Update cache
+        this.setCachedUser(updatedUser.id, updatedUser);
+        
+        // 4. Clean up any duplicate admin accounts
+        await this.cleanupDuplicateAdminAccounts(email);
+        
+        return true;
+      }
+      
+      console.log('[STORAGE] Failed to update admin flag');
+      return false;
+    } catch (error) {
+      console.error('[STORAGE] Error fixing admin account:', error);
+      return false;
+    }
+  }
+  
+  // Clean up duplicate admin accounts
+  async cleanupDuplicateAdminAccounts(primaryAdminEmail: string): Promise<void> {
+    try {
+      console.log('[STORAGE] Cleaning up duplicate admin accounts...');
+      
+      // Find all admin users
+      const allAdmins = await db.select().from(users).where(eq(users.isAdmin, true));
+      
+      console.log('[STORAGE] Found admin accounts:', allAdmins.map(u => ({ 
+        email: u.email, 
+        id: u.id 
+      })));
+      
+      // Remove duplicates that are not the primary admin
+      const duplicates = allAdmins.filter(admin => 
+        admin.email !== primaryAdminEmail && 
+        (admin.email === 'codanudge@gmail.com' || admin.id.startsWith('admin-'))
+      );
+      
+      if (duplicates.length > 0) {
+        console.log('[STORAGE] Removing duplicate admin accounts:', duplicates.map(d => d.email));
+        
+        for (const duplicate of duplicates) {
+          await db.delete(users).where(eq(users.id, duplicate.id));
+          console.log('[STORAGE] Removed duplicate admin:', duplicate.email);
+        }
+      } else {
+        console.log('[STORAGE] No duplicate admin accounts found');
+      }
+    } catch (error) {
+      console.error('[STORAGE] Error cleaning up duplicate admin accounts:', error);
+      // Don't throw - this is cleanup, shouldn't break the main process
+    }
+  }
+
+  // Quick database analysis method
+  async analyzeDatabaseState(): Promise<void> {
+    try {
+      console.log('[STORAGE] 📊 ANALYZING DATABASE STATE...');
+      
+      // Get all users
+      const allUsers = await db.select().from(users);
+      const adminUsers = allUsers.filter(u => u.isAdmin);
+      const onboardedUsers = allUsers.filter(u => u.hasCompletedOnboarding);
+      
+      console.log('[STORAGE] 👥 USER STATISTICS:');
+      console.log(`  Total Users: ${allUsers.length}`);
+      console.log(`  Admin Users: ${adminUsers.length}`);
+      console.log(`  Onboarded Users: ${onboardedUsers.length}`);
+      
+      // Show admin users
+      if (adminUsers.length > 0) {
+        console.log('[STORAGE] 🔑 ADMIN ACCOUNTS:');
+        adminUsers.forEach(admin => {
+          console.log(`  ✓ ${admin.email} (ID: ${admin.id})`);
+        });
+      } else {
+        console.log('[STORAGE] ⚠️  NO ADMIN ACCOUNTS FOUND!');
+      }
+      
+      // Check for the specific admin account
+      const targetAdmin = allUsers.find(u => u.email === 'tinymanagerai@gmail.com');
+      if (targetAdmin) {
+        console.log('[STORAGE] 🎯 TARGET ADMIN ACCOUNT:');
+        console.log(`  Email: ${targetAdmin.email}`);
+        console.log(`  Admin Status: ${targetAdmin.isAdmin}`);
+        console.log(`  Onboarded: ${targetAdmin.hasCompletedOnboarding}`);
+        console.log(`  ID: ${targetAdmin.id}`);
+      } else {
+        console.log('[STORAGE] ❌ TARGET ADMIN ACCOUNT NOT FOUND!');
+      }
+      
+      // Check team members
+      const teamMembersCount = await db.select({ count: count() }).from(teamMembers);
+      console.log(`[STORAGE] 👥 Team Members: ${teamMembersCount[0]?.count || 0}`);
+      
+      // Check conversations
+      const conversationsCount = await db.select({ count: count() }).from(conversations);
+      console.log(`[STORAGE] 💬 Conversations: ${conversationsCount[0]?.count || 0}`);
+      
+    } catch (error) {
+      console.error('[STORAGE] Error analyzing database state:', error);
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
@@ -1524,14 +1669,27 @@ export const storage = new DatabaseStorage();
 // Start cache cleanup
 storage.startCacheCleanup();
 
-// Run database cleanup on startup (in background)
-setTimeout(() => {
-  storage.cleanupOrphanedRecords().catch(error => {
-    console.error('[STORAGE] Background database cleanup failed:', error);
-  });
-  
-  // Also ensure admin user is properly set up
-  storage.ensureAdminUser('tinymanagerai@gmail.com').catch(error => {
-    console.error('[STORAGE] Background admin setup failed:', error);
-  });
-}, 5000); // Wait 5 seconds after startup
+// Run comprehensive database analysis and fixes on startup
+setTimeout(async () => {
+  try {
+    console.log('[STORAGE] 🚀 Starting background database maintenance...');
+    
+    // 1. Analyze current state
+    await storage.analyzeDatabaseState();
+    
+    // 2. Fix admin account issue
+    const adminFixed = await storage.fixAdminAccountIssue('tinymanagerai@gmail.com');
+    if (adminFixed) {
+      console.log('[STORAGE] ✅ Admin account fixed successfully');
+    } else {
+      console.log('[STORAGE] ❌ Admin account fix failed');
+    }
+    
+    // 3. Clean up orphaned records
+    await storage.cleanupOrphanedRecords();
+    
+    console.log('[STORAGE] 🎉 Background database maintenance completed');
+  } catch (error) {
+    console.error('[STORAGE] Background database maintenance failed:', error);
+  }
+}, 3000); // Wait 3 seconds after startup for faster admin fix

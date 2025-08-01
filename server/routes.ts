@@ -1104,26 +1104,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: 'Invalid admin email' });
       }
 
-      // Use the enhanced admin setup that handles duplicates
-      const adminUser = await storage.ensureAdminUser(email);
+      // Use the direct fix method for immediate resolution
+      const adminFixed = await storage.fixAdminAccountIssue(email);
 
-      if (!adminUser) {
-        return res.status(404).json({ error: 'User not found. Please log in first to create your account.' });
+      if (!adminFixed) {
+        return res.status(404).json({ error: 'User not found or admin fix failed. Please log in first.' });
       }
 
+      // Get the updated user
+      const adminUser = await storage.getUserByEmail(email);
+      
       res.json({ 
         success: true, 
         message: 'Admin privileges granted and duplicates cleaned up',
         user: {
-          id: adminUser.id,
-          email: adminUser.email,
-          isAdmin: adminUser.isAdmin,
-          hasCompletedOnboarding: adminUser.hasCompletedOnboarding
+          id: adminUser?.id,
+          email: adminUser?.email,
+          isAdmin: adminUser?.isAdmin,
+          hasCompletedOnboarding: adminUser?.hasCompletedOnboarding
         }
       });
     } catch (error) {
       console.error('Admin setup error:', error);
       res.status(500).json({ error: 'Failed to setup admin' });
+    }
+  });
+
+  // Database analysis endpoint for debugging
+  app.get('/api/admin/database-analysis', isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req as AuthenticatedRequest).user.claims.sub;
+      const user = await storage.getUser(userId);
+
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      // Run comprehensive database analysis
+      await storage.analyzeDatabaseState();
+      const integrity = await storage.validateSystemIntegrity();
+      
+      res.json({
+        success: true,
+        message: 'Database analysis completed',
+        integrity,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Database analysis error:', error);
+      res.status(500).json({ error: 'Failed to analyze database' });
+    }
+  });
+
+  // Quick admin fix endpoint (for emergency use)
+  app.post('/api/admin/quick-fix', async (req, res) => {
+    try {
+      console.log('[ADMIN FIX] Emergency admin fix requested');
+      
+      const adminFixed = await storage.fixAdminAccountIssue('tinymanagerai@gmail.com');
+      
+      if (adminFixed) {
+        res.json({
+          success: true,
+          message: 'Admin account fixed successfully',
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Admin fix failed - user may not exist',
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('[ADMIN FIX] Emergency fix failed:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Admin fix failed with error',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
     }
   });
 
