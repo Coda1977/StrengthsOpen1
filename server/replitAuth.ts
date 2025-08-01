@@ -100,17 +100,29 @@ async function upsertUser(
   claims: any,
 ) {
   try {
-    // Check if this is a new user
-    const existingUser = await storage.getUser(claims["sub"]);
-    const isNewUser = !existingUser;
-    
-    await storage.upsertUser({
+    console.log('[AUTH] upsertUser called with claims:', {
+      sub: claims["sub"],
+      email: claims["email"],
+      first_name: claims["first_name"]
+    });
+
+    // Use the improved upsertUser method that handles ID reconciliation
+    const user = await storage.upsertUser({
       id: claims["sub"],
       email: claims["email"],
       firstName: claims["first_name"],
       lastName: claims["last_name"],
       profileImageUrl: claims["profile_image_url"],
     });
+
+    console.log('[AUTH] User upserted successfully:', {
+      id: user.id,
+      email: user.email,
+      isNewUser: !user.hasCompletedOnboarding
+    });
+
+    // Check if this is a new user (hasn't completed onboarding)
+    const isNewUser = !user.hasCompletedOnboarding;
 
     // Send authorization welcome email for new users
     if (isNewUser && claims["email"] && claims["first_name"]) {
@@ -125,26 +137,38 @@ async function upsertUser(
           claims["first_name"], 
           websiteUrl
         );
-        console.log(`Authorization welcome email sent to new user: ${claims["email"]}`);
+        console.log(`[AUTH] Authorization welcome email sent to new user: ${claims["email"]}`);
       } catch (error) {
-        console.error('Failed to send authorization welcome email:', error);
+        console.error('[AUTH] Failed to send authorization welcome email:', error);
         // Don't fail the authentication flow if email fails
       }
     }
+    
+    return user;
   } catch (error) {
-    console.error('Failed to upsert user during authentication:', error);
-    // Instead of throwing, try to find existing user
+    console.error('[AUTH] Failed to upsert user during authentication:', error);
+    
+    // Enhanced error recovery with email-based lookup
     try {
-      const existingUser = await storage.getUser(claims["sub"]);
+      console.log('[AUTH] Attempting user recovery by email');
+      const existingUser = await storage.getUserByEmail(claims["email"]);
       if (existingUser) {
-        console.log('[AUTH] Using existing user after upsert failure');
-        return; // Continue with authentication using existing user
+        console.log('[AUTH] Found existing user by email during recovery:', existingUser.id);
+        return existingUser;
+      }
+      
+      // Fallback: try by original ID
+      const userById = await storage.getUser(claims["sub"]);
+      if (userById) {
+        console.log('[AUTH] Found existing user by ID during recovery');
+        return userById;
       }
     } catch (findError) {
-      console.error('Failed to find existing user after upsert failure:', findError);
+      console.error('[AUTH] Failed to find existing user during recovery:', findError);
     }
+    
     // Only throw if we truly can't proceed
-    throw new Error('User account setup failed');
+    throw new Error('User account setup failed: Unable to create or find user account');
   }
 }
 
@@ -176,10 +200,34 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
-    const user = {};
-    updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
-    verified(null, user);
+    try {
+      const user = {};
+      updateUserSession(user, tokens);
+      
+      // Get the actual user from database (handles ID reconciliation)
+      const dbUser = await upsertUser(tokens.claims());
+      
+      // CRITICAL: Update session with the correct user ID from database
+      if (dbUser && dbUser.id !== tokens.claims()["sub"]) {
+        console.log('[AUTH] Updating session with reconciled user ID:', {
+          tokenId: tokens.claims()["sub"],
+          dbId: dbUser.id
+        });
+        // Update the claims to use the database user ID
+        const claims = tokens.claims();
+        if (claims) {
+          (user as any).claims = {
+            ...claims,
+            sub: dbUser.id
+          };
+        }
+      }
+      
+      verified(null, user);
+    } catch (error) {
+      console.error('[AUTH] Verification failed:', error);
+      verified(error, null);
+    }
   };
 
   // Enhanced domain resolution with fallbacks
@@ -202,7 +250,7 @@ export async function setupAuth(app: Express) {
     possibleDomains.push(currentReplitDomain);
   }
   
-  const domains = [...new Set(possibleDomains)]; // Remove duplicates
+  const domains = Array.from(new Set(possibleDomains)); // Remove duplicates
   
   console.log('Auth environment variables:', {
     REPLIT_DOMAINS: process.env.REPLIT_DOMAINS,
@@ -352,15 +400,31 @@ export async function setupAuth(app: Express) {
         console.log('[AUTH] Login successful for user:', user.claims?.sub);
 
         try {
-          const dbUser = await storage.getUser(user.claims.sub);
+          // Use the user ID from the session (which has been reconciled)
+          const sessionUserId = user.claims.sub;
+          const dbUser = await storage.getUser(sessionUserId);
           
-          if (dbUser && dbUser.hasCompletedOnboarding) {
+          if (!dbUser) {
+            console.error('[AUTH] No database user found after successful login');
+            return res.redirect("/api/login?error=user_not_found");
+          }
+          
+          console.log('[AUTH] User status check:', {
+            userId: dbUser.id,
+            hasCompletedOnboarding: dbUser.hasCompletedOnboarding,
+            email: dbUser.email
+          });
+          
+          if (dbUser.hasCompletedOnboarding) {
+            console.log('[AUTH] Redirecting to dashboard');
             return res.redirect("/dashboard");
           } else {
+            console.log('[AUTH] Redirecting to onboarding');
             return res.redirect("/onboarding");
           }
         } catch (error) {
           console.error('[AUTH] Error checking user status:', error);
+          // Default to onboarding in case of errors
           return res.redirect("/onboarding");
         }
       });

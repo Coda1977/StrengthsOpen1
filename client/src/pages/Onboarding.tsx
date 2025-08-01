@@ -34,7 +34,11 @@ const Onboarding = () => {
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       console.log('[ONBOARDING] Redirecting to login - not authenticated');
-      window.location.href = '/api/login';
+      // Add delay to prevent redirect loops during session reconciliation
+      const timeoutId = setTimeout(() => {
+        window.location.href = '/api/login';
+      }, 1000);
+      return () => clearTimeout(timeoutId);
     }
   }, [isAuthenticated, isLoading]);
 

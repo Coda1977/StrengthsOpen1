@@ -209,10 +209,17 @@ export class DatabaseStorage implements IStorage {
 
   async upsertUser(userData: UpsertUser): Promise<User> {
     try {
+      console.log('[STORAGE] upsertUser called with:', {
+        id: userData.id,
+        email: userData.email,
+        firstName: userData.firstName
+      });
+
       // First try to find existing user by ID
       const existingUserById = await this.getUser(userData.id);
       
       if (existingUserById) {
+        console.log('[STORAGE] Found existing user by ID, updating');
         // Update existing user
         const [user] = await db
           .update(users)
@@ -230,26 +237,27 @@ export class DatabaseStorage implements IStorage {
         this.setCachedUser(user.id, user);
         return user;
       } else {
-        // Check if user exists by email (for edge cases)
+        console.log('[STORAGE] No user found by ID, checking by email');
+        // Check if user exists by email (for ID reconciliation)
         const existingUserByEmail = await this.getUserByEmail(userData.email);
         
         if (existingUserByEmail) {
-          // User exists with same email but different ID - just update other fields, don't change ID
-          const [user] = await db
-            .update(users)
-            .set({
-              firstName: userData.firstName,
-              lastName: userData.lastName,
-              profileImageUrl: userData.profileImageUrl,
-              updatedAt: new Date(),
-            })
-            .where(eq(users.id, existingUserByEmail.id))
-            .returning();
+          console.log('[STORAGE] Found existing user by email with different ID:', {
+            existingId: existingUserByEmail.id,
+            newId: userData.id
+          });
           
-          // Update cache
-          this.setCachedUser(user.id, user);
-          return user;
+          // CRITICAL: Handle ID mismatch - this is the core fix
+          // Instead of creating a new user, return the existing one
+          // The session reconciliation will handle updating the session with correct ID
+          if (userData.email) {
+            return existingUserByEmail;
+          } else {
+            // Fallback if no email provided
+            throw new Error('Cannot reconcile user without email');
+          }
         } else {
+          console.log('[STORAGE] Creating new user');
           // Create new user
           const [user] = await db.insert(users).values(userData).returning();
           
@@ -259,27 +267,58 @@ export class DatabaseStorage implements IStorage {
         }
       }
     } catch (error) {
-      if (isDev) console.error('Failed to upsert user:', error);
+      console.error('[STORAGE] Failed to upsert user:', error);
       
       // Handle specific database constraint errors
       if (error instanceof Error) {
         if (error.message.includes('duplicate key value violates unique constraint')) {
+          console.log('[STORAGE] Constraint violation, attempting recovery');
           // Try to find and return the existing user
           try {
             if (userData.email) {
               const existingUser = await this.getUserByEmail(userData.email);
               if (existingUser) {
-                console.log('[AUTH] Returning existing user due to constraint violation');
+                console.log('[STORAGE] Returning existing user due to constraint violation');
                 return existingUser;
               }
             }
           } catch (findError) {
-            console.error('Error finding existing user:', findError);
+            console.error('[STORAGE] Error finding existing user:', findError);
           }
         }
       }
       
       throw new Error('Failed to save user');
+    }
+  }
+
+  // New method: Reconcile user ID mismatches between session and database
+  async reconcileUserSession(sessionUserId: string, userEmail: string): Promise<User | null> {
+    try {
+      console.log('[STORAGE] Reconciling user session:', { sessionUserId, userEmail });
+      
+      // First check if session user ID exists in database
+      const userById = await this.getUser(sessionUserId);
+      if (userById && userById.email === userEmail) {
+        console.log('[STORAGE] Session user ID matches database, no reconciliation needed');
+        return userById;
+      }
+      
+      // Session user ID doesn't exist or email mismatch, find by email
+      const userByEmail = await this.getUserByEmail(userEmail);
+      if (userByEmail) {
+        console.log('[STORAGE] Found user by email with different ID:', {
+          sessionId: sessionUserId,
+          databaseId: userByEmail.id
+        });
+        return userByEmail;
+      }
+      
+      console.log('[STORAGE] No user found for reconciliation');
+      return null;
+    } catch (error) {
+      console.error('[STORAGE] Error during user session reconciliation:', error);
+      return null;
     }
   }
 
@@ -1170,9 +1209,56 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Failed to unsubscribe from emails');
     }
   }
+
+  // Database maintenance method to clean up orphaned records
+  async cleanupOrphanedRecords(): Promise<void> {
+    try {
+      console.log('[STORAGE] Starting database cleanup of orphaned records');
+      
+      // Clean up email logs with non-existent user IDs
+      const orphanedEmailLogs = await db
+        .select({ id: emailLogs.id, userId: emailLogs.userId })
+        .from(emailLogs)
+        .leftJoin(users, eq(emailLogs.userId, users.id))
+        .where(sql`${users.id} IS NULL`);
+        
+      if (orphanedEmailLogs.length > 0) {
+        console.log(`[STORAGE] Found ${orphanedEmailLogs.length} orphaned email logs`);
+        const orphanedIds = orphanedEmailLogs.map(log => log.id);
+        await db.delete(emailLogs).where(inArray(emailLogs.id, orphanedIds));
+        console.log(`[STORAGE] Cleaned up ${orphanedIds.length} orphaned email log records`);
+      }
+      
+      // Clean up email subscriptions with non-existent user IDs
+      const orphanedSubscriptions = await db
+        .select({ id: emailSubscriptions.id, userId: emailSubscriptions.userId })
+        .from(emailSubscriptions)
+        .leftJoin(users, eq(emailSubscriptions.userId, users.id))
+        .where(sql`${users.id} IS NULL`);
+        
+      if (orphanedSubscriptions.length > 0) {
+        console.log(`[STORAGE] Found ${orphanedSubscriptions.length} orphaned email subscriptions`);
+        const orphanedIds = orphanedSubscriptions.map(sub => sub.id);
+        await db.delete(emailSubscriptions).where(inArray(emailSubscriptions.id, orphanedIds));
+        console.log(`[STORAGE] Cleaned up ${orphanedIds.length} orphaned email subscription records`);
+      }
+      
+      console.log('[STORAGE] Database cleanup completed successfully');
+    } catch (error) {
+      console.error('[STORAGE] Error during database cleanup:', error);
+      // Don't throw - cleanup is maintenance, shouldn't break app functionality
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
 
 // Start cache cleanup
 storage.startCacheCleanup();
+
+// Run database cleanup on startup (in background)
+setTimeout(() => {
+  storage.cleanupOrphanedRecords().catch(error => {
+    console.error('[STORAGE] Background database cleanup failed:', error);
+  });
+}, 5000); // Wait 5 seconds after startup

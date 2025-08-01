@@ -12,20 +12,31 @@ interface User {
 }
 
 export function useAuth() {
-  const { data: user, isLoading, error } = useQuery<User | null>({
+  const { data: user, isLoading, error, refetch } = useQuery<User | null>({
     queryKey: ["/api/auth/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
     retry: (failureCount, error) => {
-      // Don't retry on 401 errors (unauthorized)
-      if (error && 'status' in error && error.status === 401) {
-        return false;
+      // Handle session reconciliation responses
+      if (error && 'status' in error) {
+        if (error.status === 401) {
+          // Check if this is a session reconciliation request
+          const errorData = (error as any).data;
+          if (errorData?.code === 'SESSION_INVALID') {
+            console.log('[AUTH] Session invalid, redirecting to login');
+            window.location.href = '/api/login';
+            return false;
+          }
+          return false;
+        }
       }
       return failureCount < 2;
     },
     refetchOnWindowFocus: false,
-    refetchOnMount: true, // Allow refetch to ensure fresh data
+    refetchOnMount: true,
     refetchInterval: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes (shorter for more responsive auth)
+    staleTime: 2 * 60 * 1000, // Reduced to 2 minutes for faster reconciliation detection
+    // Note: onError is deprecated in newer react-query versions
+    // Error handling is now done in the retry function above
   });
 
   return {
@@ -33,6 +44,7 @@ export function useAuth() {
     isLoading,
     isAuthenticated: !!user && !isLoading,
     error,
+    refetch, // Expose refetch for manual reconciliation triggers
     // Helper to check if user has completed onboarding
     hasCompletedOnboarding: !!user?.hasCompletedOnboarding,
   };

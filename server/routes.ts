@@ -157,8 +157,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+  // Enhanced session reconciliation middleware
+  const sessionReconciliationMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.isAuthenticated() || !req.user) {
+        return next();
+      }
+
+      const authReq = req as AuthenticatedRequest;
+      const sessionUserId = authReq.user.claims.sub;
+      const userEmail = authReq.user.claims.email;
+
+      console.log('[SESSION RECONCILIATION] Checking session consistency:', {
+        sessionUserId,
+        userEmail
+      });
+
+      // Attempt to reconcile user session
+      const reconciledUser = await storage.reconcileUserSession(sessionUserId, userEmail);
+
+      if (!reconciledUser) {
+        console.log('[SESSION RECONCILIATION] No user found, forcing re-authentication');
+        // Clear the invalid session
+        req.logout(() => {
+          req.session.destroy(() => {
+            res.clearCookie('sessionId');
+            return res.status(401).json({
+              message: "Session invalid, please re-authenticate",
+              code: "SESSION_INVALID",
+              redirect: "/api/login"
+            });
+          });
+        });
+        return;
+      }
+
+      // If user ID mismatch detected, update the session
+      if (reconciledUser.id !== sessionUserId) {
+        console.log('[SESSION RECONCILIATION] Updating session with correct user ID:', {
+          oldId: sessionUserId,
+          newId: reconciledUser.id
+        });
+        
+        // Update session with correct user ID
+        authReq.user.claims.sub = reconciledUser.id;
+        
+        // Save the updated session
+        req.session.save((err) => {
+          if (err) {
+            console.error('[SESSION RECONCILIATION] Failed to save updated session:', err);
+          } else {
+            console.log('[SESSION RECONCILIATION] Session updated successfully');
+          }
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error('[SESSION RECONCILIATION] Error during reconciliation:', error);
+      next();
+    }
+  };
+
+  // Auth routes with enhanced reconciliation
+  app.get('/api/auth/user', isAuthenticated, sessionReconciliationMiddleware, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = (req as AuthenticatedRequest).user.claims.sub;
       const user = await storage.getUser(userId);
