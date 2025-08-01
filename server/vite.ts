@@ -36,8 +36,9 @@ export async function setupVite(app: Express, server: Server) {
       },
     },
     server: {
-      ...serverOptions,
-      host: "0.0.0.0",
+      ...viteConfig.server,  // Preserve allowedHosts: "all" from vite.config.ts
+      ...serverOptions,      // Add middleware mode and HMR server  
+      host: "0.0.0.0",       // Override host for Replit
       hmr: {
         ...serverOptions.hmr,
         clientPort: 443

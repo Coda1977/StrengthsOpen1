@@ -50,7 +50,7 @@ if (process.env.NODE_ENV !== 'test') {
       const port = Number(process.env.PORT) || 5000;
 
       // Environment variable verification function
-      function verifyEnvironmentVariables() {
+      const verifyEnvironmentVariables = () => {
         const required = [
           'DATABASE_URL',
           'SESSION_SECRET',
@@ -94,7 +94,7 @@ if (process.env.NODE_ENV !== 'test') {
         }
 
         console.log('[ENV] Environment verification completed successfully');
-      }
+      };
       // Verify environment variables before starting
       try {
         verifyEnvironmentVariables();
