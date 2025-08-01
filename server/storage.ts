@@ -229,17 +229,16 @@ export class DatabaseStorage implements IStorage {
         const existingUserByEmail = await this.getUserByEmail(userData.email);
         
         if (existingUserByEmail) {
-          // User exists with same email but different ID - update the existing record
+          // User exists with same email but different ID - just update other fields, don't change ID
           const [user] = await db
             .update(users)
             .set({
-              id: userData.id, // Update ID to match the auth provider
               firstName: userData.firstName,
               lastName: userData.lastName,
               profileImageUrl: userData.profileImageUrl,
               updatedAt: new Date(),
             })
-            .where(eq(users.email, userData.email))
+            .where(eq(users.id, existingUserByEmail.id))
             .returning();
           
           // Update cache
@@ -262,10 +261,12 @@ export class DatabaseStorage implements IStorage {
         if (error.message.includes('duplicate key value violates unique constraint')) {
           // Try to find and return the existing user
           try {
-            const existingUser = await this.getUserByEmail(userData.email);
-            if (existingUser) {
-              console.log('[AUTH] Returning existing user due to constraint violation');
-              return existingUser;
+            if (userData.email) {
+              const existingUser = await this.getUserByEmail(userData.email);
+              if (existingUser) {
+                console.log('[AUTH] Returning existing user due to constraint violation');
+                return existingUser;
+              }
             }
           } catch (findError) {
             console.error('Error finding existing user:', findError);

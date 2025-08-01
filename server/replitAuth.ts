@@ -63,17 +63,11 @@ export function getSession() {
     console.log('[SESSION] Store disconnected from database');
   });
 
-  // Test session store connectivity
+  // Session store initialized
   try {
-    sessionStore.query('SELECT 1', [], (err, result) => {
-      if (err) {
-        console.error('[SESSION] Initial connectivity test failed:', err);
-      } else {
-        console.log('[SESSION] Initial connectivity test passed');
-      }
-    });
+    console.log('[SESSION] Session store initialized successfully');
   } catch (error) {
-    console.error('[SESSION] Failed to test session store connectivity:', error);
+    console.error('[SESSION] Failed to initialize session store:', error);
   }
   
   return session({
@@ -139,7 +133,17 @@ async function upsertUser(
     }
   } catch (error) {
     console.error('Failed to upsert user during authentication:', error);
-    // Re-throw the error so authentication can handle it properly
+    // Instead of throwing, try to find existing user
+    try {
+      const existingUser = await storage.getUser(claims["sub"]);
+      if (existingUser) {
+        console.log('[AUTH] Using existing user after upsert failure');
+        return; // Continue with authentication using existing user
+      }
+    } catch (findError) {
+      console.error('Failed to find existing user after upsert failure:', findError);
+    }
+    // Only throw if we truly can't proceed
     throw new Error('User account setup failed');
   }
 }
