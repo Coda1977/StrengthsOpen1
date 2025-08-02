@@ -367,6 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const authReq = req as AuthenticatedRequest;
       const userId = authReq.user.claims.sub;
+      const { forceRefresh } = req.body; // Accept refresh parameter from frontend
       const user = await storage.getUser(userId);
       const teamMembers = await storage.getTeamMembers(userId);
       if (!user || !user.topStrengths) {
@@ -382,7 +383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           strengths: member.strengths
         }))
       };
-      const insight = await generateTeamInsight(teamData, userId);
+      const insight = await generateTeamInsight(teamData, userId, forceRefresh);
       res.json(createSuccessResponse(
         { insight, generatedAt: new Date().toISOString() }, 
         req.headers['x-request-id'] as string
@@ -886,12 +887,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { userId } = req.params;
+      const { reason } = req.body;
 
-      // Delete user and all related data (cascade)
-      await db.delete(users).where(eq(users.id, userId));
+      // SAFETY: Require deletion reason for audit trail
+      if (!reason || reason.trim().length < 5) {
+        return res.status(400).json({ 
+          error: 'Deletion reason required (minimum 5 characters)' 
+        });
+      }
 
-      res.json({ success: true });
+      // SAFETY: Block deletion in production without explicit override
+      if (process.env.NODE_ENV === 'production' && !req.body.productionOverride) {
+        return res.status(403).json({
+          error: 'User deletion disabled in production for safety',
+          hint: 'Use soft delete or contact system administrator'
+        });
+      }
+
+      // SAFETY: Log deletion attempt
+      console.log(`[ADMIN_ACTION] User deletion requested by ${currentUser.email} (${currentUserId})`);
+      console.log(`[ADMIN_ACTION] Target user: ${userId}`);
+      console.log(`[ADMIN_ACTION] Reason: ${reason}`);
+      console.log(`[ADMIN_ACTION] Timestamp: ${new Date().toISOString()}`);
+
+      // TODO: Implement safe deletion with DataProtection module
+      // For now, block all deletions to prevent data loss
+      return res.status(501).json({ 
+        error: 'User deletion temporarily disabled for safety',
+        message: 'Contact administrator for user management'
+      });
+
+      // DANGEROUS: Original deletion code disabled
+      // await db.delete(users).where(eq(users.id, userId));
+
+      // res.json({ success: true });
     } catch (error) {
+      console.error('[ADMIN_ACTION] User deletion failed:', error);
       res.status(500).json({ error: 'Failed to delete user' });
     }
   });

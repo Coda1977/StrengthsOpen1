@@ -110,8 +110,8 @@ const Dashboard = () => {
   });
 
   const generateInsightMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/generate-team-insight', {});
+    mutationFn: async (forceRefresh: boolean = false) => {
+      const response = await apiRequest('POST', '/api/generate-team-insight', { forceRefresh });
       return await response.json();
     },
     onSuccess: (data: any) => {
@@ -226,7 +226,7 @@ const Dashboard = () => {
 
   const handleRefreshInsight = () => {
     if (refreshCount > 0) {
-      generateInsightMutation.mutate();
+      generateInsightMutation.mutate(true); // Pass true to force refresh
     }
   };
 

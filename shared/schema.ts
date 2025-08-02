@@ -68,7 +68,7 @@ export const teamMembers = pgTable("team_members", {
       }
     }
   }),
-  managerId: varchar("manager_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  managerId: varchar("manager_id").notNull().references(() => users.id, { onDelete: "restrict" }),
   name: varchar("name").notNull(),
   strengths: jsonb("strengths").$type<string[]>().notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -117,7 +117,7 @@ export const messages = pgTable("messages", {
       });
     }
   }),
-  conversationId: varchar("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+  conversationId: varchar("conversation_id").notNull().references(() => conversations.id, { onDelete: "restrict" }),
   content: text("content").notNull(),
   type: text("type", { enum: ["user", "ai"] }).notNull(),
   timestamp: timestamp("timestamp").defaultNow(),
@@ -150,7 +150,7 @@ export const conversationBackups = pgTable("conversation_backups", {
 // Email tracking tables
 export const emailSubscriptions = pgTable("email_subscriptions", {
   id: varchar("id").primaryKey().notNull().$defaultFn(() => randomUUID()),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
   emailType: text("email_type", { enum: ["welcome", "weekly_coaching"] }).notNull(),
   isActive: boolean("is_active").default(true),
   startDate: timestamp("start_date").defaultNow(),
@@ -173,7 +173,7 @@ export const emailSubscriptions = pgTable("email_subscriptions", {
 
 export const emailLogs = pgTable("email_logs", {
   id: varchar("id").primaryKey().notNull().$defaultFn(() => randomUUID()),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
   emailType: text("email_type", { enum: ["welcome", "weekly_coaching"] }).notNull(),
   emailSubject: text("email_subject").notNull(),
   weekNumber: text("week_number"), // For weekly emails: "1", "2", etc.
@@ -201,7 +201,7 @@ export const emailMetrics = pgTable("email_metrics", {
 // OpenAI usage logs table
 export const openaiUsageLogs = pgTable("openai_usage_logs", {
   id: varchar("id").primaryKey().notNull().$defaultFn(() => randomUUID()),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
   requestType: text("request_type").notNull(), // 'insight', 'coaching_response', 'collaboration_insight', 'email_content'
   promptTokens: integer("prompt_tokens").notNull(),
   completionTokens: integer("completion_tokens").notNull(),
@@ -213,7 +213,7 @@ export const openaiUsageLogs = pgTable("openai_usage_logs", {
 // Unsubscribe tokens table for secure email unsubscription
 export const unsubscribeTokens = pgTable("unsubscribe_tokens", {
   id: varchar("id").primaryKey().notNull().$defaultFn(() => randomUUID()),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
   token: varchar("token").notNull(),
   emailType: text("email_type", { enum: ["welcome", "weekly_coaching", "all"] }).notNull(),
   expiresAt: timestamp("expires_at").notNull(),

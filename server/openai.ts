@@ -57,7 +57,7 @@ async function logOpenAIUsage({ userId, requestType, promptTokens, completionTok
   });
 }
 
-export async function generateTeamInsight(data: TeamStrengthsData, userId?: string): Promise<string> {
+export async function generateTeamInsight(data: TeamStrengthsData, userId?: string, forceRefresh: boolean = false): Promise<string> {
   // Check if OpenAI API key is available
   if (!process.env.OPENAI_API_KEY) {
     if (isDev) console.error('OpenAI API key not found');
@@ -68,8 +68,12 @@ export async function generateTeamInsight(data: TeamStrengthsData, userId?: stri
   
   // Create cache key from team composition
   const cacheKey = `team_insight_${JSON.stringify({ managerStrengths, teamMembers: teamMembers.map(m => ({ name: m.name, strengths: m.strengths })) })}`;
-  const cached = getCachedResponse(cacheKey);
-  if (cached) return cached;
+  
+  // Only use cache if not forcing refresh
+  if (!forceRefresh) {
+    const cached = getCachedResponse(cacheKey);
+    if (cached) return cached;
+  }
   
   // Validate input data
   if (!managerStrengths || managerStrengths.length === 0) {
@@ -122,7 +126,9 @@ Provide a direct, actionable insight that:
 2. Suggests ONE concrete action the manager can take this week
 3. Is specific enough to implement immediately
 
-Keep the response to 2-3 sentences maximum. No fluff. Be nuanced - acknowledge both the power and potential blind spots of this team composition. Use vivid, memorable language that sticks.`;
+Keep the response to 2-3 sentences maximum. No fluff. Be nuanced - acknowledge both the power and potential blind spots of this team composition. Use vivid, memorable language that sticks.
+
+${forceRefresh ? `\nIMPORTANT: Generate a FRESH perspective. Focus on a different aspect or angle than previous insights for this team composition.` : ''}`;
 
   try {
     const response = await openai.chat.completions.create({

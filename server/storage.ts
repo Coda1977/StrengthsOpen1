@@ -357,13 +357,15 @@ export class DatabaseStorage implements IStorage {
               .where(eq(users.id, userByEmail.id));
           }
           
-          // Clean up the duplicate session user (this will cascade delete related records)
-          try {
-            await db.delete(users).where(eq(users.id, userById.id));
-            console.log('[STORAGE] Cleaned up duplicate user:', userById.id);
-          } catch (deleteError) {
-            console.error('[STORAGE] Could not delete duplicate user:', deleteError);
-          }
+          // DISABLED: Clean up the duplicate session user (this will cascade delete related records)
+          // EMERGENCY DISABLE: This caused mass user deletion - DO NOT RE-ENABLE without careful review
+          console.log('[STORAGE] SKIPPING duplicate user cleanup to prevent data loss:', userById.id);
+          // try {
+          //   await db.delete(users).where(eq(users.id, userById.id));
+          //   console.log('[STORAGE] Cleaned up duplicate user:', userById.id);
+          // } catch (deleteError) {
+          //   console.error('[STORAGE] Could not delete duplicate user:', deleteError);
+          // }
         }
         
         // Return the updated email user
@@ -1324,11 +1326,12 @@ export class DatabaseStorage implements IStorage {
         .where(eq(users.id, primaryUser.id))
         .returning();
       
-      // Delete duplicate users
+      // DISABLED: Delete duplicate users
+      // EMERGENCY DISABLE: This caused mass user deletion - DO NOT RE-ENABLE without careful review
       const duplicateIds = allUsers.filter(u => u.id !== primaryUser.id).map(u => u.id);
       if (duplicateIds.length > 0) {
-        console.log('[STORAGE] Cleaning up duplicate admin users:', duplicateIds);
-        await db.delete(users).where(inArray(users.id, duplicateIds));
+        console.log('[STORAGE] SKIPPING cleanup of duplicate admin users to prevent data loss:', duplicateIds);
+        // await db.delete(users).where(inArray(users.id, duplicateIds));
       }
       
       console.log('[STORAGE] Admin user reconciled successfully:', {
@@ -1598,12 +1601,12 @@ export class DatabaseStorage implements IStorage {
       );
       
       if (duplicates.length > 0) {
-        console.log('[STORAGE] Removing duplicate admin accounts:', duplicates.map(d => d.email));
-        
-        for (const duplicate of duplicates) {
-          await db.delete(users).where(eq(users.id, duplicate.id));
-          console.log('[STORAGE] Removed duplicate admin:', duplicate.email);
-        }
+        console.log('[STORAGE] SKIPPING removal of duplicate admin accounts to prevent data loss:', duplicates.map(d => d.email));
+        // EMERGENCY DISABLE: This caused mass user deletion - DO NOT RE-ENABLE without careful review
+        // for (const duplicate of duplicates) {
+        //   await db.delete(users).where(eq(users.id, duplicate.id));
+        //   console.log('[STORAGE] Removed duplicate admin:', duplicate.email);
+        // }
       } else {
         console.log('[STORAGE] No duplicate admin accounts found');
       }
