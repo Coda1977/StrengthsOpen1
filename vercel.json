@@ -1,3 +1,4 @@
 {
-  "outputDirectory": "client/dist"
+  "buildCommand": "npm run build && mkdir -p dist && cp -r client/dist/* dist/",
+  "outputDirectory": "dist"
 }
