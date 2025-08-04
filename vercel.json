@@ -1,4 +1,4 @@
 {
-  "buildCommand": "npm run build && ls -la dist/",
+  "buildCommand": "npm run build && mv dist/public/* dist/ && rmdir dist/public",
   "outputDirectory": "dist"
 }
