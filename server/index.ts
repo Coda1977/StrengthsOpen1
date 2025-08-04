@@ -6,7 +6,7 @@ import "./vite-override.js";
 
 export const app = express();
 
-// Trust proxy for Vercel
+// Trust proxy for Railway
 app.set('trust proxy', true);
 
 app.use(express.json());
@@ -49,7 +49,7 @@ if (process.env.NODE_ENV !== 'test') {
     try {
       const port = Number(process.env.PORT) || 5000;
 
-      // Environment variable verification function for Vercel
+      // Environment variable verification function for Railway
       const verifyEnvironmentVariables = () => {
         const required = [
           'DATABASE_URL',
@@ -70,8 +70,8 @@ if (process.env.NODE_ENV !== 'test') {
           warnings.push('JWT_SECRET not set, using SESSION_SECRET as fallback');
         }
 
-        // Check app URL
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app';
+        // Check app URL - Railway provides RAILWAY_STATIC_URL
+        const appUrl = process.env.RAILWAY_STATIC_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.railway.app';
         console.log('[ENV] APP_URL:', appUrl);
 
         if (warnings.length > 0) {
@@ -142,7 +142,7 @@ if (process.env.NODE_ENV !== 'test') {
         console.log(`Server accessible at:`);
         console.log(`- Local: http://localhost:${port}`);
         console.log(`- Network: http://0.0.0.0:${port}`);
-        console.log(`- External: Should be accessible via Replit preview`);
+        console.log(`- Railway: ${process.env.RAILWAY_STATIC_URL || 'Railway URL will be provided after deployment'}`);
       });
 
       // Graceful shutdown logic
