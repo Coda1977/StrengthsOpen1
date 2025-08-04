@@ -1,5 +1,16 @@
 {
-  "buildCommand": "npm run build && ls -la dist/",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
-  "framework": null
+  "framework": null,
+  "functions": {
+    "dist/index.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/dist/index.js"
+    }
+  ]
 }
