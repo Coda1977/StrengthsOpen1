@@ -62,7 +62,7 @@ const LandingPage = () => {
               <div className="hero-buttons">
                 <button 
                   className="primary-button"
-                  onClick={() => window.location.href = '/api/login'}
+                  onClick={() => window.location.href = '/login'}
                 >
                   Get Started
                 </button>
@@ -125,7 +125,7 @@ const LandingPage = () => {
           <p>Don't waste time trying to put in what was left out. Try to draw out what was left in.</p>
           <button 
             className="footer-button"
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => window.location.href = '/login'}
           >
             Get Started
           </button>

@@ -16,6 +16,8 @@ const Onboarding = lazy(() => import("@/pages/Onboarding"));
 const Logout = lazy(() => import("@/pages/Logout"));
 const Admin = lazy(() => import("@/pages/Admin"));
 const AdminLogin = lazy(() => import("@/pages/AdminLogin"));
+const Login = lazy(() => import("@/pages/Login"));
+const Register = lazy(() => import("@/pages/Register"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function Router() {
@@ -82,7 +84,24 @@ function Router() {
           <Logout />
         </Route>
 
+        {/* Authentication routes - public */}
+        <Route path="/login">
+          <PublicRoute routeName="Login">
+            <Login />
+          </PublicRoute>
+        </Route>
 
+        <Route path="/register">
+          <PublicRoute routeName="Register">
+            <Register />
+          </PublicRoute>
+        </Route>
+
+        <Route path="/admin-login">
+          <PublicRoute routeName="Admin Login">
+            <AdminLogin />
+          </PublicRoute>
+        </Route>
 
         {/* Public landing page route - must come after specific routes */}
         <Route path="/">

@@ -23,6 +23,8 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@neondatabase/serverless": "^0.10.4",
     "@prisma/client": "5.10.2",
@@ -115,6 +117,7 @@
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.1",
     "@testing-library/user-event": "^14.5.2",
+    "@types/bcrypt": "^5.0.2",
     "@types/connect-pg-simple": "^7.0.3",
     "@types/dotenv": "^6.1.1",
     "@types/express": "4.17.21",

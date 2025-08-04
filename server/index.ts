@@ -6,7 +6,7 @@ import "./vite-override.js";
 
 export const app = express();
 
-// Trust proxy for Replit domains
+// Trust proxy for Vercel
 app.set('trust proxy', true);
 
 app.use(express.json());
@@ -49,13 +49,11 @@ if (process.env.NODE_ENV !== 'test') {
     try {
       const port = Number(process.env.PORT) || 5000;
 
-      // Environment variable verification function
+      // Environment variable verification function for Vercel
       const verifyEnvironmentVariables = () => {
         const required = [
           'DATABASE_URL',
-          'SESSION_SECRET',
-          'REPL_ID',
-          'REPLIT_DOMAINS'
+          'SESSION_SECRET'
         ];
 
         const missing = required.filter(key => !process.env[key]);
@@ -66,28 +64,15 @@ if (process.env.NODE_ENV !== 'test') {
           throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
         }
 
-        // Validate specific variables
-        if (process.env.REPLIT_DOMAINS) {
-          const domains = process.env.REPLIT_DOMAINS.split(',');
-          console.log('[ENV] REPLIT_DOMAINS configured with', domains.length, 'domains:', domains);
-
-          if (domains.length === 0) {
-            warnings.push('REPLIT_DOMAINS is empty');
-          }
+        // Validate JWT secret
+        const jwtSecret = process.env.JWT_SECRET || process.env.SESSION_SECRET;
+        if (!jwtSecret) {
+          warnings.push('JWT_SECRET not set, using SESSION_SECRET as fallback');
         }
 
-        if (process.env.REPL_ID) {
-          console.log('[ENV] REPL_ID:', process.env.REPL_ID);
-          const expectedDomain = `${process.env.REPL_ID}.replit.app`;
-          const domains = process.env.REPLIT_DOMAINS?.split(',') || [];
-          if (!domains.includes(expectedDomain)) {
-            warnings.push(`Expected domain ${expectedDomain} not found in REPLIT_DOMAINS`);
-          }
-        }
-
-        // ISSUER_URL has a default value in replitAuth.ts
-        const issuerUrl = process.env.ISSUER_URL || 'https://replit.com/oidc';
-        console.log('[ENV] ISSUER_URL:', issuerUrl);
+        // Check app URL
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app';
+        console.log('[ENV] APP_URL:', appUrl);
 
         if (warnings.length > 0) {
           console.warn('[ENV] Configuration warnings:', warnings);

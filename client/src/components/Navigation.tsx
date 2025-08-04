@@ -78,7 +78,7 @@ const Navigation = ({ simplified = false, onChatHamburgerClick }: NavigationProp
           
           {isAuthenticated && (
             <button 
-              onClick={() => window.location.href = '/api/logout'}
+              onClick={() => window.location.href = '/logout'}
               className="nav-item"
               style={{ background: 'none', border: 'none', cursor: 'pointer', minWidth: 44, minHeight: 44 }}
               tabIndex={0}
