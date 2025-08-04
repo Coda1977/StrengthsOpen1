@@ -1,4 +1,4 @@
 {
-  "buildCommand": "npm run build && mkdir -p dist && cp -r client/dist/* dist/",
+  "buildCommand": "npm run build && mkdir -p dist && cp -r client/dist/* dist/ || echo 'Copy failed, trying alternative...' && cp -r client/dist/. dist/",
   "outputDirectory": "dist"
 }
