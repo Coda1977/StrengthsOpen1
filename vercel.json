@@ -6,7 +6,7 @@
   "framework": null,
   "functions": {
     "server/index.ts": {
-      "runtime": "nodejs18.x"
+      "runtime": "nodejs20.x"
     }
   },
   "routes": [
@@ -16,11 +16,8 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/client/$1"
+      "dest": "/client/dist/$1"
     }
   ],
-  "outputDirectory": "client/dist",
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "outputDirectory": "client/dist"
 }
